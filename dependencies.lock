@@ -1,0 +1,76 @@
+dependencies:
+  espressif/cmake_utilities:
+    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.1'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.5.3
+  espressif/esp32-camera:
+    component_hash: 4aadd189e9ca97298f1d69920f2d8c6b07cb3cbca014584b60e96de8a3cbb249
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.0.10
+  espressif/led_strip:
+    component_hash: 28c6509a727ef74925b372ed404772aeedf11cce10b78c3f69b3c66799095e2d
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.5.5
+  espressif/tinyusb:
+    component_hash: 214989d502fc168241a4a4f83b097d8ac44a93cd6f1787b4ac10069a8b3bebd3
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    version: 0.15.0~10
+  espressif/usb_device_uvc:
+    component_hash: f86ee44e64f3914474919a14ac4d47082d6a2888a62c239e6e9dc58c32da4682
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com/
+      require: private
+      version: '*'
+    - name: espressif/tinyusb
+      registry_url: https://components.espressif.com/
+      require: private
+      version: '>=0.15.0~10'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    version: 1.1.0
+  idf:
+    source:
+      type: idf
+    version: 5.3.1
+direct_dependencies:
+- espressif/esp32-camera
+- espressif/led_strip
+- espressif/usb_device_uvc
+- idf
+manifest_hash: 10ae06dee995e9f5b117c494c0d7becd586027c7109cd05681c7e469c643dd90
+target: esp32s3
+version: 2.0.0
