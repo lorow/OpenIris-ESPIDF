@@ -20,11 +20,10 @@
 #include "nvs_flash.h"
 
 #include <openiris_logo.hpp>
-#include <customSomething.hpp>
 #include <wifiManager.hpp>
-#include <Preferences.hpp>
+#include <ProjectConfig.hpp>
 
-static const char *TAG = "example";
+static const char *TAG = "[MAIN]";
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
@@ -64,8 +63,8 @@ extern "C" void app_main(void)
     // port the wifi manager first. - worky!!!
     // get it connect to the network and setup an AP with hardcoded creds first -- connects. AP will be next
     // port the logo - done
-    // port preferences lib -  in progress; prolly temporary
-    // then port the config - in progress
+    // port preferences lib -  DONE; prolly temporary
+    // then port the config - done, needs todos done
     // then port the led manager as this will be fairly easy
     // then port the serial manager
     // then port the camera manager
@@ -74,10 +73,15 @@ extern "C" void app_main(void)
     // then port the Elegant OTA stuff
     // then port the mdns stuff
 
+    // TODO add this option
+    // ProjectConfig deviceConfig("openiris", MDNS_HOSTNAME);
+    ProjectConfig deviceConfig("openiris", "openiristracker");
+    WiFiManager wifiManager;
+
     Logo::printASCII();
     initNVSStorage();
 
-    WiFiManager wifiManager;
+    deviceConfig.load();
     wifiManager.Begin();
 
     /* Configure the peripheral according to the LED type */
@@ -85,7 +89,6 @@ extern "C" void app_main(void)
 
     while (1)
     {
-        printTheInclude();
         ESP_LOGI(TAG, "Turning the LED on pin %d %s!", BLINK_GPIO, s_led_state == true ? "ON" : "OFF");
         blink_led();
         /* Toggle the LED state */
