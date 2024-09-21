@@ -5,6 +5,8 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include <StateManager.hpp>
+
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -19,20 +21,6 @@ static const char *WIFI_MAMANGER_TAG = "[WIFI_MANAGER]";
 
 class WiFiManager
 {
-public:
-public:
-  enum class state_e
-  {
-    NOT_INITIALIZED,
-    INITIALIZED,
-    READY_TO_CONNECT,
-    CONNECTING,
-    WAITING_FOR_IP,
-    CONNECTED,
-    DISCONNECTED,
-    ERROR
-  };
-
 private:
   uint8_t channel;
   wifi_init_config_t _wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -40,8 +28,6 @@ private:
 
   esp_event_handler_instance_t instance_any_id;
   esp_event_handler_instance_t instance_got_ip;
-
-  static state_e _state;
 
   int8_t power;
   bool _enable_adhoc;
@@ -51,7 +37,6 @@ private:
 
 public:
   void SetCredentials(const char *ssid, const char *password);
-  constexpr const state_e &GetState(void) { return _state; }
   void Begin();
 };
 

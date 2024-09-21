@@ -1,7 +1,5 @@
 #include "wifiManager.hpp"
 
-WiFiManager::state_e WiFiManager::_state = {state_e::NOT_INITIALIZED};
-
 void event_handler(void *arg, esp_event_base_t event_base,
                    int32_t event_id, void *event_data)
 {
@@ -80,11 +78,11 @@ void WiFiManager::Begin()
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg));
 
-  _state = state_e::READY_TO_CONNECT;
+  wifiStateManager.setState(WiFiState_e::WiFiState_ReadyToConect);
   esp_wifi_start();
   ESP_LOGI(WIFI_MAMANGER_TAG, "wifi_init_sta finished.");
 
-  _state = state_e::CONNECTING;
+  wifiStateManager.setState(WiFiState_e::WiFiState_Connecting);
   EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                          pdFALSE,
@@ -97,14 +95,15 @@ void WiFiManager::Begin()
   {
     ESP_LOGI(WIFI_MAMANGER_TAG, "connected to ap SSID:%s password:%s",
              _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
-    _state = state_e::CONNECTED;
+
+    wifiStateManager.setState(WiFiState_e::WiFiState_Connected);
   }
 
   else if (bits & WIFI_FAIL_BIT)
   {
     ESP_LOGE(WIFI_MAMANGER_TAG, "Failed to connect to SSID:%s, password:%s",
              _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
-    _state = state_e::ERROR;
+    wifiStateManager.setState(WiFiState_e::WiFiState_Error);
   }
   else
   {

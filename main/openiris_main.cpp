@@ -65,7 +65,9 @@ extern "C" void app_main(void)
     // port the logo - done
     // port preferences lib -  DONE; prolly temporary
     // then port the config - done, needs todos done
-    // then port the led manager as this will be fairly easy
+    // State Management - done
+    // then port the led manager as this will be fairly easy - in progress
+    // then add ADHOC and support for more networks in wifi manager
     // then port the serial manager
     // then port the camera manager
     // then port the streaming stuff (web and uvc)
