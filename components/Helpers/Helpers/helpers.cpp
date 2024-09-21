@@ -78,3 +78,8 @@ std::vector<std::string> Helpers::split(const std::string &s, char delimiter)
   }
   return parts;
 }
+
+int64_t Helpers::getTimeInMillis()
+{
+  return (esp_timer_get_time() / 1000);
+}

@@ -1,5 +1,7 @@
+#pragma once
 #ifndef HELPERS_HPP
 #define HELPERS_HPP
+#include "esp_timer.h"
 #include <string>
 #include <sstream>
 #include <vector>
@@ -31,6 +33,8 @@ namespace Helpers
     std::snprintf(buf.get(), size, format.c_str(), args...);
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
   }
+
+  int64_t getTimeInMillis();
 }
 
 #endif // HELPERS_HPP
