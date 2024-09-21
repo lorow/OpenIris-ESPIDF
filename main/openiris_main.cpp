@@ -22,6 +22,7 @@
 #include <wifiManager.hpp>
 #include <ProjectConfig.hpp>
 #include <LEDManager.hpp>
+#include <MDNSManager.hpp>
 
 #define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
 
@@ -47,19 +48,20 @@ extern "C" void app_main(void)
     // port preferences lib -  DONE; prolly temporary
     // then port the config - done, needs todos done
     // State Management - done
-    // then port the led manager as this will be fairly easy - in progress
+    // then port the led manager as this will be fairly easy - done
+    // then port the mdns stuff - done
     // then add ADHOC and support for more networks in wifi manager
-    // then port the serial manager
     // then port the camera manager
     // then port the streaming stuff (web and uvc)
     // then port the async web server
     // then port the Elegant OTA stuff
-    // then port the mdns stuff
+    // then port the serial manager
 
     // TODO add this option
     // ProjectConfig deviceConfig("openiris", MDNS_HOSTNAME);
     ProjectConfig deviceConfig("openiris", "openiristracker");
     WiFiManager wifiManager;
+    MDNSManager mdnsManager(deviceConfig);
 
 #ifdef USE_ILLUMNATIOR_PIN
     // LEDManager ledManager(BLINK_GPIO, ILLUMINATOR_PIN);
@@ -74,6 +76,7 @@ extern "C" void app_main(void)
     ledManager.setup();
     deviceConfig.load();
     wifiManager.Begin();
+    mdnsManager.start();
 
     while (1)
     {

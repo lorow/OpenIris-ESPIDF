@@ -1,4 +1,5 @@
 dependencies:
+  espressif/mdns: "*"
   espressif/led_strip: "^2.4.1"
   idf: "^5.0"
   espressif/esp32-camera: "^2.0.0"
