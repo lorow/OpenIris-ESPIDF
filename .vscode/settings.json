@@ -79,6 +79,7 @@
     "thread": "cpp",
     "cinttypes": "cpp",
     "typeinfo": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "uvc_frame_config.h": "c"
   }
 }
