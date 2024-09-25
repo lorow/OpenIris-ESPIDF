@@ -4,7 +4,7 @@
 
 #include "driver/gpio.h"
 
-#ifdef USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_USE_ILLUMNATIOR_PIN
 #include "driver/ledc.h"
 #endif
 
@@ -21,7 +21,7 @@ class LEDManager
 public:
   LEDManager(gpio_num_t blink_led_pin);
 
-#ifdef USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_USE_ILLUMNATIOR_PIN
   gpio_num_t illumninator_led_pin;
   LEDManager(gpio_num_t blink_led_pin, gpio_num_t illumninator_led_pin);
 #endif

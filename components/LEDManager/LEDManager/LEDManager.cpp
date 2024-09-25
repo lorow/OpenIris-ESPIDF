@@ -47,7 +47,7 @@ std::vector<LEDStates_e> LEDManager::keepAliveStates = {
 
 LEDManager::LEDManager(gpio_num_t pin) : blink_led_pin(pin), state(false) {}
 
-#ifdef USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_USE_ILLUMNATIOR_PIN
 LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin) : blink_led_pin(pin), illumninator_led_pin(illumninator_led_pin) state(false) {}
 #endif
 
@@ -65,7 +65,7 @@ void LEDManager::setup()
   this->toggleLED(pattern.state);
   this->nextStateChangeMillis = pattern.delayTime;
 
-#ifdef USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_USE_ILLUMNATIOR_PIN
   ESP_LOGD(LED_MANAGER_TAG, "Setting up illuminator led.");
   const int ledPin = 1; // Replace this with a command endpoint eventually.
   const int freq = 5000;
