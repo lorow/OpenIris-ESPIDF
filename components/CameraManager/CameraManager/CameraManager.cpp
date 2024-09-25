@@ -1,0 +1,351 @@
+#include "CameraManager.hpp"
+
+const char *CAMERA_MANAGER_TAG = "[CAMERA_MANAGER]";
+
+CameraManager::CameraManager(ProjectConfig &projectConfig)
+    : projectConfig(projectConfig) {}
+
+void CameraManager::setupCameraPinout()
+{
+  // Workaround for espM5SStack not having a defined camera
+#ifdef CONFIG_CAMERA_MODULE_NAME
+  ESP_LOGI(CAMERA_MANAGER_TAG, "[Camera]: Camera module is %s", CONFIG_CAMERA_MODULE_NAME);
+#else
+  ESP_LOGI(CAMERA_MANAGER_TAG, "[Camera]: Camera module is undefined");
+#endif
+
+  // camera external clock signal frequencies
+  // 10000000 stable
+  // 16500000 optimal freq on ESP32-CAM (default)
+  // 20000000 max freq on ESP32-CAM
+  // 24000000 optimal freq on ESP32-S3
+  int xclk_freq_hz = DEFAULT_XCLK_FREQ_HZ;
+
+#if CONFIG_CAMERA_MODULE_ESP_EYE
+  /* IO13, IO14 is designed for JTAG by default,
+   * to use it as generalized input,
+   * firstly declare it as pullup input
+   **/
+  gpio_reset_pin(13);
+  gpio_reset_pin(14);
+  gpio_set_direction(13, GPIO_MODE_INPUT);
+  gpio_set_direction(14, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(13, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode(14, GPIO_PULLUP_ONLY);
+  ESP_LOGI(CAMERA_MANAGER_TAG, "ESP_EYE");
+#elif CONFIG_CAMERA_MODULE_CAM_BOARD
+  /* IO13, IO14 is designed for JTAG by default,
+   * to use it as generalized input,
+   * firstly declare it as pullup input
+   **/
+
+  gpio_reset_pin(13);
+  gpio_reset_pin(14);
+  gpio_set_direction(13, GPIO_MODE_INPUT);
+  gpio_set_direction(14, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(13, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode(14, GPIO_PULLUP_ONLY);
+
+  ESP_LOGI(CAMERA_MANAGER_TAG, "CAM_BOARD");
+#endif
+#if ETVR_EYE_TRACKER_USB_API
+  xclk_freq_hz = USB_DEFAULT_XCLK_FREQ_HZ;
+#endif
+
+  // config = {
+  //     .pin_pwdn = CAM_PIN_PWDN,
+  //     .pin_reset = CAM_PIN_RESET,
+  //     .pin_xclk = CAM_PIN_XCLK,
+  //     .pin_sccb_sda = CAM_PIN_SIOD,
+  //     .pin_sccb_scl = CAM_PIN_SIOC,
+
+  //     .pin_d7 = CAM_PIN_D7,
+  //     .pin_d6 = CAM_PIN_D6,
+  //     .pin_d5 = CAM_PIN_D5,
+  //     .pin_d4 = CAM_PIN_D4,
+  //     .pin_d3 = CAM_PIN_D3,
+  //     .pin_d2 = CAM_PIN_D2,
+  //     .pin_d1 = CAM_PIN_D1,
+  //     .pin_d0 = CAM_PIN_D0,
+  //     .pin_vsync = CAM_PIN_VSYNC,
+  //     .pin_href = CAM_PIN_HREF,
+  //     .pin_pclk = CAM_PIN_PCLK,
+
+  //     // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
+  //     .xclk_freq_hz = 20000000,
+  //     .ledc_timer = LEDC_TIMER_0,
+  //     .ledc_channel = LEDC_CHANNEL_0,
+
+  //     .pixel_format = PIXFORMAT_RGB565, // YUV422,GRAYSCALE,RGB565,JPEG
+  //     .frame_size = FRAMESIZE_QVGA,     // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
+
+  //     .jpeg_quality = 12, // 0-63, for OV series camera sensors, lower number means higher quality
+  //     .fb_count = 1,      // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+  //     .fb_location = CAMERA_FB_IN_PSRAM,
+  //     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
+  // };
+
+  // todo fix pinout in sdkconfig lmao
+  config = {
+      .pin_pwdn = -1,     // CAM_PIN_PWDN,
+      .pin_reset = -1,    // CAM_PIN_RESET,
+      .pin_xclk = 10,     // CAM_PIN_XCLK,
+      .pin_sccb_sda = 40, // CAM_PIN_SIOD,
+      .pin_sccb_scl = 39, // CAM_PIN_SIOC,
+
+      .pin_d7 = 48,    /// CAM_PIN_D7,
+      .pin_d6 = 11,    /// CAM_PIN_D6,
+      .pin_d5 = 12,    // CAM_PIN_D5,
+      .pin_d4 = 14,    // CAM_PIN_D4,
+      .pin_d3 = 16,    // CAM_PIN_D3,
+      .pin_d2 = 18,    // CAM_PIN_D2,
+      .pin_d1 = 17,    // CAM_PIN_D1,
+      .pin_d0 = 15,    // CAM_PIN_D0,
+      .pin_vsync = 38, // CAM_PIN_VSYNC,
+      .pin_href = 47,  // CAM_PIN_HREF,
+      .pin_pclk = 13,  // CAM_PIN_PCLK,
+
+      // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
+      .xclk_freq_hz = 16500000,
+      .ledc_timer = LEDC_TIMER_0,
+      .ledc_channel = LEDC_CHANNEL_0,
+
+      // this causes problems
+      .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
+      .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
+
+      .jpeg_quality = 7,                 // 0-63, for OV series camera sensors, lower number means higher quality
+      .fb_count = 3,                     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+      .fb_location = CAMERA_FB_IN_PSRAM, // maybe it cannot put them fully in psram?
+      .grab_mode = CAMERA_GRAB_LATEST,
+      // .pin_pwdn = CONFIG_PWDN_GPIO_NUM,
+      // .pin_reset = CONFIG_RESET_GPIO_NUM,
+      // .pin_xclk = CONFIG_XCLK_GPIO_NUM,
+      // .pin_sccb_sda = CONFIG_SIOD_GPIO_NUM,
+      // .pin_sccb_scl = CONFIG_SIOC_GPIO_NUM,
+
+      // .pin_d7 = CONFIG_Y2_GPIO_NUM,
+      // .pin_d6 = CONFIG_Y3_GPIO_NUM,
+      // .pin_d5 = CONFIG_Y4_GPIO_NUM,
+      // .pin_d4 = CONFIG_Y5_GPIO_NUM,
+      // .pin_d3 = CONFIG_Y6_GPIO_NUM,
+      // .pin_d2 = CONFIG_Y7_GPIO_NUM,
+      // .pin_d1 = CONFIG_Y8_GPIO_NUM,
+      // .pin_d0 = CONFIG_Y9_GPIO_NUM,
+
+      // .pin_vsync = CONFIG_VSYNC_GPIO_NUM,
+      // .pin_href = CONFIG_HREF_GPIO_NUM,
+      // .pin_pclk = CONFIG_PCLK_GPIO_NUM,
+
+      // .xclk_freq_hz = xclk_freq_hz,
+
+      // .ledc_timer = LEDC_TIMER_0,
+      // .ledc_channel = LEDC_CHANNEL_0,
+
+      // .pixel_format = PIXFORMAT_JPEG,
+      // .frame_size = FRAMESIZE_240X240,
+      // .jpeg_quality = 7,
+      // .fb_count = 3,
+      // .fb_location = CAMERA_FB_IN_PSRAM,
+      // .grab_mode = CAMERA_GRAB_LATEST,
+  };
+}
+
+void CameraManager::setupBasicResolution()
+{
+
+  if (!esp_psram_is_initialized())
+  {
+    ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM not initialized!");
+    config.fb_location = CAMERA_FB_IN_DRAM;
+    config.jpeg_quality = 9;
+    config.fb_count = 2;
+    return;
+  }
+  else
+  {
+    ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
+  }
+
+  ESP_LOGD(CAMERA_MANAGER_TAG, "Setting fb_location to CAMERA_FB_IN_PSRAM");
+}
+
+void CameraManager::setupCameraSensor()
+{
+  ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera sensor");
+
+  camera_sensor = esp_camera_sensor_get();
+  // fixes corrupted jpegs, https://github.com/espressif/esp32-camera/issues/203
+  // documentation https://www.uctronics.com/download/cam_module/OV2640DS.pdf
+  camera_sensor->set_reg(
+      camera_sensor, 0xff, 0xff,
+      0x00);                                            // banksel, here we're directly writing to the registers.
+                                                        // 0xFF==0x00 is the first bank, there's also 0xFF==0x01
+  camera_sensor->set_reg(camera_sensor, 0xd3, 0xff, 5); // clock
+  camera_sensor->set_brightness(camera_sensor, 2);      // -2 to 2
+  camera_sensor->set_contrast(camera_sensor, 2);        // -2 to 2
+  camera_sensor->set_saturation(camera_sensor, -2);     // -2 to 2
+
+  // white balance control
+  camera_sensor->set_whitebal(camera_sensor, 1); // 0 = disable , 1 = enable
+  camera_sensor->set_awb_gain(camera_sensor, 0); // 0 = disable , 1 = enable
+  camera_sensor->set_wb_mode(camera_sensor,
+                             0); // 0 to 4 - if awb_gain enabled (0 - Auto, 1 -
+                                 // Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
+
+  // controls the exposure
+  camera_sensor->set_exposure_ctrl(camera_sensor,
+                                   0);              // 0 = disable , 1 = enable
+  camera_sensor->set_aec2(camera_sensor, 0);        // 0 = disable , 1 = enable
+  camera_sensor->set_ae_level(camera_sensor, 0);    // -2 to 2
+  camera_sensor->set_aec_value(camera_sensor, 300); // 0 to 1200
+
+  // controls the gain
+  camera_sensor->set_gain_ctrl(camera_sensor, 0); // 0 = disable , 1 = enable
+
+  // automatic gain control gain, controls by how much the resulting image
+  // should be amplified
+  camera_sensor->set_agc_gain(camera_sensor, 2);                   // 0 to 30
+  camera_sensor->set_gainceiling(camera_sensor, (gainceiling_t)6); // 0 to 6
+
+  // black and white pixel correction, averages the white and black spots
+  camera_sensor->set_bpc(camera_sensor, 1); // 0 = disable , 1 = enable
+  camera_sensor->set_wpc(camera_sensor, 1); // 0 = disable , 1 = enable
+  // digital clamp white balance
+  camera_sensor->set_dcw(camera_sensor, 0); // 0 = disable , 1 = enable
+
+  // gamma correction
+  camera_sensor->set_raw_gma(
+      camera_sensor,
+      1); // 0 = disable , 1 = enable (makes much lighter and noisy)
+
+  camera_sensor->set_lenc(camera_sensor, 0); // 0 = disable , 1 = enable // 0 =
+                                             // disable , 1 = enable
+
+  camera_sensor->set_colorbar(camera_sensor, 0); // 0 = disable , 1 = enable
+
+  camera_sensor->set_special_effect(
+      camera_sensor,
+      2); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint,
+          // 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
+
+  ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera sensor done");
+}
+
+bool CameraManager::setupCamera()
+{
+  ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera pinout");
+  this->setupCameraPinout();
+  ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera with resolution");
+  // this->setupBasicResolution();
+
+  ESP_LOGI(CAMERA_MANAGER_TAG, "Initializing camera...");
+  esp_err_t hasCameraBeenInitialized = esp_camera_init(&config);
+
+  if (hasCameraBeenInitialized == ESP_OK)
+  {
+    ESP_LOGI(CAMERA_MANAGER_TAG, "Camera initialized: %s \r\n",
+             esp_err_to_name(hasCameraBeenInitialized));
+
+    cameraStateManager.setState(CameraState_e::Camera_Success);
+  }
+  else
+  {
+    ESP_LOGE(CAMERA_MANAGER_TAG, "Camera initialization failed with error: %s \r\n",
+             esp_err_to_name(hasCameraBeenInitialized));
+    ESP_LOGE(CAMERA_MANAGER_TAG, "Camera most likely not seated properly in the socket. "
+                                 "Please "
+                                 "fix the "
+                                 "camera and reboot the device.\r\n");
+    ledStateManager.setState(LEDStates_e::_Camera_Error);
+    cameraStateManager.setState(CameraState_e::Camera_Error);
+    return false;
+  }
+
+#if CONFIG_ETVR_EYE_TRACKER_USB_API
+  auto temp_sensor = esp_camera_sensor_get();
+  auto camera_id = temp_sensor->id.PID;
+  switch (camera_id)
+  {
+  // Thanks to lick_it, we discovered that OV5640 likes to overheat when
+  // running at higher than usual xclk frequencies.
+  // Hence why we're limit the faster ones for OV2640
+  case OV5640_PID:
+    config.xclk_freq_hz = OV5640_XCLK_FREQ_HZ;
+    esp_camera_deinit();
+    esp_camera_init(&config);
+    break;
+  default:
+    break;
+  }
+#endif
+
+  // this->setupCameraSensor();
+  // this->loadConfigData(); // move this to update method once implemented
+  return true;
+}
+
+void CameraManager::loadConfigData()
+{
+  ESP_LOGD(CAMERA_MANAGER_TAG, "Loading camera config data");
+  ProjectConfig::CameraConfig_t cameraConfig = projectConfig.getCameraConfig();
+  this->setHFlip(cameraConfig.href);
+  this->setVFlip(cameraConfig.vflip);
+  this->setCameraResolution((framesize_t)cameraConfig.framesize);
+  camera_sensor->set_quality(camera_sensor, cameraConfig.quality);
+  camera_sensor->set_agc_gain(camera_sensor, cameraConfig.brightness);
+  ESP_LOGD(CAMERA_MANAGER_TAG, "Loading camera config data done");
+}
+
+int CameraManager::setCameraResolution(framesize_t frameSize)
+{
+  if (camera_sensor->pixformat == PIXFORMAT_JPEG)
+  {
+    return camera_sensor->set_framesize(camera_sensor, frameSize);
+  }
+  return -1;
+}
+
+int CameraManager::setVFlip(int direction)
+{
+  return camera_sensor->set_vflip(camera_sensor, direction);
+}
+
+int CameraManager::setHFlip(int direction)
+{
+  return camera_sensor->set_hmirror(camera_sensor, direction);
+}
+
+int CameraManager::setVieWindow(int offsetX,
+                                int offsetY,
+                                int outputX,
+                                int outputY)
+{
+
+  // todo safariMonkey made a PoC, implement it here
+  return 0;
+}
+
+//! either hardware(1) or software(0)
+void CameraManager::resetCamera(bool type)
+{
+  // TODO add camera reset
+
+  // if (type)
+  // {
+  //   // power cycle the camera module (handy if camera stops responding)
+  //   digitalWrite(PWDN_GPIO_NUM, HIGH); // turn power off to camera module
+  //   Network_Utilities::my_delay(0.3);  // a for loop with a delay of 300ms
+  //   digitalWrite(PWDN_GPIO_NUM, LOW);
+  //   Network_Utilities::my_delay(0.3);
+  //   setupCamera();
+  // }
+  // else
+  // {
+  //   // reset via software (handy if you wish to change resolution or image type
+  //   // etc. - see test procedure)
+  //   esp_camera_deinit();
+  //   Network_Utilities::my_delay(0.05);
+  //   setupCamera();
+  // }
+}

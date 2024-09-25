@@ -1,0 +1,107 @@
+menu "Camera sensor pinout configuration"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config CAMERA_MODULE_NAME
+        string "Camera module name"
+        default "ESP32S3_XIAO_SENSE"
+        help 
+            Camera module name
+
+    config PWDN_GPIO_NUM
+        int "Power Down GPIO Number"
+        default -1
+        help
+            Power Down GPIO number
+
+    config RESET_GPIO_NUM
+        int "Reset GPIO Number"
+        default -1
+        help
+            Reset GPIO number
+
+    config XCLK_GPIO_NUM
+        int "External Clock (XCLK) GPIO Number"
+        default 10
+        help
+            External Clock GPIO number (set to GPIO 4)
+
+    config SIOD_GPIO_NUM
+        int "Serial Data I/O (SIOD) GPIO Number"
+        default 40
+        help
+            Serial Data I/O (SDA) GPIO number (set to GPIO 18)
+
+    config SIOC_GPIO_NUM
+        int "Serial Clock (SIOC) GPIO Number"
+        default 39
+        help
+            Serial Clock (SCL) GPIO number (set to GPIO 23)
+
+    config Y9_GPIO_NUM
+        int "Y9 Data Bit GPIO Number"
+        default 48
+        help
+            Y9 Data bit GPIO number (set to GPIO 36)
+
+    config Y8_GPIO_NUM
+        int "Y8 Data Bit GPIO Number"
+        default 11
+        help
+            Y8 Data bit GPIO number (set to GPIO 37)
+
+    config Y7_GPIO_NUM
+        int "Y7 Data Bit GPIO Number"
+        default 12
+        help
+            Y7 Data bit GPIO number (set to GPIO 38)
+
+    config Y6_GPIO_NUM
+        int "Y6 Data Bit GPIO Number"
+        default 14
+        help
+            Y6 Data bit GPIO number (set to GPIO 39)
+
+    config Y5_GPIO_NUM
+        int "Y5 Data Bit GPIO Number"
+        default 16
+        help
+            Y5 Data bit GPIO number (set to GPIO 14)
+
+    config Y4_GPIO_NUM
+        int "Y4 Data Bit GPIO Number"
+        default 18
+        help
+            Y4 Data bit GPIO number (set to GPIO 19)
+
+    config Y3_GPIO_NUM
+        int "Y3 Data Bit GPIO Number"
+        default 17
+        help
+            Y3 Data bit GPIO number (set to GPIO 13)
+
+    config Y2_GPIO_NUM
+        int "Y2 Data Bit GPIO Number"
+        default 15
+        help
+            Y2 Data bit GPIO number (set to GPIO 34)
+
+    config VSYNC_GPIO_NUM
+        int "Vertical Sync (VSYNC) GPIO Number"
+        default 38
+        help
+            Vertical Sync GPIO number (set to GPIO 5)
+
+    config HREF_GPIO_NUM
+        int "Horizontal Reference (HREF) GPIO Number"
+        default 47
+        help
+            Horizontal Reference GPIO number (set to GPIO 27)
+
+    config PCLK_GPIO_NUM
+        int "Pixel Clock (PCLK) GPIO Number"
+        default 13
+        help
+            Pixel Clock GPIO number (set to GPIO 25)
+
+endmenu

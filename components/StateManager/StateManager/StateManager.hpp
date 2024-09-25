@@ -70,7 +70,6 @@ struct DeviceStates
   {
     Camera_Disconnected,
     Camera_Success,
-    Camera_Connected,
     Camera_Error
   };
 
