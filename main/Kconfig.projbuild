@@ -46,6 +46,10 @@ menu "OpenIris basic configuration"
         help
             Define the blinking period in milliseconds.
 
+    config WIRED_MODE
+        bool "WIred mode"
+        default false
+
     config WIFI_SSID
         string "WiFi network name"
         default ""

@@ -16,6 +16,7 @@
 #include <LEDManager.hpp>
 #include <MDNSManager.hpp>
 #include <CameraManager.hpp>
+#include <StreamServer.hpp>
 
 #define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
 
@@ -57,6 +58,7 @@ extern "C" void app_main(void)
     WiFiManager wifiManager;
     MDNSManager mdnsManager(deviceConfig);
     CameraManager cameraHandler(deviceConfig);
+    StreamServer streamServer;
 
 #ifdef CONFIG_USE_ILLUMNATIOR_PIN
     // LEDManager ledManager(BLINK_GPIO, ILLUMINATOR_PIN);
@@ -73,29 +75,12 @@ extern "C" void app_main(void)
     wifiManager.Begin();
     mdnsManager.start();
     cameraHandler.setupCamera();
+    streamServer.startStreamServer();
 
     while (1)
     {
         ledManager.handleLED();
 
-        ESP_LOGI(TAG, "Free heap: %u, free PSRAM: %u", esp_get_free_heap_size(), esp_get_free_internal_heap_size());
-        heap_caps_print_heap_info(MALLOC_CAP_SPIRAM);
-
-        if (cameraStateManager.getCurrentState() != CameraState_e::Camera_Success)
-            return;
-
-        ESP_LOGI(TAG, "Taking picture...");
-        camera_fb_t *pic = esp_camera_fb_get();
-
-        // use pic->buf to access the image
-        if (pic == NULL)
-        {
-            ESP_LOGE(TAG, "Camera capture failed");
-            continue;
-        }
-
-        ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
-        esp_camera_fb_return(pic);
         vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
     }
 }
