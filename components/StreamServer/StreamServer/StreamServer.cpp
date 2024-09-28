@@ -70,7 +70,7 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
     long request_end = Helpers::getTimeInMillis();
     long latency = (request_end - last_request_time);
     last_request_time = request_end;
-    ESP_LOGD(STREAM_SERVER_TAG, "Size: %uKB, Time: %lims (%lifps)\n", _jpg_buf_len / 1024, latency, 1000 / latency);
+    ESP_LOGI(STREAM_SERVER_TAG, "Size: %uKB, Time: %lims (%lifps)\n", _jpg_buf_len / 1024, latency, 1000 / latency);
   }
   last_frame = 0;
   return response;
