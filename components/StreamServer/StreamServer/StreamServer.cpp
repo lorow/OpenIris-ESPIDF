@@ -6,7 +6,10 @@ constexpr static const char *STREAM_PART = "Content-Type: image/jpeg\r\nContent-
 
 static const char *STREAM_SERVER_TAG = "[STREAM_SERVER]";
 
-// the stream is super low FPS, find out why
+StreamServer::StreamServer(const int STREAM_PORT) : STREAM_SERVER_PORT(STREAM_PORT)
+{
+}
+
 esp_err_t StreamHelpers::stream(httpd_req_t *req)
 {
   long last_request_time = 0;
@@ -76,15 +79,14 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
   return response;
 }
 
-StreamServer::StreamServer(const int STREAM_PORT) : STREAM_SERVER_PORT(STREAM_PORT) {}
+esp_err_t StreamHelpers::ws_logs_handle(httpd_req_t *req)
+{
+  auto ret = webSocketLogger.register_socket_client(req);
+  return ret;
+}
 
 esp_err_t StreamServer::startStreamServer()
 {
-  if (cameraStateManager.getCurrentState() != CameraState_e::Camera_Success)
-  {
-    ESP_LOGE(STREAM_SERVER_TAG, "Camera not initialized. Cannot start stream server.");
-    return ESP_FAIL;
-  }
 
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.stack_size = 20480;
@@ -99,6 +101,14 @@ esp_err_t StreamServer::startStreamServer()
       .user_ctx = nullptr,
   };
 
+  httpd_uri_t logs_ws = {
+      .uri = "/ws",
+      .method = HTTP_GET,
+      .handler = &StreamHelpers::ws_logs_handle,
+      .user_ctx = nullptr,
+      .is_websocket = true,
+  };
+
   int status = httpd_start(&camera_stream, &config);
 
   if (status != ESP_OK)
@@ -107,7 +117,15 @@ esp_err_t StreamServer::startStreamServer()
     return status;
   }
 
+  httpd_register_uri_handler(camera_stream, &logs_ws);
+  if (cameraStateManager.getCurrentState() != CameraState_e::Camera_Success)
+  {
+    ESP_LOGE(STREAM_SERVER_TAG, "Camera not initialized. Cannot start stream server. Logs server will be running.");
+    return ESP_FAIL;
+  }
+
   httpd_register_uri_handler(camera_stream, &stream_page);
+
   ESP_LOGI(STREAM_SERVER_TAG, "Stream server started on port %d", STREAM_SERVER_PORT);
   // todo add printing IP addr here
 

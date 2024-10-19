@@ -9,22 +9,29 @@
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include <StateManager.hpp>
+#include <WebSocketLogger.hpp >
 #include <Helpers.hpp>
+
+extern WebSocketLogger webSocketLogger;
 
 namespace StreamHelpers
 {
   esp_err_t stream(httpd_req_t *req);
+  esp_err_t ws_logs_handle(httpd_req_t *req);
 }
 
 class StreamServer
 {
 private:
-  httpd_handle_t camera_stream = nullptr;
   int STREAM_SERVER_PORT;
+  httpd_handle_t camera_stream = nullptr;
 
 public:
-  StreamServer(const int STREAM_PORT = 80);
+  StreamServer(const int STREAM_PORT);
   esp_err_t startStreamServer();
+
+  esp_err_t stream(httpd_req_t *req);
+  esp_err_t ws_logs_handle(httpd_req_t *req);
 };
 
 #endif

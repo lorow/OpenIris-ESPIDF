@@ -2,8 +2,8 @@
 // ported by: Lorow, do not trust this please
 
 #pragma once
-#ifndef _PREFERENCES_HPP_
-#define _PREFERENCES_HPP_
+#ifndef PREFERENCES_HPP
+#define PREFERENCES_HPP
 
 #include <cstdint>
 #include <string>
@@ -84,4 +84,4 @@ public:
   size_t freeEntries();
 };
 
-#endif _PREFERENCES_HPP_
+#endif PREFERENCES_HPP
