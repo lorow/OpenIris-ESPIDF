@@ -3,8 +3,13 @@
 #define UVCSTREAM_HPP
 #include "esp_timer.h"
 #include "esp_camera.h"
+#include <CameraManager.hpp>
 #include "esp_log.h"
 #include "usb_device_uvc.h"
+
+// we need access to the camera manager
+// in order to update the frame settings
+extern CameraManager cameraHandler;
 
 namespace UVCStreamHelpers
 {

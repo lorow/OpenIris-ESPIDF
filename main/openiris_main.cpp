@@ -66,14 +66,12 @@ int test_log(const char *format, va_list args)
     return vprintf(format, args);
 }
 
-void mylog(const char *format, ...);
-
 extern "C" void app_main(void)
 {
     // uvc plan
 
     // cleanup the logs - done
-    // prepare the camera to be initialized with UVC
+    // prepare the camera to be initialized with UVC - done?
     // debug uvc performance - done
 
     // porting plan:
@@ -86,7 +84,7 @@ extern "C" void app_main(void)
     // then port the led manager as this will be fairly easy - done
     // then port the mdns stuff - done
     // then port the camera manager - in progress
-    // then port the streaming stuff (web and uvc) - in progress
+    // then port the streaming stuff (web and uvc) - done
 
     // then add ADHOC and support for more networks in wifi manager
     // then port the async web server
@@ -101,7 +99,7 @@ extern "C" void app_main(void)
     deviceConfig.load();
     wifiManager.Begin();
     mdnsManager.start();
-    // cameraHandler.setupCamera();
+    cameraHandler.setupCamera();
     streamServer.startStreamServer();
 
 #ifdef CONFIG_WIRED_MODE
