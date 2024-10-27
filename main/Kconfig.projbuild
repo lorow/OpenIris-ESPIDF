@@ -57,4 +57,12 @@ menu "OpenIris basic configuration"
     config WIFI_PASSOWRD
         string "WiFi password"
         default ""
+
+    config AP_WIFI_SSID
+        string "AP WiFi network name"
+        default "EyeTrackVR"
+    
+    config AP_WIFI_PASSWORD
+        string "AP WiFi password"
+        default "12345678"
 endmenu

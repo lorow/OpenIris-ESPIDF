@@ -33,7 +33,7 @@ WebSocketLogger webSocketLogger;
 // TODO add this option
 // ProjectConfig deviceConfig("openiris", MDNS_HOSTNAME);
 ProjectConfig deviceConfig("openiris", "openiristracker");
-WiFiManager wifiManager;
+WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
 CameraManager cameraHandler(deviceConfig);
 StreamServer streamServer(80);
@@ -76,20 +76,21 @@ extern "C" void app_main(void)
 
     // porting plan:
     // port the wifi manager first. - worky!!!
-    // get it connect to the network and setup an AP with hardcoded creds first -- connects. AP will be next
     // port the logo - done
     // port preferences lib -  DONE; prolly temporary
     // then port the config - done, needs todos done
     // State Management - done
     // then port the led manager as this will be fairly easy - done
     // then port the mdns stuff - done
-    // then port the camera manager - in progress
+    // then port the camera manager - done
     // then port the streaming stuff (web and uvc) - done
 
-    // then add ADHOC and support for more networks in wifi manager
+    // then add ADHOC and support for more networks in wifi manager - done
     // then port the async web server
     // then port the Elegant OTA stuff
-    // then port the serial manager
+    // then port the serial manager - for wifi and mdns provisioning setup?
+    // finish todos, overhaul stuff a bit
+    // maybe swich websocket logging to udp logging
 
     Logo::printASCII();
     initNVSStorage();
