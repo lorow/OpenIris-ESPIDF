@@ -30,9 +30,7 @@ static const char *TAG = "[MAIN]";
 
 WebSocketLogger webSocketLogger;
 
-// TODO add this option
-// ProjectConfig deviceConfig("openiris", MDNS_HOSTNAME);
-ProjectConfig deviceConfig("openiris", "openiristracker");
+ProjectConfig deviceConfig("openiris", CONFIG_MDNS_HOSTNAME);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
 CameraManager cameraHandler(deviceConfig);
@@ -43,8 +41,7 @@ UVCStreamManager uvcStream;
 #endif
 
 #ifdef CONFIG_USE_ILLUMNATIOR_PIN
-// LEDManager ledManager(BLINK_GPIO, ILLUMINATOR_PIN);
-LEDManager ledManager(BLINK_GPIO, 1);
+LEDManager ledManager(BLINK_GPIO, CONFIG_ILLUMINATOR_PIN);
 #else
 LEDManager ledManager(BLINK_GPIO);
 #endif

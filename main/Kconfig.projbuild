@@ -45,10 +45,18 @@ menu "OpenIris basic configuration"
         default 1000
         help
             Define the blinking period in milliseconds.
+    
+    config ILLUMINATOR_PIN
+        int "Project Babble Illuminator Pin Number"
+        default 1
 
     config WIRED_MODE
         bool "WIred mode"
         default false
+
+    config MDNS_HOSTNAME
+        string "mDNS name"
+        default "openiristracker"
 
     config WIFI_SSID
         string "WiFi network name"
