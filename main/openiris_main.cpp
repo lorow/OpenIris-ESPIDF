@@ -17,6 +17,7 @@
 #include <CameraManager.hpp>
 #include <WebSocketLogger.hpp>
 #include <StreamServer.hpp>
+#include <RestAPI.hpp>
 
 #include <stdarg.h>
 
@@ -35,6 +36,7 @@ WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
 CameraManager cameraHandler(deviceConfig);
 StreamServer streamServer(80);
+RestAPI restAPI("http://0.0.0.0:81");
 
 #ifdef CONFIG_WIRED_MODE
 UVCStreamManager uvcStream;
@@ -97,6 +99,7 @@ extern "C" void app_main(void)
     deviceConfig.load();
     wifiManager.Begin();
     mdnsManager.start();
+    restAPI.begin();
     cameraHandler.setupCamera();
     streamServer.startStreamServer();
 
@@ -107,6 +110,7 @@ extern "C" void app_main(void)
     while (1)
     {
         ledManager.handleLED();
+        restAPI.poll();
         vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
     }
 }
