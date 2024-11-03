@@ -4,7 +4,7 @@ RestAPI::RestAPI(std::string url)
 {
   this->url = url;
   // updates
-  routes.emplace("/api/update/wifi/", &RestAPI::handle_wifi);
+  routes.emplace("/api/update/wifi/", &RestAPI::handle_update_wifi);
   routes.emplace("/api/update/device/", &RestAPI::handle_update_device);
   routes.emplace("/api/update/camera/", &RestAPI::handle_update_camera);
 
@@ -17,8 +17,6 @@ RestAPI::RestAPI(std::string url)
 
   // gets
   routes.emplace("/api/get/config/", &RestAPI::handle_get_config);
-  routes.emplace("/api/reboot/", &RestAPI::handle_reboot);
-  routes.emplace("/api/reboot/", &RestAPI::handle_reboot);
 
   // reboots
   routes.emplace("/api/reboot/device/", &RestAPI::handle_reboot);
@@ -47,21 +45,17 @@ void RestAPI::handle_request(struct mg_connection *connection, int event, void *
     struct mg_http_message *message = (struct mg_http_message *)event_data;
     std::string uri = std::string(message->uri.buf, message->uri.len);
 
-    bool found = false;
-    for (auto it = this->routes.begin(); it != this->routes.end(); it++)
+    if (auto method_it = this->routes.find(uri); method_it != this->routes.end())
     {
-      if (it->first == uri)
-      {
-        found = true;
-        RequestContext *context = new RequestContext{
-            .connection = connection,
-        };
-        auto method = it->second;
-        (*this.*method)(context);
-      }
+      RequestContext *context = new RequestContext{
+          .connection = connection,
+          .method = std::string(message->method.buf, message->method.len),
+          .body = std::string(message->body.buf, message->body.len),
+      };
+      auto method = method_it->second;
+      (*this.*method)(context);
     }
-
-    if (!found)
+    else
     {
       mg_http_reply(connection, 404, "", "Wrong URL");
     }
@@ -79,7 +73,69 @@ void RestAPI::poll()
   mg_mgr_poll(&mgr, 100);
 }
 
+// commands
+
+// updates
+void RestAPI::handle_update_wifi(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "WiFi config updated");
+}
+
+void RestAPI::handle_update_device(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+}
+
+void RestAPI::handle_update_camera(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+}
+
+// gets
+
+void handle_get_config(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+}
+
+// resets
+
+void RestAPI::handle_reset_config(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Config reset");
+}
+
+void RestAPI::handle_reset_wifi_config(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "WiFi Config reset");
+}
+
+void RestAPI::handle_reset_txpower_config(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "TX Power Config reset");
+}
+
+void RestAPI::handle_reset_camera_config(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Camera Config reset");
+}
+
+// reboots
 void RestAPI::handle_reboot(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, "", "Yes sir");
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Ok");
+}
+
+// heartbeat
+
+void RestAPI::pong(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "pong");
+}
+
+// special
+
+void RestAPI::handle_save(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Config saved");
 }

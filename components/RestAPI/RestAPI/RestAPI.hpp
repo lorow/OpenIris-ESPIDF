@@ -5,9 +5,13 @@
 
 #include "esp_log.h"
 
+#define JSON_RESPONSE "Content-Type: application/json\r\n"
+
 struct RequestContext
 {
   mg_connection *connection;
+  std::string method;
+  std::string body;
 };
 
 class RestAPI
@@ -20,7 +24,29 @@ class RestAPI
   struct mg_mgr mgr;
 
 private:
+  // updates
+  void handle_update_wifi(RequestContext *context);
+  void handle_update_device(RequestContext *context);
+  void handle_update_camera(RequestContext *context);
+
+  // gets
+  void handle_get_config(RequestContext *context);
+
+  // resets
+  void handle_reset_config(RequestContext *context);
+  void handle_reset_wifi_config(RequestContext *context);
+  void handle_reset_txpower_config(RequestContext *context);
+  void handle_reset_camera_config(RequestContext *context);
+
+  // reboots
   void handle_reboot(RequestContext *context);
+  void handle_camera_reboot(RequestContext *context);
+
+  // heartbeat
+  void pong(RequestContext *context);
+
+  // special
+  void handle_save(RequestContext *context);
 
 public:
   // this will also need command manager
