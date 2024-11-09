@@ -1,3 +1,5 @@
+#ifndef COMMAND_SCHEMA_HPP
+#define COMMAND_SCHEMA_HPP
 class BasePayload
 {
 };
@@ -24,3 +26,5 @@ class deleteNetworkPayload : public BasePayload
 {
   std::optional<std::string> networkName;
 };
+
+#endif

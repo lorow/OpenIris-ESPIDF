@@ -1,3 +1,6 @@
+#ifndef COMMANDMANAGER_HPP
+#define COMMANDMANAGER_HPP
+
 #include <ProjectConfig.hpp>
 #include <memory>
 #include <string>
@@ -6,8 +9,10 @@
 #include "CommandResult.hpp"
 #include "CommandSchema.hpp"
 #include "Commands.hpp"
+#include <cJSON.h>
 
-const enum CommandType {
+enum CommandType
+{
   None,
   PING,
   SET_WIFI,
@@ -32,5 +37,8 @@ public:
   CommandManager(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
   std::unique_ptr<Command> createCommand(CommandType type);
 
-  CommandResult executeFromJson(const std::string *json);
+  CommandResult executeFromJson(std::string *json);
+  CommandResult executeFromType(CommandType type, std::string *json);
 };
+
+#endif

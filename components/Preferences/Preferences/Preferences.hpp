@@ -84,4 +84,4 @@ public:
   size_t freeEntries();
 };
 
-#endif PREFERENCES_HPP
+#endif

@@ -1,3 +1,5 @@
+#ifndef COMMANDS_HPP
+#define COMMANDS_HPP
 #include <ProjectConfig.hpp>
 #include <memory>
 #include <string>
@@ -8,31 +10,25 @@
 
 class Command
 {
+public:
   virtual ~Command() = default;
-  virtual CommandResult execute(const std::shared_ptr<BasePayload> &payload) = 0;
-  virtual std::shared_ptr<BasePayload> parsePayload(const std::string *json) = 0;
+  virtual CommandResult execute(std::string &jsonPayload) = 0;
 };
 
 class PingCommand : public Command
 {
 public:
-  CommandResult execute(const std::shared_ptr<BasePayload> &payload);
-  std::shared_ptr<BasePayload> parsePayload(const std::string *json);
+  CommandResult execute(std::string &jsonPayload) override;
 };
 
-class setConfigCommand : public Command
+class setWiFiCommand : public Command
 {
-public:
-  CommandResult execute(const std::shared_ptr<BasePayload> &payload);
-  std::shared_ptr<BasePayload> parsePayload(const std::string *json);
-};
-
-class UpdateWifiCommand : public Command
-{
-private:
   ProjectConfig &projectConfig;
 
 public:
-  UpdateWifiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(const std::shared_ptr<BasePayload> &payload);
+  setWiFiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  CommandResult execute(std::string &jsonPayload) override;
+  WifiPayload parsePayload(std::string &jsonPayload);
 };
+
+#endif

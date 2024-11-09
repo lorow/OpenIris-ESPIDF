@@ -6,16 +6,52 @@ std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
   {
   case CommandType::PING:
     return std::make_unique<PingCommand>();
-    break;
-  case CommandType::UPDATE_WIFI:
-    return std::make_unique<UpdateWifiCommand>(projectConfig);
+  case CommandType::SET_WIFI:
+    return std::make_unique<setWiFiCommand>(projectConfig);
   default:
     return nullptr;
   }
 }
 
-CommandResult CommandManager::executeFromJson(const std::string *json)
+CommandResult CommandManager::executeFromJson(std::string *json)
 {
-  // parse it, get a type of command, grab a command from the map based on type
-  // parse the payload json, call execute on the command and return the result
+  cJSON *parsedJson = cJSON_Parse(json->c_str());
+  if (parsedJson == nullptr)
+    return CommandResult::getErrorResult("Invalid JSON");
+
+  const cJSON *commandData = nullptr;
+  const cJSON *commands = cJSON_GetObjectItem(parsedJson, "commands");
+  cJSON_ArrayForEach(commandData, commands)
+  {
+    const cJSON *commandTypeString = cJSON_GetObjectItem(commandData, "command");
+    const cJSON *commandPayload = cJSON_GetObjectItem(commandData, "data");
+
+    auto commandType = commandTypeMap.at(std::string(commandTypeString->valuestring));
+    auto command = createCommand(commandType);
+
+    if (command == nullptr)
+    {
+      cJSON_Delete(parsedJson);
+      return CommandResult::getErrorResult("Unknown command");
+    }
+
+    std::string commandPayloadString = std::string(cJSON_Print(commandPayload));
+    cJSON_Delete(parsedJson);
+    return command->execute(commandPayloadString);
+  }
+
+  cJSON_Delete(parsedJson);
+  return CommandResult::getErrorResult("Commands missing");
+}
+
+CommandResult CommandManager::executeFromType(CommandType type, std::string *json)
+{
+  auto command = createCommand(type);
+
+  if (command == nullptr)
+  {
+    return CommandResult::getErrorResult("Unknown command");
+  }
+
+  return command->execute(*json);
 }

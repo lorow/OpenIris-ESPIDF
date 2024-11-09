@@ -1,3 +1,6 @@
+#ifndef COMMAND_RESULT
+#define COMMAND_RESULT
+
 class CommandResult
 {
 private:
@@ -37,3 +40,5 @@ public:
   std::string getSuccessMessage() const { return successMessage.value(); };
   std::string getErrorMessage() const { return errorMessage.value(); }
 };
+
+#endif
