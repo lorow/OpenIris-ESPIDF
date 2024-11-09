@@ -93,7 +93,7 @@ void RestAPI::handle_update_camera(RequestContext *context)
 
 // gets
 
-void handle_get_config(RequestContext *context)
+void RestAPI::handle_get_config(RequestContext *context)
 {
   mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
 }
@@ -122,6 +122,11 @@ void RestAPI::handle_reset_camera_config(RequestContext *context)
 
 // reboots
 void RestAPI::handle_reboot(RequestContext *context)
+{
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Ok");
+}
+
+void RestAPI::handle_camera_reboot(RequestContext *context)
 {
   mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Ok");
 }
