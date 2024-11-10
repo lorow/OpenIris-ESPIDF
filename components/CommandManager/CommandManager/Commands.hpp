@@ -42,4 +42,14 @@ public:
   std::optional<deleteNetworkPayload> parsePayload(std::string &jsonPayload);
 };
 
+class updateWifiCommand : public Command
+{
+  ProjectConfig &projectConfig;
+
+public:
+  updateWifiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  CommandResult execute(std::string &jsonPayload) override;
+  std::optional<UpdateWifiPayload> parsePayload(std::string &jsonPayload);
+};
+
 #endif

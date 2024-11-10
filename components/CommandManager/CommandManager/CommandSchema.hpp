@@ -17,7 +17,7 @@ public:
 class UpdateWifiPayload : public BasePayload
 {
 public:
-  std::optional<std::string> networkName;
+  std::string networkName;
   std::optional<std::string> ssid;
   std::optional<std::string> password;
   std::optional<uint8_t> channel;
