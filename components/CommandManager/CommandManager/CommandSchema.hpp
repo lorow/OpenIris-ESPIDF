@@ -6,6 +6,7 @@ class BasePayload
 
 class WifiPayload : public BasePayload
 {
+public:
   std::string networkName;
   std::string ssid;
   std::string password;
@@ -15,6 +16,7 @@ class WifiPayload : public BasePayload
 
 class UpdateWifiPayload : public BasePayload
 {
+public:
   std::optional<std::string> networkName;
   std::optional<std::string> ssid;
   std::optional<std::string> password;
@@ -24,7 +26,8 @@ class UpdateWifiPayload : public BasePayload
 
 class deleteNetworkPayload : public BasePayload
 {
-  std::optional<std::string> networkName;
+public:
+  std::string networkName;
 };
 
 #endif

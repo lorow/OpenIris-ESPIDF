@@ -5,6 +5,7 @@
 #include <string>
 #include <optional>
 #include <unordered_map>
+#include <cJSON.h>
 #include "CommandResult.hpp"
 #include "CommandSchema.hpp"
 
@@ -28,7 +29,17 @@ class setWiFiCommand : public Command
 public:
   setWiFiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
-  WifiPayload parsePayload(std::string &jsonPayload);
+  std::optional<WifiPayload> parsePayload(std::string &jsonPayload);
+};
+
+class deleteWifiCommand : public Command
+{
+  ProjectConfig &projectConfig;
+
+public:
+  deleteWifiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  CommandResult execute(std::string &jsonPayload) override;
+  std::optional<deleteNetworkPayload> parsePayload(std::string &jsonPayload);
 };
 
 #endif

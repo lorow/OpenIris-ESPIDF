@@ -8,6 +8,8 @@ std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
     return std::make_unique<PingCommand>();
   case CommandType::SET_WIFI:
     return std::make_unique<setWiFiCommand>(projectConfig);
+  case CommandType::DELETE_NETWORK:
+    return std::make_unique<deleteWifiCommand>(projectConfig);
   default:
     return nullptr;
   }
