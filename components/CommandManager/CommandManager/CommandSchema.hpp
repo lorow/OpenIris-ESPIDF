@@ -1,12 +1,15 @@
 #ifndef COMMAND_SCHEMA_HPP
 #define COMMAND_SCHEMA_HPP
-class BasePayload
+
+// this generally should be merged with ProjectConfig definitions
+// and moved into a separate component
+// and used as more or less models
+struct BasePayload
 {
 };
 
-class WifiPayload : public BasePayload
+struct WifiPayload : BasePayload
 {
-public:
   std::string networkName;
   std::string ssid;
   std::string password;
@@ -14,9 +17,8 @@ public:
   uint8_t power;
 };
 
-class UpdateWifiPayload : public BasePayload
+struct UpdateWifiPayload : BasePayload
 {
-public:
   std::string networkName;
   std::optional<std::string> ssid;
   std::optional<std::string> password;
@@ -24,10 +26,33 @@ public:
   std::optional<uint8_t> power;
 };
 
-class deleteNetworkPayload : public BasePayload
+struct deleteNetworkPayload : BasePayload
 {
-public:
   std::string networkName;
+};
+
+// implement
+struct UpdateAPWiFiPayload : BasePayload
+{
+  std::string ssid;
+  std::string password;
+  uint8_t channel;
+};
+
+struct MDNSPayload : public BasePayload
+{
+  std::string hostname;
+};
+
+// todo implement
+struct UpdateCameraConfigPayload : BasePayload
+{
+  uint8_t vflip;
+  uint8_t href;
+  uint8_t framesize;
+  uint8_t quality;
+  uint8_t brightness;
+  // todo add more options here
 };
 
 #endif

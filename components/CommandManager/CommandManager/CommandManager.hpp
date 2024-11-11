@@ -18,7 +18,13 @@ enum CommandType
   SET_WIFI,
   UPDATE_WIFI,
   DELETE_NETWORK,
+  UPDATE_AP_WIFI,
+  UPDATE_MDNS,
+  SET_MDNS,
+  UPDATE_CAMERA,
   SAVE_CONFIG,
+  RESET_CONFIG,
+  RESTART_DEVICE,
 };
 
 std::unordered_map<std::string, CommandType> commandTypeMap = {

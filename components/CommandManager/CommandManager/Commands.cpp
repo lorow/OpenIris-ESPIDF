@@ -66,8 +66,7 @@ CommandResult setWiFiCommand::execute(std::string &jsonPayload)
       wifiConfig.password,
       wifiConfig.channel,
       wifiConfig.power,
-      false,
-      false);
+      true);
 
   return CommandResult::getSuccessResult("Config updated");
 }
@@ -168,9 +167,79 @@ CommandResult updateWifiCommand::execute(std::string &jsonPayload)
         updatedConfig.password.has_value() ? updatedConfig.password.value() : networkToUpdate->password,
         updatedConfig.channel.has_value() ? updatedConfig.channel.value() : networkToUpdate->channel,
         updatedConfig.power.has_value() ? updatedConfig.power.value() : networkToUpdate->power,
-        false,
         false);
   }
   else
     return CommandResult::getErrorResult("Requested network does not exist");
+}
+
+std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string &jsonPayload)
+{
+  UpdateAPWiFiPayload payload;
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+
+  // todo implement parsing
+
+  cJSON_Delete(parsedJson);
+  return payload;
+}
+
+CommandResult updateAPWiFiCommand::execute(std::string &jsonPayload)
+{
+  auto payload = parsePayload(jsonPayload);
+  // todo implement updating
+  return CommandResult::getSuccessResult("Config updated");
+}
+
+std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string &jsonPayload)
+{
+  MDNSPayload payload;
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  if (parsedJson == nullptr)
+    return std::nullopt;
+
+  cJSON *hostnameObject = cJSON_GetObjectItem(parsedJson, "hostname");
+
+  if (hostnameObject == nullptr)
+  {
+    cJSON_Delete(parsedJson);
+    return std::nullopt;
+  }
+
+  payload.hostname = std::string(hostnameObject->valuestring);
+  cJSON_Delete(parsedJson);
+  return payload;
+}
+
+CommandResult setMDNSCommand::execute(std::string &jsonPayload)
+{
+  auto payload = parsePayload(jsonPayload);
+  if (!payload.has_value())
+    return CommandResult::getErrorResult("Invalid payload");
+
+  projectConfig.setMDNSConfig(payload.value().hostname, false);
+
+  return CommandResult::getSuccessResult("Config updated");
+}
+
+std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::string &jsonPayload)
+{
+  UpdateCameraConfigPayload payload;
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+
+  cJSON_Delete(parsedJson);
+  return payload;
+}
+
+CommandResult updateCameraCommand::execute(std::string &jsonPayload)
+{
+  auto payload = parsePayload(jsonPayload);
+  // todo implement updating
+  return CommandResult::getSuccessResult("Config updated");
+}
+
+CommandResult saveConfigCommand::execute(std::string &jsonPayload)
+{
+  projectConfig.save();
+  return CommandResult::getSuccessResult("Config saved");
 }

@@ -10,8 +10,19 @@ std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
     return std::make_unique<setWiFiCommand>(projectConfig);
   case CommandType::UPDATE_WIFI:
     return std::make_unique<updateWifiCommand>(projectConfig);
+  case CommandType::UPDATE_AP_WIFI:
+    return std::make_unique<updateAPWiFiCommand>(projectConfig);
   case CommandType::DELETE_NETWORK:
     return std::make_unique<deleteWifiCommand>(projectConfig);
+  case CommandType::SET_MDNS:
+    return std::make_unique<setMDNSCommand>(projectConfig);
+  // updating the mnds name is essentially the same operation
+  case CommandType::UPDATE_MDNS:
+    return std::make_unique<setMDNSCommand>(projectConfig);
+  case CommandType::UPDATE_CAMERA:
+    return std::make_unique<updateCameraCommand>(projectConfig);
+  case CommandType::SAVE_CONFIG:
+    return std::make_unique<saveConfigCommand>(projectConfig);
   default:
     return nullptr;
   }

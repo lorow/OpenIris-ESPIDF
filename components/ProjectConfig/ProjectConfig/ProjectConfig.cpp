@@ -129,7 +129,6 @@ void ProjectConfig::mdnsConfigSave()
 {
   /* Device Config */
   putString("hostname", this->config.mdns.hostname.c_str());
-  putString("service", this->config.mdns.service.c_str());
 }
 
 void ProjectConfig::wifiTxPowerConfigSave()
@@ -173,7 +172,6 @@ void ProjectConfig::load()
 
   /* MDNS Config */
   this->config.mdns.hostname = getString("hostname", _mdnsName.c_str()).c_str();
-  this->config.mdns.service = getString("service").c_str();
 
   /* Wifi TX Power Config */
   // 11dBm is the default value
@@ -247,12 +245,10 @@ void ProjectConfig::setDeviceConfig(const std::string &OTALogin,
 }
 
 void ProjectConfig::setMDNSConfig(const std::string &hostname,
-                                  const std::string &service,
                                   bool shouldNotify)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating MDNS config");
   this->config.mdns.hostname.assign(hostname);
-  this->config.mdns.service.assign(service);
 
   // TODO turn this on
   // if (shouldNotify)
@@ -284,12 +280,8 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
                                   const std::string &password,
                                   uint8_t channel,
                                   uint8_t power,
-                                  bool adhoc,
                                   bool shouldNotify)
 {
-  // we store the ADHOC flag as false because the networks we store in the
-  // config are the ones we want the esp to connect to, rather than host as AP,
-  // and here we're just updating them
   size_t size = this->config.networks.size();
 
   for (auto it = this->config.networks.begin();
@@ -305,7 +297,6 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
       it->password = password;
       it->channel = channel;
       it->power = power;
-      it->adhoc = false;
 
       if (shouldNotify)
       {
@@ -398,14 +389,11 @@ void ProjectConfig::setWiFiTxPower(uint8_t power, bool shouldNotify)
 void ProjectConfig::setAPWifiConfig(const std::string &ssid,
                                     const std::string &password,
                                     uint8_t channel,
-                                    bool adhoc,
                                     bool shouldNotify)
 {
   this->config.ap_network.ssid.assign(ssid);
   this->config.ap_network.password.assign(password);
   this->config.ap_network.channel = channel;
-  this->config.ap_network.adhoc = adhoc;
-
   ESP_LOGD(CONFIGURATION_TAG, "Updating access point config");
   if (shouldNotify)
   {
@@ -437,8 +425,8 @@ std::string ProjectConfig::DeviceConfig_t::toRepresentation()
 std::string ProjectConfig::MDNSConfig_t::toRepresentation()
 {
   std::string json = Helpers::format_string(
-      "\"mdns_config\": {\"hostname\": \"%s\", \"service\": \"%s\"}",
-      this->hostname.c_str(), this->service.c_str());
+      "\"mdns_config\": {\"hostname\": \"%s\"}",
+      this->hostname.c_str());
   return json;
 }
 
@@ -457,9 +445,9 @@ std::string ProjectConfig::WiFiConfig_t::toRepresentation()
   std::string json = Helpers::format_string(
       "{\"name\": \"%s\", \"ssid\": \"%s\", \"password\": \"%s\", "
       "\"channel\": "
-      "%u, \"power\": %u,\"adhoc\": %s}",
+      "%u, \"power\": %u}",
       this->name.c_str(), this->ssid.c_str(), this->password.c_str(),
-      this->channel, this->power, this->adhoc ? "true" : "false");
+      this->channel, this->power);
   return json;
 }
 
@@ -467,9 +455,8 @@ std::string ProjectConfig::AP_WiFiConfig_t::toRepresentation()
 {
   std::string json = Helpers::format_string(
       "\"ap_wifi_config\": {\"ssid\": \"%s\", \"password\": \"%s\", "
-      "\"channel\": %u, \"adhoc\": %s}",
-      this->ssid.c_str(), this->password.c_str(), this->channel,
-      this->adhoc ? "true" : "false");
+      "\"channel\": %u}",
+      this->ssid.c_str(), this->password.c_str(), this->channel);
   return json;
 }
 
