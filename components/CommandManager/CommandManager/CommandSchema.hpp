@@ -44,15 +44,14 @@ struct MDNSPayload : public BasePayload
   std::string hostname;
 };
 
-// todo implement
 struct UpdateCameraConfigPayload : BasePayload
 {
-  uint8_t vflip;
-  uint8_t href;
-  uint8_t framesize;
-  uint8_t quality;
-  uint8_t brightness;
-  // todo add more options here
+  std::optional<uint8_t> vflip;
+  std::optional<uint8_t> href;
+  std::optional<uint8_t> framesize;
+  std::optional<uint8_t> quality;
+  std::optional<uint8_t> brightness;
+  // TODO add more options here
 };
 
 #endif

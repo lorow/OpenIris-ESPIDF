@@ -1,5 +1,7 @@
 #include "ProjectConfig.hpp"
 
+// TODO the current implementation is kinda wack, rethink it
+
 ProjectConfig::ProjectConfig(const std::string &name,
                              const std::string &mdnsName)
     : _name(std::move(name)),
