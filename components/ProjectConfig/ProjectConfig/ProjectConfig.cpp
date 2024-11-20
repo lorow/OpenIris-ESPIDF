@@ -43,7 +43,6 @@ void ProjectConfig::initConfig()
   }
   this->config.mdns = {
       _mdnsName,
-      "openiristracker",
   };
 
   ESP_LOGI(CONFIGURATION_TAG, "MDNS name: %s", _mdnsName.c_str());
@@ -52,7 +51,6 @@ void ProjectConfig::initConfig()
       "",
       "",
       1,
-      false,
   };
 
   this->config.camera = {

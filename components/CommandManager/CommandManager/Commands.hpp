@@ -84,6 +84,7 @@ public:
 
 class saveConfigCommand : public Command
 {
+public:
   ProjectConfig &projectConfig;
   saveConfigCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
