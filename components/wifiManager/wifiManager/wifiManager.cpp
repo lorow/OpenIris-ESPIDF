@@ -36,7 +36,7 @@ void WiFiManagerHelpers::event_handler(void *arg, esp_event_base_t event_base,
   }
 }
 
-WiFiManager::WiFiManager(ProjectConfig &deviceConfig) : deviceConfig(deviceConfig) {}
+WiFiManager::WiFiManager(std::shared_ptr<ProjectConfig> deviceConfig) : deviceConfig(deviceConfig) {}
 
 void WiFiManager::SetCredentials(const char *ssid, const char *password)
 {
@@ -84,7 +84,7 @@ void WiFiManager::ConnectWithHardcodedCredentials()
 
 void WiFiManager::ConnectWithStoredCredentials()
 {
-  auto networks = this->deviceConfig.getWifiConfigs();
+  auto networks = this->deviceConfig->getWifiConfigs();
   for (auto network : networks)
   {
     xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);

@@ -1,7 +1,11 @@
+#pragma once
+#ifndef RESTAPI_HPP
+#define RESTAPI_HPP
 #include <string>
 #include <memory>
 #include <unordered_map>
 #include <mongoose.h>
+#include <CommandManager.hpp>
 
 #include "esp_log.h"
 
@@ -22,6 +26,7 @@ class RestAPI
   route_map routes;
 
   struct mg_mgr mgr;
+  std::shared_ptr<CommandManager> command_manager;
 
 private:
   // updates
@@ -50,7 +55,7 @@ private:
 
 public:
   // this will also need command manager
-  RestAPI(std::string url);
+  RestAPI(std::string url, std::shared_ptr<CommandManager> command_manager);
   void begin();
   void handle_request(struct mg_connection *connection, int event, void *event_data);
   void poll();
@@ -60,3 +65,5 @@ namespace RestAPIHelpers
 {
   void event_handler(struct mg_connection *connection, int event, void *event_data);
 };
+
+#endif

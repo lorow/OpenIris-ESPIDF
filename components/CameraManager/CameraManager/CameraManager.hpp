@@ -20,11 +20,11 @@ class CameraManager
 {
 private:
   sensor_t *camera_sensor;
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
   camera_config_t config;
 
 public:
-  CameraManager(ProjectConfig &projectConfigl);
+  CameraManager(std::shared_ptr<ProjectConfig> projectConfigl);
   int setCameraResolution(framesize_t frameSize);
   bool setupCamera(); // todo, once we have observers, make it private
 

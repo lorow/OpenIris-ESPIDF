@@ -60,7 +60,7 @@ CommandResult setWiFiCommand::execute(std::string &jsonPayload)
     return CommandResult::getErrorResult("Invalid payload");
   }
   auto wifiConfig = payload.value();
-  projectConfig.setWifiConfig(
+  projectConfig->setWifiConfig(
       wifiConfig.networkName,
       wifiConfig.ssid,
       wifiConfig.password,
@@ -98,7 +98,7 @@ CommandResult deleteWifiCommand::execute(std::string &jsonPayload)
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
-  projectConfig.deleteWifiConfig(payload.value().networkName, false);
+  projectConfig->deleteWifiConfig(payload.value().networkName, false);
   return CommandResult::getSuccessResult("Config updated");
 }
 
@@ -153,7 +153,7 @@ CommandResult updateWifiCommand::execute(std::string &jsonPayload)
   }
 
   auto updatedConfig = payload.value();
-  auto storedNetworks = projectConfig.getWifiConfigs();
+  auto storedNetworks = projectConfig->getWifiConfigs();
   if (auto networkToUpdate = std::find_if(
           storedNetworks.begin(),
           storedNetworks.end(),
@@ -161,7 +161,7 @@ CommandResult updateWifiCommand::execute(std::string &jsonPayload)
           { return network.name == updatedConfig.networkName; });
       networkToUpdate != storedNetworks.end())
   {
-    projectConfig.setWifiConfig(
+    projectConfig->setWifiConfig(
         updatedConfig.networkName,
         updatedConfig.ssid.has_value() ? updatedConfig.ssid.value() : networkToUpdate->ssid,
         updatedConfig.password.has_value() ? updatedConfig.password.value() : networkToUpdate->password,
@@ -217,7 +217,7 @@ CommandResult setMDNSCommand::execute(std::string &jsonPayload)
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
-  projectConfig.setMDNSConfig(payload.value().hostname, false);
+  projectConfig->setMDNSConfig(payload.value().hostname, true);
 
   return CommandResult::getSuccessResult("Config updated");
 }
@@ -260,8 +260,8 @@ CommandResult updateCameraCommand::execute(std::string &jsonPayload)
   }
   auto updatedConfig = payload.value();
 
-  auto oldConfig = projectConfig.getCameraConfig();
-  this->projectConfig.setCameraConfig(
+  auto oldConfig = projectConfig->getCameraConfig();
+  this->projectConfig->setCameraConfig(
       updatedConfig.vflip.has_value() ? updatedConfig.vflip.value() : oldConfig.vflip,
       updatedConfig.framesize.has_value() ? updatedConfig.framesize.value() : oldConfig.framesize,
       updatedConfig.href.has_value() ? updatedConfig.href.value() : oldConfig.href,
@@ -274,6 +274,6 @@ CommandResult updateCameraCommand::execute(std::string &jsonPayload)
 
 CommandResult saveConfigCommand::execute(std::string &jsonPayload)
 {
-  projectConfig.save();
+  projectConfig->save();
   return CommandResult::getSuccessResult("Config saved");
 }

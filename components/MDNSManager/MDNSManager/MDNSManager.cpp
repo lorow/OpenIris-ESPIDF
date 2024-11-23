@@ -2,7 +2,7 @@
 
 static const char *MDNS_MANAGER_TAG = "[MDNS MANAGER]";
 
-MDNSManager::MDNSManager(ProjectConfig &projectConfig) : projectConfig(projectConfig) {}
+MDNSManager::MDNSManager(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {}
 
 esp_err_t MDNSManager::start()
 {
@@ -17,7 +17,7 @@ esp_err_t MDNSManager::start()
     return result;
   }
 
-  auto mdnsConfig = projectConfig.getMDNSConfig();
+  auto mdnsConfig = projectConfig->getMDNSConfig();
   result = mdns_hostname_set(mdnsConfig.hostname.c_str());
   if (result != ESP_OK)
   {

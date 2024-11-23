@@ -11,10 +11,10 @@
 class MDNSManager
 {
 private:
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  MDNSManager(ProjectConfig &projectConfig);
+  MDNSManager(std::shared_ptr<ProjectConfig> projectConfig);
   esp_err_t start();
 };
 

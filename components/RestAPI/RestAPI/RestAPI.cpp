@@ -1,6 +1,6 @@
 #include "RestAPI.hpp"
 
-RestAPI::RestAPI(std::string url)
+RestAPI::RestAPI(std::string url, std::shared_ptr<CommandManager> commandManager) : command_manager(commandManager)
 {
   this->url = url;
   // updates

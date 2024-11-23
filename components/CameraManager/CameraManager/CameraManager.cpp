@@ -2,7 +2,7 @@
 
 const char *CAMERA_MANAGER_TAG = "[CAMERA_MANAGER]";
 
-CameraManager::CameraManager(ProjectConfig &projectConfig)
+CameraManager::CameraManager(std::shared_ptr<ProjectConfig> projectConfig)
     : projectConfig(projectConfig) {}
 
 void CameraManager::setupCameraPinout()
@@ -225,7 +225,7 @@ bool CameraManager::setupCamera()
 void CameraManager::loadConfigData()
 {
   ESP_LOGD(CAMERA_MANAGER_TAG, "Loading camera config data");
-  ProjectConfig::CameraConfig_t cameraConfig = projectConfig.getCameraConfig();
+  ProjectConfig::CameraConfig_t cameraConfig = projectConfig->getCameraConfig();
   this->setHFlip(cameraConfig.href);
   this->setVFlip(cameraConfig.vflip);
   this->setCameraResolution((framesize_t)cameraConfig.framesize);

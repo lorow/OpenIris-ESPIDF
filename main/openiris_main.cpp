@@ -17,6 +17,7 @@
 #include <CameraManager.hpp>
 #include <WebSocketLogger.hpp>
 #include <StreamServer.hpp>
+#include <CommandManager.hpp>
 #include <RestAPI.hpp>
 
 #include <stdarg.h>
@@ -31,12 +32,14 @@ static const char *TAG = "[MAIN]";
 
 WebSocketLogger webSocketLogger;
 
-ProjectConfig deviceConfig("openiris", CONFIG_MDNS_HOSTNAME);
+auto deviceConfig = std::make_shared<ProjectConfig>("openiris", CONFIG_MDNS_HOSTNAME);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
 CameraManager cameraHandler(deviceConfig);
 StreamServer streamServer(80);
-RestAPI restAPI("http://0.0.0.0:81");
+
+auto commandManager = std::make_shared<CommandManager>(deviceConfig);
+RestAPI restAPI("http://0.0.0.0:81", commandManager);
 
 #ifdef CONFIG_WIRED_MODE
 UVCStreamManager uvcStream;
@@ -96,7 +99,7 @@ extern "C" void app_main(void)
 
     esp_log_set_vprintf(&test_log);
     ledManager.setup();
-    deviceConfig.load();
+    deviceConfig->load();
     wifiManager.Begin();
     mdnsManager.start();
     restAPI.begin();

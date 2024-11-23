@@ -1,5 +1,13 @@
 #include "CommandManager.hpp"
 
+std::unordered_map<std::string, CommandType> commandTypeMap = {
+    {"ping", CommandType::PING},
+    {"set_wifi", CommandType::SET_WIFI},
+    {"update_wifi", CommandType::UPDATE_WIFI},
+    {"delete_network", CommandType::DELETE_NETWORK},
+    {"save_config", CommandType::SAVE_CONFIG},
+};
+
 std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
 {
   switch (type)

@@ -24,60 +24,60 @@ public:
 
 class setWiFiCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  setWiFiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  setWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<WifiPayload> parsePayload(std::string &jsonPayload);
 };
 
 class deleteWifiCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  deleteWifiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  deleteWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<deleteNetworkPayload> parsePayload(std::string &jsonPayload);
 };
 
 class updateWifiCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  updateWifiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  updateWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<UpdateWifiPayload> parsePayload(std::string &jsonPayload);
 };
 
 class updateAPWiFiCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  updateAPWiFiCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  updateAPWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<UpdateAPWiFiPayload> parsePayload(std::string &jsonPayload);
 };
 
 class setMDNSCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  setMDNSCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  setMDNSCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<MDNSPayload> parsePayload(std::string &jsonPayload);
 };
 
 class updateCameraCommand : public Command
 {
-  ProjectConfig &projectConfig;
+  std::shared_ptr<ProjectConfig> projectConfig;
 
 public:
-  updateCameraCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  updateCameraCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
   std::optional<UpdateCameraConfigPayload> parsePayload(std::string &jsonPayload);
 };
@@ -85,8 +85,8 @@ public:
 class saveConfigCommand : public Command
 {
 public:
-  ProjectConfig &projectConfig;
-  saveConfigCommand(ProjectConfig &projectConfig) : projectConfig(projectConfig) {};
+  std::shared_ptr<ProjectConfig> projectConfig;
+  saveConfigCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   CommandResult execute(std::string &jsonPayload) override;
 };
 
