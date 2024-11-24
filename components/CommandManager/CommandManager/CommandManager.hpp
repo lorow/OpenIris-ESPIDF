@@ -16,6 +16,7 @@ enum CommandType
   None,
   PING,
   SET_WIFI,
+  UPDATE_DEVICE,
   UPDATE_WIFI,
   DELETE_NETWORK,
   UPDATE_AP_WIFI,
@@ -36,8 +37,8 @@ public:
   CommandManager(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
   std::unique_ptr<Command> createCommand(CommandType type);
 
-  CommandResult executeFromJson(std::string *json);
-  CommandResult executeFromType(CommandType type, std::string *json);
+  CommandResult executeFromJson(std::string_view json);
+  CommandResult executeFromType(CommandType type, std::string_view json);
 };
 
 #endif

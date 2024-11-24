@@ -36,9 +36,9 @@ std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
   }
 }
 
-CommandResult CommandManager::executeFromJson(std::string *json)
+CommandResult CommandManager::executeFromJson(std::string_view json)
 {
-  cJSON *parsedJson = cJSON_Parse(json->c_str());
+  cJSON *parsedJson = cJSON_Parse(json.data());
   if (parsedJson == nullptr)
     return CommandResult::getErrorResult("Invalid JSON");
 
@@ -67,7 +67,7 @@ CommandResult CommandManager::executeFromJson(std::string *json)
   return CommandResult::getErrorResult("Commands missing");
 }
 
-CommandResult CommandManager::executeFromType(CommandType type, std::string *json)
+CommandResult CommandManager::executeFromType(CommandType type, std::string_view json)
 {
   auto command = createCommand(type);
 
@@ -76,5 +76,5 @@ CommandResult CommandManager::executeFromType(CommandType type, std::string *jso
     return CommandResult::getErrorResult("Unknown command");
   }
 
-  return command->execute(*json);
+  return command->execute(json);
 }

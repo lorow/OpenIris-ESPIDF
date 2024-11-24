@@ -1,44 +1,49 @@
 #ifndef COMMAND_RESULT
 #define COMMAND_RESULT
 
+#include <format>
+#include <string>
+
 class CommandResult
 {
 private:
-  std::optional<std::string> successMessage;
-  std::optional<std::string> errorMessage;
-
-public:
-  CommandResult(std::optional<std::string> success_message,
-                std::optional<std::string> error_message)
+  enum class Status
   {
-    if (success_message.has_value())
+    SUCCESS,
+    FAILURE,
+  };
+
+  Status status;
+  std::string message;
+
+  CommandResult(std::string message, Status status)
+  {
+    this->status = status;
+    if (status == Status::SUCCESS)
     {
-      this->successMessage =
-          "{\"message\":\"" + success_message.value() + "\"}";
+      // we gotta do it this way, because if we define it as { "result": " {} " } it crashes the compiler, lol
+      this->message = std::format("{}\"result\":\" {} \"{}", "{", message, "}");
     }
     else
-      this->successMessage = std::nullopt;
-
-    if (error_message.has_value())
-      this->errorMessage = "{\"error\":\"" + error_message.value() + "\"}";
-    else
-      this->errorMessage = std::nullopt;
+    {
+      this->message = std::format("{}\"error\":\" {} \"{}", "{", message, "}");
+    }
   }
 
-  bool isSuccess() const { return successMessage.has_value(); }
+public:
+  bool isSuccess() const { return status == Status::SUCCESS; }
 
   static CommandResult getSuccessResult(std::string message)
   {
-    return CommandResult(message, std::nullopt);
+    return CommandResult(message, Status::SUCCESS);
   }
 
   static CommandResult getErrorResult(std::string message)
   {
-    return CommandResult(std::nullopt, message);
+    return CommandResult(message, Status::FAILURE);
   }
 
-  std::string getSuccessMessage() const { return successMessage.value(); };
-  std::string getErrorMessage() const { return errorMessage.value(); }
+  std::string getResult() const { return this->message; }
 };
 
 #endif

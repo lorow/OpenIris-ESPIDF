@@ -12,14 +12,16 @@
 class Command
 {
 public:
+  Command() = default;
   virtual ~Command() = default;
-  virtual CommandResult execute(std::string &jsonPayload) = 0;
+  virtual CommandResult execute(std::string_view jsonPayload) = 0;
 };
 
 class PingCommand : public Command
 {
 public:
-  CommandResult execute(std::string &jsonPayload) override;
+  PingCommand() = default;
+  CommandResult execute(std::string_view jsonPayload) override;
 };
 
 class setWiFiCommand : public Command
@@ -28,8 +30,8 @@ class setWiFiCommand : public Command
 
 public:
   setWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<WifiPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<WifiPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class deleteWifiCommand : public Command
@@ -38,8 +40,8 @@ class deleteWifiCommand : public Command
 
 public:
   deleteWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<deleteNetworkPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<deleteNetworkPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class updateWifiCommand : public Command
@@ -48,8 +50,8 @@ class updateWifiCommand : public Command
 
 public:
   updateWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<UpdateWifiPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<UpdateWifiPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class updateAPWiFiCommand : public Command
@@ -58,8 +60,8 @@ class updateAPWiFiCommand : public Command
 
 public:
   updateAPWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<UpdateAPWiFiPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<UpdateAPWiFiPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class setMDNSCommand : public Command
@@ -68,8 +70,8 @@ class setMDNSCommand : public Command
 
 public:
   setMDNSCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<MDNSPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<MDNSPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class updateCameraCommand : public Command
@@ -78,8 +80,8 @@ class updateCameraCommand : public Command
 
 public:
   updateCameraCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
-  std::optional<UpdateCameraConfigPayload> parsePayload(std::string &jsonPayload);
+  CommandResult execute(std::string_view jsonPayload) override;
+  std::optional<UpdateCameraConfigPayload> parsePayload(std::string_view jsonPayload);
 };
 
 class saveConfigCommand : public Command
@@ -87,7 +89,7 @@ class saveConfigCommand : public Command
 public:
   std::shared_ptr<ProjectConfig> projectConfig;
   saveConfigCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string &jsonPayload) override;
+  CommandResult execute(std::string_view jsonPayload) override;
 };
 
 // mostlikely missing commands

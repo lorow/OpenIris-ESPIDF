@@ -1,14 +1,14 @@
 #include "Commands.hpp"
 
-CommandResult PingCommand::execute(std::string &jsonPayload)
+CommandResult PingCommand::execute(std::string_view jsonPayload)
 {
   return CommandResult::getSuccessResult("pong");
 }
 
-std::optional<WifiPayload> setWiFiCommand::parsePayload(std::string &jsonPayload)
+std::optional<WifiPayload> setWiFiCommand::parsePayload(std::string_view jsonPayload)
 {
   WifiPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
   if (parsedJson == nullptr)
     return std::nullopt;
@@ -52,7 +52,7 @@ std::optional<WifiPayload> setWiFiCommand::parsePayload(std::string &jsonPayload
   return payload;
 }
 
-CommandResult setWiFiCommand::execute(std::string &jsonPayload)
+CommandResult setWiFiCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   if (!payload.has_value())
@@ -71,10 +71,10 @@ CommandResult setWiFiCommand::execute(std::string &jsonPayload)
   return CommandResult::getSuccessResult("Config updated");
 }
 
-std::optional<deleteNetworkPayload> deleteWifiCommand::parsePayload(std::string &jsonPayload)
+std::optional<deleteNetworkPayload> deleteWifiCommand::parsePayload(std::string_view jsonPayload)
 {
   deleteNetworkPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
   if (parsedJson == nullptr)
     return std::nullopt;
@@ -92,7 +92,7 @@ std::optional<deleteNetworkPayload> deleteWifiCommand::parsePayload(std::string 
   return payload;
 }
 
-CommandResult deleteWifiCommand::execute(std::string &jsonPayload)
+CommandResult deleteWifiCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   if (!payload.has_value())
@@ -102,10 +102,10 @@ CommandResult deleteWifiCommand::execute(std::string &jsonPayload)
   return CommandResult::getSuccessResult("Config updated");
 }
 
-std::optional<UpdateWifiPayload> updateWifiCommand::parsePayload(std::string &jsonPayload)
+std::optional<UpdateWifiPayload> updateWifiCommand::parsePayload(std::string_view jsonPayload)
 {
   UpdateWifiPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
   if (parsedJson == nullptr)
     return std::nullopt;
@@ -124,7 +124,7 @@ std::optional<UpdateWifiPayload> updateWifiCommand::parsePayload(std::string &js
   cJSON *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
   cJSON *powerObject = cJSON_GetObjectItem(parsedJson, "power");
 
-  if (ssidObject != nullptr && ssidObject->valuestring == "")
+  if (ssidObject != nullptr && (strcmp(ssidObject->valuestring, "") == 0))
   {
     // we need ssid to actually connect
     cJSON_Delete(parsedJson);
@@ -142,9 +142,12 @@ std::optional<UpdateWifiPayload> updateWifiCommand::parsePayload(std::string &js
 
   if (powerObject != nullptr)
     payload.power = powerObject->valueint;
+
+  cJSON_Delete(parsedJson);
+  return payload;
 }
 
-CommandResult updateWifiCommand::execute(std::string &jsonPayload)
+CommandResult updateWifiCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   if (!payload.has_value())
@@ -168,15 +171,17 @@ CommandResult updateWifiCommand::execute(std::string &jsonPayload)
         updatedConfig.channel.has_value() ? updatedConfig.channel.value() : networkToUpdate->channel,
         updatedConfig.power.has_value() ? updatedConfig.power.value() : networkToUpdate->power,
         false);
+
+    return CommandResult::getSuccessResult("Config updated");
   }
   else
     return CommandResult::getErrorResult("Requested network does not exist");
 }
 
-std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string &jsonPayload)
+std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string_view jsonPayload)
 {
   UpdateAPWiFiPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
   // todo implement parsing
 
@@ -184,17 +189,17 @@ std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string
   return payload;
 }
 
-CommandResult updateAPWiFiCommand::execute(std::string &jsonPayload)
+CommandResult updateAPWiFiCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   // todo implement updating
   return CommandResult::getSuccessResult("Config updated");
 }
 
-std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string &jsonPayload)
+std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string_view jsonPayload)
 {
   MDNSPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
   if (parsedJson == nullptr)
     return std::nullopt;
 
@@ -211,7 +216,7 @@ std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string &jsonPayload
   return payload;
 }
 
-CommandResult setMDNSCommand::execute(std::string &jsonPayload)
+CommandResult setMDNSCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   if (!payload.has_value())
@@ -222,10 +227,10 @@ CommandResult setMDNSCommand::execute(std::string &jsonPayload)
   return CommandResult::getSuccessResult("Config updated");
 }
 
-std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::string &jsonPayload)
+std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::string_view jsonPayload)
 {
   UpdateCameraConfigPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.c_str());
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
   if (parsedJson == nullptr)
     return std::nullopt;
@@ -251,7 +256,7 @@ std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::
   return payload;
 }
 
-CommandResult updateCameraCommand::execute(std::string &jsonPayload)
+CommandResult updateCameraCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
   if (!payload.has_value())
@@ -272,7 +277,7 @@ CommandResult updateCameraCommand::execute(std::string &jsonPayload)
   return CommandResult::getSuccessResult("Config updated");
 }
 
-CommandResult saveConfigCommand::execute(std::string &jsonPayload)
+CommandResult saveConfigCommand::execute(std::string_view jsonPayload)
 {
   projectConfig->save();
   return CommandResult::getSuccessResult("Config saved");

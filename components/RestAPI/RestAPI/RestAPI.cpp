@@ -1,5 +1,7 @@
 #include "RestAPI.hpp"
 
+#define POST_METHOD "POST"
+
 RestAPI::RestAPI(std::string url, std::shared_ptr<CommandManager> commandManager) : command_manager(commandManager)
 {
   this->url = url;
@@ -78,17 +80,41 @@ void RestAPI::poll()
 // updates
 void RestAPI::handle_update_wifi(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "WiFi config updated");
+  if (context->method != POST_METHOD)
+  {
+    mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
+    return;
+  }
+
+  auto result = command_manager->executeFromType(CommandType::UPDATE_WIFI, context->body);
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 void RestAPI::handle_update_device(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+  if (context->method != POST_METHOD)
+  {
+    mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
+    return;
+  }
+
+  auto result = command_manager->executeFromType(CommandType::UPDATE_DEVICE, context->body);
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 void RestAPI::handle_update_camera(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+  if (context->method != POST_METHOD)
+  {
+    mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
+    return;
+  }
+
+  auto result = command_manager->executeFromType(CommandType::UPDATE_CAMERA, context->body);
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 // gets
@@ -135,12 +161,16 @@ void RestAPI::handle_camera_reboot(RequestContext *context)
 
 void RestAPI::pong(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "pong");
+  CommandResult result = this->command_manager->executeFromType(CommandType::PING, "");
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 // special
 
 void RestAPI::handle_save(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Config saved");
+  CommandResult result = this->command_manager->executeFromType(CommandType::SAVE_CONFIG, "");
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
