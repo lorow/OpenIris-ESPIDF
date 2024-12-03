@@ -8,9 +8,17 @@
 #include <unordered_map>
 #include "CommandResult.hpp"
 #include "CommandSchema.hpp"
-#include "Commands.hpp"
+#include "commands/BaseCommand.hpp"
+#include "commands/simple_commands.hpp"
+#include "commands/camera_commands.hpp"
+#include "commands/config_commands.hpp"
+#include "commands/mdns_commands.hpp"
+#include "commands/wifi_commands.hpp"
 #include <cJSON.h>
 
+// mostlikely missing commands
+// reset config
+// restart device
 enum CommandType
 {
   None,
