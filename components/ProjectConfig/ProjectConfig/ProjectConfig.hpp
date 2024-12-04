@@ -99,6 +99,7 @@ public:
     AP_WiFiConfig_t ap_network;
     MDNSConfig_t mdns;
     WiFiTxPower_t txpower;
+    std::string toRepresentation();
   };
 
   DeviceConfig_t &getDeviceConfig();
@@ -107,6 +108,7 @@ public:
   AP_WiFiConfig_t &getAPWifiConfig();
   MDNSConfig_t &getMDNSConfig();
   WiFiTxPower_t &getWiFiTxPowerConfig();
+  TrackerConfig_t &getTrackerConfig();
 
   void setDeviceConfig(const std::string &OTALogin,
                        const std::string &OTAPassword,

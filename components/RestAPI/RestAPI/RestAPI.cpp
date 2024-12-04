@@ -121,7 +121,8 @@ void RestAPI::handle_update_camera(RequestContext *context)
 
 void RestAPI::handle_get_config(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Device config updated");
+  auto result = this->command_manager->executeFromType(CommandType::GET_CONFIG, "");
+  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), result.getResult());
 }
 
 // resets

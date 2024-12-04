@@ -467,6 +467,26 @@ std::string ProjectConfig::WiFiTxPower_t::toRepresentation()
   return json;
 }
 
+std::string ProjectConfig::TrackerConfig_t::toRepresentation()
+{
+  std::string WifiConfigRepresentation = "";
+
+  for (auto &network : this->networks)
+  {
+    WifiConfigRepresentation += Helpers::format_string(", %s", network.toRepresentation());
+  }
+
+  std::string json = Helpers::format_string(
+      "%s, %s, %s, %s, %s, %s",
+      this->device.toRepresentation().c_str(),
+      this->mdns.toRepresentation().c_str(),
+      this->camera.toRepresentation().c_str(),
+      WifiConfigRepresentation.c_str(),
+      this->mdns.toRepresentation().c_str(),
+      this->txpower.toRepresentation().c_str());
+  return json;
+}
+
 //**********************************************************************************************************************
 //*
 //!                                                Get Methods
@@ -496,4 +516,8 @@ ProjectConfig::MDNSConfig_t &ProjectConfig::getMDNSConfig()
 ProjectConfig::WiFiTxPower_t &ProjectConfig::getWiFiTxPowerConfig()
 {
   return this->config.txpower;
+}
+ProjectConfig::TrackerConfig_t &ProjectConfig::getTrackerConfig()
+{
+  return this->config;
 }

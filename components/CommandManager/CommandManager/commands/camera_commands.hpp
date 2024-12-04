@@ -9,3 +9,5 @@ public:
   CommandResult execute(std::string_view jsonPayload) override;
   std::optional<UpdateCameraConfigPayload> parsePayload(std::string_view jsonPayload);
 };
+
+// add cropping command
