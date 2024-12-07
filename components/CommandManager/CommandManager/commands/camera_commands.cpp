@@ -49,3 +49,37 @@ CommandResult updateCameraCommand::execute(std::string_view jsonPayload)
 
   return CommandResult::getSuccessResult("Config updated");
 }
+
+std::optional<RestartCameraPayload> restartCameraCommand::parsePayload(std::string_view jsonPayload)
+{
+  RestartCameraPayload payload;
+  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
+
+  if (parsedJson == nullptr)
+    return std::nullopt;
+
+  cJSON *mode = cJSON_GetObjectItem(parsedJson, "mode");
+
+  if (mode == nullptr)
+  {
+    cJSON_Delete(parsedJson);
+  }
+
+  payload.mode = (bool)mode->valueint;
+
+  cJSON_Delete(parsedJson);
+
+  return payload;
+}
+
+CommandResult restartCameraCommand::execute(std::string_view jsonPayload)
+{
+  auto payload = parsePayload(jsonPayload);
+  if (!payload.has_value())
+  {
+    return CommandResult::getErrorResult("Invalid payload");
+  }
+
+  this->cameraManager->resetCamera(payload.value().mode);
+  return CommandResult::getSuccessResult("Camera restarted");
+}

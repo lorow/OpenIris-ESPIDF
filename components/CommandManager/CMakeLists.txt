@@ -6,8 +6,9 @@ idf_component_register(
     "CommandManager/commands/wifi_commands.cpp"
     "CommandManager/commands/config_commands.cpp"
     "CommandManager/commands/mdns_commands.cpp"
+    "CommandManager/commands/device_commands.cpp"
   INCLUDE_DIRS
      "CommandManager"
      "CommandManager/commands"
-  REQUIRES ProjectConfig cJSON
+  REQUIRES ProjectConfig cJSON CameraManager
 )

@@ -1,9 +1,6 @@
 #ifndef COMMAND_SCHEMA_HPP
 #define COMMAND_SCHEMA_HPP
 
-// this generally should be merged with ProjectConfig definitions
-// and moved into a separate component
-// and used as more or less models
 struct BasePayload
 {
 };
@@ -54,4 +51,13 @@ struct UpdateCameraConfigPayload : BasePayload
   // TODO add more options here
 };
 
+struct ResetConfigPayload : BasePayload
+{
+  std::string section;
+};
+
+struct RestartCameraPayload : BasePayload
+{
+  bool mode;
+};
 #endif

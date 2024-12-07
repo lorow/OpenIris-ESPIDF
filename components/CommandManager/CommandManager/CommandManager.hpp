@@ -2,6 +2,7 @@
 #define COMMANDMANAGER_HPP
 
 #include <ProjectConfig.hpp>
+#include <CameraManager.hpp>
 #include <memory>
 #include <string>
 #include <optional>
@@ -14,6 +15,7 @@
 #include "commands/config_commands.hpp"
 #include "commands/mdns_commands.hpp"
 #include "commands/wifi_commands.hpp"
+#include "commands/device_commands.hpp"
 #include <cJSON.h>
 
 // mostlikely missing commands
@@ -31,6 +33,7 @@ enum CommandType
   UPDATE_MDNS,
   SET_MDNS,
   UPDATE_CAMERA,
+  RESTART_CAMERA,
   SAVE_CONFIG,
   GET_CONFIG,
   RESET_CONFIG,
@@ -41,9 +44,10 @@ class CommandManager
 {
 private:
   std::shared_ptr<ProjectConfig> projectConfig;
+  std::shared_ptr<CameraManager> cameraManager;
 
 public:
-  CommandManager(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
+  CommandManager(std::shared_ptr<ProjectConfig> projectConfig, std::shared_ptr<CameraManager> cameraManager) : projectConfig(projectConfig), cameraManager(cameraManager) {};
   std::unique_ptr<Command> createCommand(CommandType type);
 
   CommandResult executeFromJson(std::string_view json);

@@ -39,9 +39,6 @@ private:
 
   // resets
   void handle_reset_config(RequestContext *context);
-  void handle_reset_wifi_config(RequestContext *context);
-  void handle_reset_txpower_config(RequestContext *context);
-  void handle_reset_camera_config(RequestContext *context);
 
   // reboots
   void handle_reboot(RequestContext *context);

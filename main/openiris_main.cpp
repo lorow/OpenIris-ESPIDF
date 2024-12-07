@@ -35,10 +35,10 @@ WebSocketLogger webSocketLogger;
 auto deviceConfig = std::make_shared<ProjectConfig>("openiris", CONFIG_MDNS_HOSTNAME);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
-CameraManager cameraHandler(deviceConfig);
+auto cameraHandler = std::make_shared<CameraManager>(deviceConfig);
 StreamServer streamServer(80);
 
-auto commandManager = std::make_shared<CommandManager>(deviceConfig);
+auto commandManager = std::make_shared<CommandManager>(deviceConfig, cameraHandler);
 RestAPI restAPI("http://0.0.0.0:81", commandManager);
 
 #ifdef CONFIG_WIRED_MODE
@@ -103,7 +103,7 @@ extern "C" void app_main(void)
     wifiManager.Begin();
     mdnsManager.start();
     restAPI.begin();
-    cameraHandler.setupCamera();
+    cameraHandler->setupCamera();
     streamServer.startStreamServer();
 
 #ifdef CONFIG_WIRED_MODE

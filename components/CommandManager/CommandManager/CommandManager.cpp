@@ -29,10 +29,16 @@ std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
     return std::make_unique<setMDNSCommand>(projectConfig);
   case CommandType::UPDATE_CAMERA:
     return std::make_unique<updateCameraCommand>(projectConfig);
+  case CommandType::RESTART_CAMERA:
+    return std::make_unique<restartCameraCommand>(cameraManager);
   case CommandType::GET_CONFIG:
     return std::make_unique<getConfigCommand>(projectConfig);
   case CommandType::SAVE_CONFIG:
     return std::make_unique<saveConfigCommand>(projectConfig);
+  case CommandType::RESET_CONFIG:
+    return std::make_unique<resetConfigCommand>(projectConfig);
+  case CommandType::RESTART_DEVICE:
+    return std::make_unique<restartDeviceCommand>();
   default:
     return nullptr;
   }

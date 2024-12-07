@@ -13,10 +13,6 @@ RestAPI::RestAPI(std::string url, std::shared_ptr<CommandManager> commandManager
   // post will reset it
   // resets
   routes.emplace("/api/reset/config/", &RestAPI::handle_reset_config);
-  routes.emplace("/api/reset/wifi/", &RestAPI::handle_reset_wifi_config);
-  routes.emplace("/api/reset/txpower/", &RestAPI::handle_reset_txpower_config);
-  routes.emplace("/api/reset/camera/", &RestAPI::handle_reset_camera_config);
-
   // gets
   routes.emplace("/api/get/config/", &RestAPI::handle_get_config);
 
@@ -129,27 +125,21 @@ void RestAPI::handle_get_config(RequestContext *context)
 
 void RestAPI::handle_reset_config(RequestContext *context)
 {
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Config reset");
-}
+  if (context->method != POST_METHOD)
+  {
+    mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
+    return;
+  }
 
-void RestAPI::handle_reset_wifi_config(RequestContext *context)
-{
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "WiFi Config reset");
-}
-
-void RestAPI::handle_reset_txpower_config(RequestContext *context)
-{
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "TX Power Config reset");
-}
-
-void RestAPI::handle_reset_camera_config(RequestContext *context)
-{
-  mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Camera Config reset");
+  auto result = this->command_manager->executeFromType(CommandType::RESET_CONFIG, "{\"section\": \"all\"}");
+  int code = result.isSuccess() ? 200 : 500;
+  mg_http_reply(context->connection, code, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), result.getResult());
 }
 
 // reboots
 void RestAPI::handle_reboot(RequestContext *context)
 {
+  auto result = this->command_manager->executeFromType(CommandType::RESTART_DEVICE, "");
   mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Ok");
 }
 
