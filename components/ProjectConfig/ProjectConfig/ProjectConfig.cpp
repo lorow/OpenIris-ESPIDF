@@ -221,8 +221,6 @@ void ProjectConfig::load()
   this->config.camera.brightness = getInt("brightness", 2);
 
   this->_already_loaded = true;
-  // TODO add support for what's the pattern? Eh, the pattern
-  // this->notifyAll(ConfigState_e::configLoaded);
 }
 //**********************************************************************************************************************
 //*
@@ -231,36 +229,25 @@ void ProjectConfig::load()
 //**********************************************************************************************************************
 void ProjectConfig::setDeviceConfig(const std::string &OTALogin,
                                     const std::string &OTAPassword,
-                                    int OTAPort,
-                                    bool shouldNotify)
+                                    int OTAPort)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating device config");
   this->config.device.OTALogin.assign(OTALogin);
   this->config.device.OTAPassword.assign(OTAPassword);
   this->config.device.OTAPort = OTAPort;
-
-  // TODO turn this on
-  // if (shouldNotify)
-  // this->notifyAll(ConfigState_e::deviceConfigUpdated);
 }
 
-void ProjectConfig::setMDNSConfig(const std::string &hostname,
-                                  bool shouldNotify)
+void ProjectConfig::setMDNSConfig(const std::string &hostname)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating MDNS config");
   this->config.mdns.hostname.assign(hostname);
-
-  // TODO turn this on
-  // if (shouldNotify)
-  //   this->notifyAll(ConfigState_e::mdnsConfigUpdated);
 }
 
 void ProjectConfig::setCameraConfig(uint8_t vflip,
                                     uint8_t framesize,
                                     uint8_t href,
                                     uint8_t quality,
-                                    uint8_t brightness,
-                                    bool shouldNotify)
+                                    uint8_t brightness)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating camera config");
   this->config.camera.vflip = vflip;
@@ -270,20 +257,17 @@ void ProjectConfig::setCameraConfig(uint8_t vflip,
   this->config.camera.brightness = brightness;
 
   ESP_LOGD(CONFIGURATION_TAG, "Updating Camera config");
-  // TODO turn this on
-  // if (shouldNotify)
-  //   this->notifyAll(ConfigState_e::cameraConfigUpdated);
 }
 
 void ProjectConfig::setWifiConfig(const std::string &networkName,
                                   const std::string &ssid,
                                   const std::string &password,
                                   uint8_t channel,
-                                  uint8_t power,
-                                  bool shouldNotify)
+                                  uint8_t power)
 {
   size_t size = this->config.networks.size();
 
+  // rewrite it to std::find
   for (auto it = this->config.networks.begin();
        it != this->config.networks.end();)
   {
@@ -297,16 +281,6 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
       it->password = password;
       it->channel = channel;
       it->power = power;
-
-      if (shouldNotify)
-      {
-        // TODO port state managers
-        // wifiStateManager.setState(WiFiState_e::WiFiState_Disconnected);
-        // WiFi.disconnect();
-        this->wifiConfigSave();
-        // TODO turn this on
-        // this->notifyAll(ConfigState_e::networksConfigUpdated);
-      }
 
       return;
     }
@@ -333,20 +307,9 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     this->config.networks.emplace_back(networkName, ssid, password, channel,
                                        power, false);
   }
-
-  if (shouldNotify)
-  {
-    // TODO port state managers
-    // wifiStateManager.setState(WiFiState_e::WiFiState_None);
-    // WiFi.disconnect();
-    this->wifiConfigSave();
-    // TODO turn this on
-    // this->notifyAll(ConfigState_e::networksConfigUpdated);
-  }
 }
 
-void ProjectConfig::deleteWifiConfig(const std::string &networkName,
-                                     bool shouldNotify)
+void ProjectConfig::deleteWifiConfig(const std::string &networkName)
 {
   size_t size = this->config.networks.size();
   if (size == 0)
@@ -368,43 +331,22 @@ void ProjectConfig::deleteWifiConfig(const std::string &networkName,
       ++it;
     }
   }
-
-  if (shouldNotify)
-  {
-    this->wifiConfigSave();
-    // TODO turn this on
-    // this->notifyAll(ConfigState_e::networksConfigUpdated);
-  }
 }
 
-void ProjectConfig::setWiFiTxPower(uint8_t power, bool shouldNotify)
+void ProjectConfig::setWiFiTxPower(uint8_t power)
 {
   this->config.txpower.power = power;
   ESP_LOGD(CONFIGURATION_TAG, "Updating wifi tx power");
-  // TODO turn this on
-  // if (shouldNotify)
-  //   this->notifyAll(ConfigState_e::wifiTxPowerUpdated);
 }
 
 void ProjectConfig::setAPWifiConfig(const std::string &ssid,
                                     const std::string &password,
-                                    uint8_t channel,
-                                    bool shouldNotify)
+                                    uint8_t channel)
 {
   this->config.ap_network.ssid.assign(ssid);
   this->config.ap_network.password.assign(password);
   this->config.ap_network.channel = channel;
   ESP_LOGD(CONFIGURATION_TAG, "Updating access point config");
-  if (shouldNotify)
-  {
-    // TODO port state managers
-    // wifiStateManager.setState(WiFiState_e::WiFiState_None);
-    // TODO Add some sort of signalling or IPC to tell the wifi manager to shut off
-    // WiFi.disconnect();
-    this->wifiConfigSave();
-    // TODO turn this on
-    // this->notifyAll(ConfigState_e::networksConfigUpdated);
-  }
 }
 
 //**********************************************************************************************************************

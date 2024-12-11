@@ -26,7 +26,7 @@ CommandResult setMDNSCommand::execute(std::string_view jsonPayload)
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
-  projectConfig->setMDNSConfig(payload.value().hostname, true);
+  projectConfig->setMDNSConfig(payload.value().hostname);
 
   return CommandResult::getSuccessResult("Config updated");
 }

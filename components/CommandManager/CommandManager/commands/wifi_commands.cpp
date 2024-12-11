@@ -60,8 +60,7 @@ CommandResult setWiFiCommand::execute(std::string_view jsonPayload)
       wifiConfig.ssid,
       wifiConfig.password,
       wifiConfig.channel,
-      wifiConfig.power,
-      true);
+      wifiConfig.power);
 
   return CommandResult::getSuccessResult("Config updated");
 }
@@ -93,7 +92,7 @@ CommandResult deleteWifiCommand::execute(std::string_view jsonPayload)
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
-  projectConfig->deleteWifiConfig(payload.value().networkName, false);
+  projectConfig->deleteWifiConfig(payload.value().networkName);
   return CommandResult::getSuccessResult("Config updated");
 }
 
@@ -164,8 +163,7 @@ CommandResult updateWifiCommand::execute(std::string_view jsonPayload)
         updatedConfig.ssid.has_value() ? updatedConfig.ssid.value() : networkToUpdate->ssid,
         updatedConfig.password.has_value() ? updatedConfig.password.value() : networkToUpdate->password,
         updatedConfig.channel.has_value() ? updatedConfig.channel.value() : networkToUpdate->channel,
-        updatedConfig.power.has_value() ? updatedConfig.power.value() : networkToUpdate->power,
-        false);
+        updatedConfig.power.has_value() ? updatedConfig.power.value() : networkToUpdate->power);
 
     return CommandResult::getSuccessResult("Config updated");
   }

@@ -7,7 +7,6 @@
 #include "esp_log.h"
 #include "mdns.h"
 
-// TODO add observer pattern here
 class MDNSManager
 {
 private:

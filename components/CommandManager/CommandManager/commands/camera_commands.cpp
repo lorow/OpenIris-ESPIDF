@@ -44,8 +44,7 @@ CommandResult updateCameraCommand::execute(std::string_view jsonPayload)
       updatedConfig.framesize.has_value() ? updatedConfig.framesize.value() : oldConfig.framesize,
       updatedConfig.href.has_value() ? updatedConfig.href.value() : oldConfig.href,
       updatedConfig.quality.has_value() ? updatedConfig.quality.value() : oldConfig.quality,
-      updatedConfig.brightness.has_value() ? updatedConfig.brightness.value() : oldConfig.brightness,
-      true);
+      updatedConfig.brightness.has_value() ? updatedConfig.brightness.value() : oldConfig.brightness);
 
   return CommandResult::getSuccessResult("Config updated");
 }

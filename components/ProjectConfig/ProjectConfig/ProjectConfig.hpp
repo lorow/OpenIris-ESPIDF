@@ -112,30 +112,25 @@ public:
 
   void setDeviceConfig(const std::string &OTALogin,
                        const std::string &OTAPassword,
-                       int OTAPort,
-                       bool shouldNotify);
-  void setMDNSConfig(const std::string &hostname,
-                     bool shouldNotify);
+                       int OTAPort);
+  void setMDNSConfig(const std::string &hostname);
   void setCameraConfig(uint8_t vflip,
                        uint8_t framesize,
                        uint8_t href,
                        uint8_t quality,
-                       uint8_t brightness,
-                       bool shouldNotify);
+                       uint8_t brightness);
   void setWifiConfig(const std::string &networkName,
                      const std::string &ssid,
                      const std::string &password,
                      uint8_t channel,
-                     uint8_t power,
-                     bool shouldNotify);
+                     uint8_t power);
 
-  void deleteWifiConfig(const std::string &networkName, bool shouldNotify);
+  void deleteWifiConfig(const std::string &networkName);
 
   void setAPWifiConfig(const std::string &ssid,
                        const std::string &password,
-                       uint8_t channel,
-                       bool shouldNotify);
-  void setWiFiTxPower(uint8_t power, bool shouldNotify);
+                       uint8_t channel);
+  void setWiFiTxPower(uint8_t power);
 
 private:
   TrackerConfig_t config;
