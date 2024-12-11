@@ -176,7 +176,23 @@ std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string
   UpdateAPWiFiPayload payload;
   cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
 
-  // todo implement parsing
+  if (parsedJson == nullptr)
+  {
+    return std::nullopt;
+  }
+
+  cJSON *ssidObject = cJSON_GetObjectItem(parsedJson, "ssid");
+  cJSON *passwordObject = cJSON_GetObjectItem(parsedJson, "password");
+  cJSON *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
+
+  if (ssidObject != nullptr)
+    payload.ssid = std::string(ssidObject->valuestring);
+
+  if (passwordObject != nullptr)
+    payload.password = std::string(passwordObject->valuestring);
+
+  if (channelObject != nullptr)
+    payload.channel = channelObject->valueint;
 
   cJSON_Delete(parsedJson);
   return payload;
@@ -185,6 +201,17 @@ std::optional<UpdateAPWiFiPayload> updateAPWiFiCommand::parsePayload(std::string
 CommandResult updateAPWiFiCommand::execute(std::string_view jsonPayload)
 {
   auto payload = parsePayload(jsonPayload);
-  // todo implement updating
+
+  if (!payload.has_value())
+    return CommandResult::getErrorResult("Invalid payload");
+
+  auto updatedConfig = payload.value();
+  auto previousAPConfig = projectConfig->getAPWifiConfig();
+
+  projectConfig->setAPWifiConfig(
+      updatedConfig.ssid.has_value() ? updatedConfig.ssid.value() : previousAPConfig.ssid,
+      updatedConfig.password.has_value() ? updatedConfig.password.value() : previousAPConfig.password,
+      updatedConfig.channel.has_value() ? updatedConfig.channel.value() : previousAPConfig.channel);
+
   return CommandResult::getSuccessResult("Config updated");
 }

@@ -31,9 +31,9 @@ struct deleteNetworkPayload : BasePayload
 // implement
 struct UpdateAPWiFiPayload : BasePayload
 {
-  std::string ssid;
-  std::string password;
-  uint8_t channel;
+  std::optional<std::string> ssid;
+  std::optional<std::string> password;
+  std::optional<uint8_t> channel;
 };
 
 struct MDNSPayload : public BasePayload
