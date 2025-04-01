@@ -42,16 +42,16 @@ void RestAPI::handle_request(struct mg_connection *connection, int event, void *
   {
     struct mg_http_message *message = (struct mg_http_message *)event_data;
     std::string uri = std::string(message->uri.buf, message->uri.len);
+    auto handler = this->routes[uri];
 
-    if (auto method_it = this->routes.find(uri); method_it != this->routes.end())
+    if (handler)
     {
       RequestContext *context = new RequestContext{
           .connection = connection,
           .method = std::string(message->method.buf, message->method.len),
           .body = std::string(message->body.buf, message->body.len),
       };
-      auto method = method_it->second;
-      (*this.*method)(context);
+      (*this.*handler)(context);
     }
     else
     {
@@ -71,8 +71,7 @@ void RestAPI::poll()
   mg_mgr_poll(&mgr, 100);
 }
 
-// commands
-
+// COMMANDS
 // updates
 void RestAPI::handle_update_wifi(RequestContext *context)
 {
