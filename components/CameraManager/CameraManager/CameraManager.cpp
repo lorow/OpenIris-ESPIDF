@@ -225,7 +225,7 @@ bool CameraManager::setupCamera()
 void CameraManager::loadConfigData()
 {
   ESP_LOGD(CAMERA_MANAGER_TAG, "Loading camera config data");
-  ProjectConfig::CameraConfig_t cameraConfig = projectConfig->getCameraConfig();
+  CameraConfig_t cameraConfig = projectConfig->getCameraConfig();
   this->setHFlip(cameraConfig.href);
   this->setVFlip(cameraConfig.vflip);
   this->setCameraResolution((framesize_t)cameraConfig.framesize);

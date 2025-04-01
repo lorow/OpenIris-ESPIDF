@@ -31,8 +31,9 @@
 static const char *TAG = "[MAIN]";
 
 WebSocketLogger webSocketLogger;
+Preferences preferences;
 
-auto deviceConfig = std::make_shared<ProjectConfig>("openiris", CONFIG_MDNS_HOSTNAME);
+auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
 auto cameraHandler = std::make_shared<CameraManager>(deviceConfig);
@@ -86,11 +87,29 @@ extern "C" void app_main(void)
     // then port the mdns stuff - done
     // then port the camera manager - done
     // then port the streaming stuff (web and uvc) - done
-
     // then add ADHOC and support for more networks in wifi manager - done
-    // then port the async web server
-    // then port the Elegant OTA stuff
-    // then port the serial manager - for wifi and mdns provisioning setup?
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    // simplify commands - a simple dependency injection + std::function should do it
+    // something like
+    // template<typename T>
+    // void registerService(std::shared_pointer<T> service)
+    // services[std::type_index(typeid(T))] = service;
+    // where services is an std::unordered_map<std::type_index, std::shared_pointer<void>>;
+    // I can then use like std::shared_ptr<T> resolve() { return services[typeid(T)]; } to get it in the command
+    // which can be like a second parameter of the command, like std::function<void(DiContainer &diContainer, char* jsonPayload)>
+
+    // simplify config - DONE
+    // here I can decouple the loading, initializing and saving logic from the config class and move
+    // that into the separate modules, and have the config class only act as a container
+
+    // port serial manager
+    // implement OTA stuff, but prepare it for future use
+    // add endpoint to check firmware version
+    // add firmware version somewhere
+    // setup CI and building for other boards
+
+    // then port the Elegant OTA stuff - I'll roll my own
     // finish todos, overhaul stuff a bit
     // maybe swich websocket logging to udp logging
 
@@ -104,12 +123,12 @@ extern "C" void app_main(void)
     mdnsManager.start();
     restAPI.begin();
     cameraHandler->setupCamera();
+    // make sure the server runs on a separate core
     streamServer.startStreamServer();
 
 #ifdef CONFIG_WIRED_MODE
     uvcStream.setup();
 #endif
-
     while (1)
     {
         ledManager.handleLED();

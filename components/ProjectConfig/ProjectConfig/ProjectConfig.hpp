@@ -6,15 +6,19 @@
 #include <vector>
 #include <string>
 #include <helpers.hpp>
+#include "Models.hpp"
 #include <Preferences.hpp>
 
 static const char *CONFIGURATION_TAG = "[CONFIGURATION]";
 
-class ProjectConfig : public Preferences
-{
+int getNetworkCount(Preferences *pref);
 
+void saveNetworkCount(Preferences *pref, int count);
+
+class ProjectConfig
+{
 public:
-  ProjectConfig(const std::string &name = std::string(), const std::string &mdnsName = std::string());
+  ProjectConfig(Preferences *pref);
   virtual ~ProjectConfig();
 
   void load();
@@ -26,81 +30,6 @@ public:
   void mdnsConfigSave();
   void wifiTxPowerConfigSave();
   bool reset();
-  void initConfig();
-
-  struct DeviceConfig_t
-  {
-    std::string OTALogin;
-    std::string OTAPassword;
-    int OTAPort;
-    std::string toRepresentation();
-  };
-
-  struct MDNSConfig_t
-  {
-    std::string hostname;
-    std::string toRepresentation();
-  };
-
-  struct CameraConfig_t
-  {
-    uint8_t vflip;
-    uint8_t href;
-    uint8_t framesize;
-    uint8_t quality;
-    uint8_t brightness;
-
-    std::string toRepresentation();
-  };
-
-  struct WiFiConfig_t
-  {
-    //! Constructor for WiFiConfig_t - allows us to use emplace_back
-    WiFiConfig_t(const std::string &name,
-                 const std::string &ssid,
-                 const std::string &password,
-                 uint8_t channel,
-                 uint8_t power,
-                 bool adhoc)
-        : name(std::move(name)),
-          ssid(std::move(ssid)),
-          password(std::move(password)),
-          channel(channel),
-          power(power) {}
-    std::string name;
-    std::string ssid;
-    std::string password;
-    uint8_t channel;
-    uint8_t power;
-
-    std::string toRepresentation();
-  };
-
-  struct AP_WiFiConfig_t
-  {
-    std::string ssid;
-    std::string password;
-    uint8_t channel;
-
-    std::string toRepresentation();
-  };
-
-  struct WiFiTxPower_t
-  {
-    uint8_t power;
-    std::string toRepresentation();
-  };
-
-  struct TrackerConfig_t
-  {
-    DeviceConfig_t device;
-    CameraConfig_t camera;
-    std::vector<WiFiConfig_t> networks;
-    AP_WiFiConfig_t ap_network;
-    MDNSConfig_t mdns;
-    WiFiTxPower_t txpower;
-    std::string toRepresentation();
-  };
 
   DeviceConfig_t &getDeviceConfig();
   CameraConfig_t &getCameraConfig();
@@ -133,10 +62,9 @@ public:
   void setWiFiTxPower(uint8_t power);
 
 private:
-  TrackerConfig_t config;
-  std::string _name;
-  std::string _mdnsName;
+  Preferences *pref;
   bool _already_loaded;
+  TrackerConfig_t config;
 };
 
 #endif
