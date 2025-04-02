@@ -9,7 +9,7 @@
 
 // we need access to the camera manager
 // in order to update the frame settings
-extern CameraManager cameraHandler;
+extern std::shared_ptr<CameraManager> cameraHandler;
 
 namespace UVCStreamHelpers
 {

@@ -36,7 +36,7 @@ Preferences preferences;
 auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
-auto cameraHandler = std::make_shared<CameraManager>(deviceConfig);
+std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig);
 StreamServer streamServer(80);
 
 auto commandManager = std::make_shared<CommandManager>(deviceConfig, cameraHandler);

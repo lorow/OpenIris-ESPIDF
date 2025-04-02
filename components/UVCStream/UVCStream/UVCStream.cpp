@@ -28,8 +28,8 @@ static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int widt
     return ESP_ERR_NOT_SUPPORTED;
   }
 
-  cameraHandler.setCameraResolution(frame_size);
-  cameraHandler.resetCamera(0);
+  cameraHandler->setCameraResolution(frame_size);
+  cameraHandler->resetCamera(0);
 
   return ESP_OK;
 }
