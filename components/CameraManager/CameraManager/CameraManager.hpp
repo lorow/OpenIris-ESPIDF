@@ -6,13 +6,14 @@
 #include "esp_camera.h"
 #include "driver/gpio.h"
 #include "esp_psram.h"
+#include "sdkconfig.h"
 
 #include <StateManager.hpp>
 #include <ProjectConfig.hpp>
 
 #ifndef DEFAULT_XCLK_FREQ_HZ
 #define DEFAULT_XCLK_FREQ_HZ 16500000
-#define USB_DEFAULT_XCLK_FREQ_HZ 24000000
+#define USB_DEFAULT_XCLK_FREQ_HZ 20000000
 #define OV5640_XCLK_FREQ_HZ DEFAULT_XCLK_FREQ_HZ
 #endif
 

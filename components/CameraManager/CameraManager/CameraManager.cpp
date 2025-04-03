@@ -48,31 +48,31 @@ void CameraManager::setupCameraPinout()
 
   ESP_LOGI(CAMERA_MANAGER_TAG, "CAM_BOARD");
 #endif
-#if ETVR_EYE_TRACKER_USB_API
+#if CONFIG_WIRED_MODE
   xclk_freq_hz = USB_DEFAULT_XCLK_FREQ_HZ;
 #endif
-  // todo fix pinout in sdkconfig lmao
-  config = {
-      .pin_pwdn = -1,     // CAM_PIN_PWDN,
-      .pin_reset = -1,    // CAM_PIN_RESET,
-      .pin_xclk = 10,     // CAM_PIN_XCLK,
-      .pin_sccb_sda = 40, // CAM_PIN_SIOD,
-      .pin_sccb_scl = 39, // CAM_PIN_SIOC,
 
-      .pin_d7 = 48,    /// CAM_PIN_D7,
-      .pin_d6 = 11,    /// CAM_PIN_D6,
-      .pin_d5 = 12,    // CAM_PIN_D5,
-      .pin_d4 = 14,    // CAM_PIN_D4,
-      .pin_d3 = 16,    // CAM_PIN_D3,
-      .pin_d2 = 18,    // CAM_PIN_D2,
-      .pin_d1 = 17,    // CAM_PIN_D1,
-      .pin_d0 = 15,    // CAM_PIN_D0,
-      .pin_vsync = 38, // CAM_PIN_VSYNC,
-      .pin_href = 47,  // CAM_PIN_HREF,
-      .pin_pclk = 13,  // CAM_PIN_PCLK,
+  config = {
+      .pin_pwdn = CONFIG_PWDN_GPIO_NUM,     // CAM_PIN_PWDN,
+      .pin_reset = CONFIG_RESET_GPIO_NUM,   // CAM_PIN_RESET,
+      .pin_xclk = CONFIG_XCLK_GPIO_NUM,     // CAM_PIN_XCLK,
+      .pin_sccb_sda = CONFIG_SIOD_GPIO_NUM, // CAM_PIN_SIOD,
+      .pin_sccb_scl = CONFIG_SIOC_GPIO_NUM, // CAM_PIN_SIOC,
+
+      .pin_d7 = CONFIG_Y9_GPIO_NUM,       /// CAM_PIN_D7,
+      .pin_d6 = CONFIG_Y8_GPIO_NUM,       /// CAM_PIN_D6,
+      .pin_d5 = CONFIG_Y7_GPIO_NUM,       // CAM_PIN_D5,
+      .pin_d4 = CONFIG_Y6_GPIO_NUM,       // CAM_PIN_D4,
+      .pin_d3 = CONFIG_Y5_GPIO_NUM,       // CAM_PIN_D3,
+      .pin_d2 = CONFIG_Y4_GPIO_NUM,       // CAM_PIN_D2,
+      .pin_d1 = CONFIG_Y3_GPIO_NUM,       // CAM_PIN_D1,
+      .pin_d0 = CONFIG_Y2_GPIO_NUM,       // CAM_PIN_D0,
+      .pin_vsync = CONFIG_VSYNC_GPIO_NUM, // CAM_PIN_VSYNC,
+      .pin_href = CONFIG_HREF_GPIO_NUM,   // CAM_PIN_HREF,
+      .pin_pclk = CONFIG_PCLK_GPIO_NUM,   // CAM_PIN_PCLK,
 
       // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-      .xclk_freq_hz = 20000000, // 20000000,
+      .xclk_freq_hz = xclk_freq_hz, // 20000000,
       .ledc_timer = LEDC_TIMER_0,
       .ledc_channel = LEDC_CHANNEL_0,
 
@@ -199,7 +199,7 @@ bool CameraManager::setupCamera()
     return false;
   }
 
-#if CONFIG_ETVR_EYE_TRACKER_USB_API
+#if CONFIG_WIRED_MODE
   auto temp_sensor = esp_camera_sensor_get();
   auto camera_id = temp_sensor->id.PID;
   switch (camera_id)
