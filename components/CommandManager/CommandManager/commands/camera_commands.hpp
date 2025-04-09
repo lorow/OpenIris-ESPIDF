@@ -1,27 +1,20 @@
 #ifndef CAMERA_COMMANDS_HPP
 #define CAMERA_COMMANDS_HPP
-#include "BaseCommand.hpp"
+#include <ProjectConfig.hpp>
+#include <memory>
+#include <string>
+#include <optional>
+#include <cJSON.h>
+#include "CommandResult.hpp"
+#include "CommandSchema.hpp"
+#include "DependencyRegistry.hpp"
 #include <CameraManager.hpp>
 
-class updateCameraCommand : public Command
-{
-  std::shared_ptr<ProjectConfig> projectConfig;
+std::optional<UpdateCameraConfigPayload> parseUpdateCameraPayload(std::string_view jsonPayload);
+CommandResult updateCameraCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
-public:
-  updateCameraCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<UpdateCameraConfigPayload> parsePayload(std::string_view jsonPayload);
-};
-
-class restartCameraCommand : public Command
-{
-  std::shared_ptr<CameraManager> cameraManager;
-
-public:
-  restartCameraCommand(std::shared_ptr<CameraManager> cameraManager) : cameraManager(cameraManager) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<RestartCameraPayload> parsePayload(std::string_view jsonPayload);
-};
-
+std::optional<RestartCameraPayload> parseRestartCameraPayload(std::string_view jsonPayload);
+CommandResult restartCameraCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 #endif
+
 // add cropping command

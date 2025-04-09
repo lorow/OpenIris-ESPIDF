@@ -7,9 +7,10 @@
 #include <string>
 #include <optional>
 #include <unordered_map>
+#include <functional>
 #include "CommandResult.hpp"
 #include "CommandSchema.hpp"
-#include "commands/BaseCommand.hpp"
+#include "DependencyRegistry.hpp"
 #include "commands/simple_commands.hpp"
 #include "commands/camera_commands.hpp"
 #include "commands/config_commands.hpp"
@@ -18,9 +19,6 @@
 #include "commands/device_commands.hpp"
 #include <cJSON.h>
 
-// mostlikely missing commands
-// reset config
-// restart device
 enum CommandType
 {
   None,
@@ -43,12 +41,11 @@ enum CommandType
 class CommandManager
 {
 private:
-  std::shared_ptr<ProjectConfig> projectConfig;
-  std::shared_ptr<CameraManager> cameraManager;
+  std::shared_ptr<DependencyRegistry> registry;
 
 public:
-  CommandManager(std::shared_ptr<ProjectConfig> projectConfig, std::shared_ptr<CameraManager> cameraManager) : projectConfig(projectConfig), cameraManager(cameraManager) {};
-  std::unique_ptr<Command> createCommand(CommandType type);
+  CommandManager(std::shared_ptr<DependencyRegistry> DependencyRegistry) : registry(DependencyRegistry) {};
+  std::function<CommandResult()> createCommand(CommandType type, std::string_view json);
 
   CommandResult executeFromJson(std::string_view json);
   CommandResult executeFromType(CommandType type, std::string_view json);

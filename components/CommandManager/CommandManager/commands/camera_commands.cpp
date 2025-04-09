@@ -1,6 +1,6 @@
 #include "camera_commands.hpp"
 
-std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::string_view jsonPayload)
+std::optional<UpdateCameraConfigPayload> parseUpdateCameraPayload(std::string_view jsonPayload)
 {
   UpdateCameraConfigPayload payload;
   cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
@@ -29,27 +29,7 @@ std::optional<UpdateCameraConfigPayload> updateCameraCommand::parsePayload(std::
   return payload;
 }
 
-CommandResult updateCameraCommand::execute(std::string_view jsonPayload)
-{
-  auto payload = parsePayload(jsonPayload);
-  if (!payload.has_value())
-  {
-    return CommandResult::getErrorResult("Invalid payload");
-  }
-  auto updatedConfig = payload.value();
-
-  auto oldConfig = projectConfig->getCameraConfig();
-  this->projectConfig->setCameraConfig(
-      updatedConfig.vflip.has_value() ? updatedConfig.vflip.value() : oldConfig.vflip,
-      updatedConfig.framesize.has_value() ? updatedConfig.framesize.value() : oldConfig.framesize,
-      updatedConfig.href.has_value() ? updatedConfig.href.value() : oldConfig.href,
-      updatedConfig.quality.has_value() ? updatedConfig.quality.value() : oldConfig.quality,
-      updatedConfig.brightness.has_value() ? updatedConfig.brightness.value() : oldConfig.brightness);
-
-  return CommandResult::getSuccessResult("Config updated");
-}
-
-std::optional<RestartCameraPayload> restartCameraCommand::parsePayload(std::string_view jsonPayload)
+std::optional<RestartCameraPayload> parseRestartCameraPayload(std::string_view jsonPayload)
 {
   RestartCameraPayload payload;
   cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
@@ -71,14 +51,36 @@ std::optional<RestartCameraPayload> restartCameraCommand::parsePayload(std::stri
   return payload;
 }
 
-CommandResult restartCameraCommand::execute(std::string_view jsonPayload)
+CommandResult updateCameraCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parsePayload(jsonPayload);
+  auto payload = parseUpdateCameraPayload(jsonPayload);
+  if (!payload.has_value())
+  {
+    return CommandResult::getErrorResult("Invalid payload");
+  }
+  auto updatedConfig = payload.value();
+
+  std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+  auto oldConfig = projectConfig->getCameraConfig();
+  projectConfig->setCameraConfig(
+      updatedConfig.vflip.has_value() ? updatedConfig.vflip.value() : oldConfig.vflip,
+      updatedConfig.framesize.has_value() ? updatedConfig.framesize.value() : oldConfig.framesize,
+      updatedConfig.href.has_value() ? updatedConfig.href.value() : oldConfig.href,
+      updatedConfig.quality.has_value() ? updatedConfig.quality.value() : oldConfig.quality,
+      updatedConfig.brightness.has_value() ? updatedConfig.brightness.value() : oldConfig.brightness);
+
+  return CommandResult::getSuccessResult("Config updated");
+}
+
+CommandResult restartCameraCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+{
+  auto payload = parseRestartCameraPayload(jsonPayload);
   if (!payload.has_value())
   {
     return CommandResult::getErrorResult("Invalid payload");
   }
 
-  this->cameraManager->resetCamera(payload.value().mode);
+  std::shared_ptr<CameraManager> cameraManager = registry->resolve<CameraManager>(DependencyType::camera_manager);
+  cameraManager->resetCamera(payload.value().mode);
   return CommandResult::getSuccessResult("Camera restarted");
 }

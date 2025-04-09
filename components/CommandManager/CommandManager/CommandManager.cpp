@@ -8,37 +8,39 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"save_config", CommandType::SAVE_CONFIG},
 };
 
-std::unique_ptr<Command> CommandManager::createCommand(CommandType type)
+std::function<CommandResult()> CommandManager::createCommand(CommandType type, std::string_view json)
 {
+  typedef std::function<CommandResult()> CommandFunction;
+
   switch (type)
   {
   case CommandType::PING:
-    return std::make_unique<PingCommand>();
+    return CommandFunction(PingCommand);
   case CommandType::SET_WIFI:
-    return std::make_unique<setWiFiCommand>(projectConfig);
+    return CommandFunction(std::bind(setWiFiCommand, this->registry, json));
   case CommandType::UPDATE_WIFI:
-    return std::make_unique<updateWifiCommand>(projectConfig);
+    return CommandFunction(std::bind(updateWiFiCommand, this->registry, json));
   case CommandType::UPDATE_AP_WIFI:
-    return std::make_unique<updateAPWiFiCommand>(projectConfig);
+    return CommandFunction(std::bind(updateAPWiFiCommand, this->registry, json));
   case CommandType::DELETE_NETWORK:
-    return std::make_unique<deleteWifiCommand>(projectConfig);
+    return CommandFunction(std::bind(deleteWiFiCommand, this->registry, json));
   case CommandType::SET_MDNS:
-    return std::make_unique<setMDNSCommand>(projectConfig);
+    return CommandFunction(std::bind(setMDNSCommand, this->registry, json));
   // updating the mnds name is essentially the same operation
   case CommandType::UPDATE_MDNS:
-    return std::make_unique<setMDNSCommand>(projectConfig);
+    return CommandFunction(std::bind(setMDNSCommand, this->registry, json));
   case CommandType::UPDATE_CAMERA:
-    return std::make_unique<updateCameraCommand>(projectConfig);
+    return CommandFunction(std::bind(updateCameraCommand, this->registry, json));
   case CommandType::RESTART_CAMERA:
-    return std::make_unique<restartCameraCommand>(cameraManager);
+    return CommandFunction(std::bind(restartCameraCommand, this->registry, json));
   case CommandType::GET_CONFIG:
-    return std::make_unique<getConfigCommand>(projectConfig);
+    return CommandFunction(std::bind(getConfigCommand, this->registry));
   case CommandType::SAVE_CONFIG:
-    return std::make_unique<saveConfigCommand>(projectConfig);
+    return CommandFunction(std::bind(saveConfigCommand, this->registry));
   case CommandType::RESET_CONFIG:
-    return std::make_unique<resetConfigCommand>(projectConfig);
+    return CommandFunction(std::bind(resetConfigCommand, this->registry, json));
   case CommandType::RESTART_DEVICE:
-    return std::make_unique<restartDeviceCommand>();
+    return CommandFunction(restartDeviceCommand);
   default:
     return nullptr;
   }
@@ -56,9 +58,10 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
   {
     const cJSON *commandTypeString = cJSON_GetObjectItem(commandData, "command");
     const cJSON *commandPayload = cJSON_GetObjectItem(commandData, "data");
-
     auto commandType = commandTypeMap.at(std::string(commandTypeString->valuestring));
-    auto command = createCommand(commandType);
+
+    std::string commandPayloadString = std::string(cJSON_Print(commandPayload));
+    auto command = createCommand(commandType, commandPayloadString);
 
     if (command == nullptr)
     {
@@ -66,9 +69,8 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
       return CommandResult::getErrorResult("Unknown command");
     }
 
-    std::string commandPayloadString = std::string(cJSON_Print(commandPayload));
     cJSON_Delete(parsedJson);
-    return command->execute(commandPayloadString);
+    return command();
   }
 
   cJSON_Delete(parsedJson);
@@ -77,12 +79,12 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
 
 CommandResult CommandManager::executeFromType(CommandType type, std::string_view json)
 {
-  auto command = createCommand(type);
+  auto command = createCommand(type, json);
 
   if (command == nullptr)
   {
     return CommandResult::getErrorResult("Unknown command");
   }
 
-  return command->execute(json);
+  return command();
 }

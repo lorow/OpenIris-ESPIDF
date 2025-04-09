@@ -1,6 +1,6 @@
 #include "mdns_commands.hpp"
 
-std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string_view jsonPayload)
+std::optional<MDNSPayload> parseMDNSCommandPayload(std::string_view jsonPayload)
 {
   MDNSPayload payload;
   cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
@@ -20,12 +20,13 @@ std::optional<MDNSPayload> setMDNSCommand::parsePayload(std::string_view jsonPay
   return payload;
 }
 
-CommandResult setMDNSCommand::execute(std::string_view jsonPayload)
+CommandResult setMDNSCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parsePayload(jsonPayload);
+  auto payload = parseMDNSCommandPayload(jsonPayload);
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
+  std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
   projectConfig->setMDNSConfig(payload.value().hostname);
 
   return CommandResult::getSuccessResult("Config updated");

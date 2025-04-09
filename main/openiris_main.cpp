@@ -30,16 +30,19 @@
 
 static const char *TAG = "[MAIN]";
 
+std::shared_ptr<DependencyRegistry> dependencyRegistry = std::make_unique<DependencyRegistry>();
+std::shared_ptr<CommandManager> commandManager = std::make_shared<CommandManager>(dependencyRegistry);
+
 WebSocketLogger webSocketLogger;
 Preferences preferences;
 
-auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
+std::shared_ptr<ProjectConfig> deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 WiFiManager wifiManager(deviceConfig);
 MDNSManager mdnsManager(deviceConfig);
+
 std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig);
 StreamServer streamServer(80);
 
-auto commandManager = std::make_shared<CommandManager>(deviceConfig, cameraHandler);
 RestAPI restAPI("http://0.0.0.0:81", commandManager);
 
 #ifdef CONFIG_WIRED_MODE
@@ -71,8 +74,10 @@ int test_log(const char *format, va_list args)
 
 extern "C" void app_main(void)
 {
-    // uvc plan
+    dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
+    dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
 
+    // uvc plan
     // cleanup the logs - done
     // prepare the camera to be initialized with UVC - done?
     // debug uvc performance - done
@@ -90,7 +95,7 @@ extern "C" void app_main(void)
     // then add ADHOC and support for more networks in wifi manager - done
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    // simplify commands - a simple dependency injection + std::function should do it
+    // simplify commands - a simple dependency injection + std::function should do it - DONE
     // something like
     // template<typename T>
     // void registerService(std::shared_pointer<T> service)

@@ -1,30 +1,14 @@
-#include "BaseCommand.hpp"
+#include <ProjectConfig.hpp>
+#include <memory>
+#include <string>
+#include <optional>
+#include <cJSON.h>
+#include "CommandResult.hpp"
+#include "CommandSchema.hpp"
+#include "DependencyRegistry.hpp"
 
-class saveConfigCommand : public Command
-{
-public:
-  std::shared_ptr<ProjectConfig> projectConfig;
-  saveConfigCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-};
+CommandResult saveConfigCommand(std::shared_ptr<DependencyRegistry> registry);
+CommandResult getConfigCommand(std::shared_ptr<DependencyRegistry> registry);
 
-class getConfigCommand : public Command
-{
-public:
-  std::shared_ptr<ProjectConfig> projectConfig;
-  getConfigCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-};
-
-class resetConfigCommand : public Command
-{
-  std::array<std::string, 4> supported_sections = {
-      "all",
-  };
-
-public:
-  std::shared_ptr<ProjectConfig> projectConfig;
-  resetConfigCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<ResetConfigPayload> parsePayload(std::string_view jsonPayload);
-};
+std::optional<ResetConfigPayload> parseresetConfigCommandPayload(std::string_view jsonPayload);
+CommandResult resetConfigCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);

@@ -1,6 +1,6 @@
 #include "simple_commands.hpp"
 
-CommandResult PingCommand::execute(std::string_view jsonPayload)
+CommandResult PingCommand()
 {
   return CommandResult::getSuccessResult("pong");
-}
+};

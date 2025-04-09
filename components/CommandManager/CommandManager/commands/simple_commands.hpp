@@ -1,8 +1,9 @@
-#include "BaseCommand.hpp"
+#ifndef SIMPLE_COMMANDS
+#define SIMPLE_COMMANDS
 
-class PingCommand : public Command
-{
-public:
-  PingCommand() = default;
-  CommandResult execute(std::string_view jsonPayload) override;
-};
+#include <string>
+#include "CommandResult.hpp"
+
+CommandResult PingCommand();
+
+#endif

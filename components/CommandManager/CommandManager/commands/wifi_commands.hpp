@@ -1,41 +1,20 @@
-#include "BaseCommand.hpp"
+#include <ProjectConfig.hpp>
+#include <memory>
+#include <string>
+#include <optional>
+#include <cJSON.h>
+#include "CommandResult.hpp"
+#include "CommandSchema.hpp"
+#include "DependencyRegistry.hpp"
 
-class setWiFiCommand : public Command
-{
-  std::shared_ptr<ProjectConfig> projectConfig;
+std::optional<WifiPayload> parseSetWiFiCommandPayload(std::string_view jsonPayload);
+CommandResult setWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
-public:
-  setWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<WifiPayload> parsePayload(std::string_view jsonPayload);
-};
+std::optional<deleteNetworkPayload> parseDeleteWifiCommandPayload(std::string_view jsonPayload);
+CommandResult deleteWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
-class deleteWifiCommand : public Command
-{
-  std::shared_ptr<ProjectConfig> projectConfig;
+std::optional<UpdateWifiPayload> parseUpdateWifiCommandPayload(std::string_view jsonPayload);
+CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
-public:
-  deleteWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<deleteNetworkPayload> parsePayload(std::string_view jsonPayload);
-};
-
-class updateWifiCommand : public Command
-{
-  std::shared_ptr<ProjectConfig> projectConfig;
-
-public:
-  updateWifiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<UpdateWifiPayload> parsePayload(std::string_view jsonPayload);
-};
-
-class updateAPWiFiCommand : public Command
-{
-  std::shared_ptr<ProjectConfig> projectConfig;
-
-public:
-  updateAPWiFiCommand(std::shared_ptr<ProjectConfig> projectConfig) : projectConfig(projectConfig) {};
-  CommandResult execute(std::string_view jsonPayload) override;
-  std::optional<UpdateAPWiFiPayload> parsePayload(std::string_view jsonPayload);
-};
+std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(std::string_view jsonPayload);
+CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
