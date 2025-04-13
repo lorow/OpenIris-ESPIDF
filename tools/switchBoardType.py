@@ -64,15 +64,16 @@ print(f"{OKGREEN}Switching configuration to board:{ENDC} {OKBLUE}{args.board}{EN
 print(f"{OKGREEN}Using defaults from :{ENDC} {get_base_config_path()}", )
 print(f"{OKGREEN}Using board config from :{ENDC} {get_board_config_path()}")
 
-main_config = open(get_main_config_path(), "w")
+main_config = open(get_main_config_path(), "w+")
 base_config = open(get_base_config_path(), "r")
 board_config = open(get_board_config_path(), "r")
 
+parsed_main_config = parse_config(main_config)
 parsed_base_config = parse_config(base_config)
 parsed_board_config = parse_config(board_config)
 
 if args.diff:
-  diff = compute_diff(parsed_base_config, parsed_board_config)
+  diff = compute_diff(parsed_main_config, parsed_board_config)
   
   if not diff:
     print(f"{HEADER_COLOR}[DIFF]{ENDC} Nothing has changed between the base config and {OKBLUE}{args.board}{ENDC} config")
