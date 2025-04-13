@@ -45,11 +45,7 @@ LEDManager::ledStateMap_t LEDManager::ledStateMap = {
 std::vector<LEDStates_e> LEDManager::keepAliveStates = {
     LEDStates_e::_WebServerState_Error, LEDStates_e::_Camera_Error};
 
-LEDManager::LEDManager(gpio_num_t pin) : blink_led_pin(pin), state(false) {}
-
-#ifdef CONFIG_USE_ILLUMNATIOR_PIN
-LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin) : blink_led_pin(pin), illumninator_led_pin(illumninator_led_pin) state(false) {}
-#endif
+LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin) : blink_led_pin(pin), illumninator_led_pin(illumninator_led_pin), state(false) {}
 
 void LEDManager::setup()
 {
@@ -65,9 +61,8 @@ void LEDManager::setup()
   this->toggleLED(pattern.state);
   this->nextStateChangeMillis = pattern.delayTime;
 
-#ifdef CONFIG_USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_SUPPORTS_EXTERNAL_LED_CONTROL
   ESP_LOGD(LED_MANAGER_TAG, "Setting up illuminator led.");
-  const int ledPin = 1; // Replace this with a command endpoint eventually.
   const int freq = 5000;
   const auto resolution = LEDC_TIMER_8_BIT;
   const int dutyCycle = 255;

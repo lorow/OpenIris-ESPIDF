@@ -4,7 +4,7 @@
 
 #include "driver/gpio.h"
 
-#ifdef CONFIG_USE_ILLUMNATIOR_PIN
+#ifdef CONFIG_SUPPORTS_EXTERNAL_LED_CONTROL
 #include "driver/ledc.h"
 #endif
 
@@ -19,18 +19,15 @@
 class LEDManager
 {
 public:
-  LEDManager(gpio_num_t blink_led_pin);
-
-#ifdef CONFIG_USE_ILLUMNATIOR_PIN
-  gpio_num_t illumninator_led_pin;
   LEDManager(gpio_num_t blink_led_pin, gpio_num_t illumninator_led_pin);
-#endif
 
   void setup();
   void handleLED();
 
 private:
   gpio_num_t blink_led_pin;
+  gpio_num_t illumninator_led_pin;
+
   unsigned long nextStateChangeMillis = 0;
   bool state = false;
 

@@ -27,6 +27,7 @@
 #endif
 
 #define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
+#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
 
 static const char *TAG = "[MAIN]";
 
@@ -49,11 +50,7 @@ RestAPI restAPI("http://0.0.0.0:81", commandManager);
 UVCStreamManager uvcStream;
 #endif
 
-#ifdef CONFIG_USE_ILLUMNATIOR_PIN
-LEDManager ledManager(BLINK_GPIO, CONFIG_ILLUMINATOR_PIN);
-#else
-LEDManager ledManager(BLINK_GPIO);
-#endif
+LEDManager ledManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO);
 
 static void initNVSStorage()
 {
