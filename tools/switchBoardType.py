@@ -64,7 +64,7 @@ print(f"{OKGREEN}Switching configuration to board:{ENDC} {OKBLUE}{args.board}{EN
 print(f"{OKGREEN}Using defaults from :{ENDC} {get_base_config_path()}", )
 print(f"{OKGREEN}Using board config from :{ENDC} {get_board_config_path()}")
 
-main_config = open(get_main_config_path(), "w+")
+main_config = open(get_main_config_path(), "a+")
 base_config = open(get_base_config_path(), "r")
 board_config = open(get_board_config_path(), "r")
 
@@ -87,7 +87,8 @@ if not args.dry_run:
   # and then add the board config on top of that, overriding where necessary.
   # This way we can have known working defaults safe from accidental modifications by espidf
   # with know working per-board config 
-  # and a still modifiable sdkconfig for espidf 
+  # and a still modifiable sdkconfig for espidf
+  main_config.truncate(0)
   for key in parsed_board_config:
     parsed_base_config[key] = parsed_board_config[key]
 
