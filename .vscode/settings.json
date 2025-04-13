@@ -1,6 +1,6 @@
 {
   "C_Cpp.intelliSenseEngine": "default",
-  "idf.portWin": "COM3",
+  "idf.portWin": "COM4",
   "idf.flashType": "UART",
   "idf.adapterTargetName": "esp32s3",
   "idf.openOcdConfigs": [
@@ -80,6 +80,13 @@
     "cinttypes": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp",
-    "uvc_frame_config.h": "c"
-  }
+    "uvc_frame_config.h": "c",
+    "codecvt": "cpp",
+    "csignal": "cpp",
+    "unordered_set": "cpp",
+    "typeindex": "cpp"
+  },
+  "idf.espIdfPathWin": "C:\\Users\\lorow\\esp\\v5.3.2\\esp-idf",
+  "idf.toolsPathWin": "C:\\Users\\lorow\\.espressif",
+  "idf.pythonInstallPath": "C:\\Users\\lorow\\.espressif\\tools\\idf-python\\3.11.2\\python.exe"
 }
