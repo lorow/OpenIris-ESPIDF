@@ -71,6 +71,16 @@ void RestAPI::poll()
   mg_mgr_poll(&mgr, 100);
 }
 
+void HandleRestAPIPollTask(void *pvParameter)
+{
+  RestAPI *rest_api_handler = static_cast<RestAPI *>(pvParameter);
+  while (1)
+  {
+    rest_api_handler->poll();
+    vTaskDelay(1000);
+  }
+}
+
 // COMMANDS
 // updates
 void RestAPI::handle_update_wifi(RequestContext *context)

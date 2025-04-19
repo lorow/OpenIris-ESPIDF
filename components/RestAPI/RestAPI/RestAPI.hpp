@@ -63,4 +63,6 @@ namespace RestAPIHelpers
   void event_handler(struct mg_connection *connection, int event, void *event_data);
 };
 
+void HandleRestAPIPollTask(void *pvParameter);
+
 #endif

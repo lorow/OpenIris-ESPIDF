@@ -1,7 +1,6 @@
 #include "StateManager.hpp"
 
 StateManager<WiFiState_e> wifiStateManager;
-StateManager<WebServerState_e> webServerStateManager;
 StateManager<MDNSState_e> mdnsStateManager;
 StateManager<CameraState_e> cameraStateManager;
 StateManager<LEDStates_e> ledStateManager;

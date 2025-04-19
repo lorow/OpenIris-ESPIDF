@@ -2,6 +2,7 @@
 #include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
@@ -31,6 +32,8 @@
 
 static const char *TAG = "[MAIN]";
 
+QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(DeviceStates::LEDStates_e));
+
 std::shared_ptr<DependencyRegistry> dependencyRegistry = std::make_unique<DependencyRegistry>();
 std::shared_ptr<CommandManager> commandManager = std::make_shared<CommandManager>(dependencyRegistry);
 
@@ -44,13 +47,13 @@ MDNSManager mdnsManager(deviceConfig);
 std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig);
 StreamServer streamServer(80);
 
-RestAPI restAPI("http://0.0.0.0:81", commandManager);
+RestAPI *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
 #ifdef CONFIG_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
-LEDManager ledManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO);
+LEDManager *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
 
 static void initNVSStorage()
 {
@@ -73,7 +76,6 @@ extern "C" void app_main(void)
 {
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
-
     // uvc plan
     // cleanup the logs - done
     // prepare the camera to be initialized with UVC - done?
@@ -105,6 +107,11 @@ extern "C" void app_main(void)
     // here I can decouple the loading, initializing and saving logic from the config class and move
     // that into the separate modules, and have the config class only act as a container
 
+    // rethink led manager - we need to move the state change sending into a queue and rethink the state lighting logic
+    // also, the entire led manager needs to be moved to a task
+    // with that, I couuld use vtaskdelayuntil to advance and display states
+    // and with that, I should rethink how state management works
+
     // port serial manager
     // implement OTA stuff, but prepare it for future use
     // add endpoint to check firmware version
@@ -118,23 +125,36 @@ extern "C" void app_main(void)
     Logo::printASCII();
     initNVSStorage();
 
-    esp_log_set_vprintf(&test_log);
-    ledManager.setup();
+    // esp_log_set_vprintf(&test_log);
+    ledManager->setup();
+
+    xTaskCreate(
+        HandleLEDDisplayTask,
+        "HandleLEDDisplayTask",
+        1024 * 2,
+        ledManager,
+        3,
+        NULL // // it's fine for us not get a handle back, we don't need it
+    );
+
     deviceConfig->load();
     wifiManager.Begin();
     mdnsManager.start();
-    restAPI.begin();
+    restAPI->begin();
     cameraHandler->setupCamera();
     // make sure the server runs on a separate core
     streamServer.startStreamServer();
 
+    xTaskCreate(
+        HandleRestAPIPollTask,
+        "HandleRestAPIPollTask",
+        1024 * 2,
+        restAPI,
+        1,   // it's the rest API, we only serve commands over it so we don't really need a higher priority
+        NULL // // it's fine for us not get a handle back, we don't need iti
+    );
+
 #ifdef CONFIG_WIRED_MODE
     uvcStream.setup();
 #endif
-    while (1)
-    {
-        ledManager.handleLED();
-        restAPI.poll();
-        vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
-    }
 }
