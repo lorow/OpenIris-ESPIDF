@@ -28,7 +28,15 @@ struct BlinkPatterns_t
   int delayTime;
 };
 
-typedef std::unordered_map<LEDStates_e, std::vector<BlinkPatterns_t>> ledStateMap_t;
+struct LEDStage
+{
+  bool isError;
+  bool isRepeatable;
+  std::vector<BlinkPatterns_t> patterns;
+};
+
+typedef std::unordered_map<LEDStates_e, LEDStage>
+    ledStateMap_t;
 
 class LEDManager
 {
@@ -37,16 +45,25 @@ public:
 
   void setup();
   void handleLED();
+  size_t getTimeToDelayFor() const { return timeToDelayFor; }
 
 private:
+  void toggleLED(bool state) const;
+  void displayCurrentPattern();
+  void updateState(LEDStates_e newState);
+
   gpio_num_t blink_led_pin;
   gpio_num_t illumninator_led_pin;
   QueueHandle_t ledStateQueue;
 
   static ledStateMap_t ledStateMap;
+
+  LEDStates_e buffer;
   LEDStates_e currentState;
 
-  void toggleLED(bool state) const;
+  size_t currentPatternIndex = 0;
+  size_t timeToDelayFor = 100;
+  bool finishedPattern = false;
 };
 
 void HandleLEDDisplayTask(void *pvParameter);

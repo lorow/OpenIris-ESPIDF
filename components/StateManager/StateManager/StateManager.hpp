@@ -12,9 +12,7 @@ struct DeviceStates
     _LedStateNone,
     _LedStateStreaming,
     _LedStateStoppedStreaming,
-    _WebServerState_Error,
     _WiFiState_Error,
-    _MDNSState_Error,
     _Camera_Error,
     _WiFiState_Connecting,
     _WiFiState_Connected

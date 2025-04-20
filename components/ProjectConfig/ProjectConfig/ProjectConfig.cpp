@@ -126,7 +126,6 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
 {
   size_t size = this->config.networks.size();
 
-  // rewrite it to std::find
   auto it = std::find_if(
       this->config.networks.begin(),
       this->config.networks.end(),
