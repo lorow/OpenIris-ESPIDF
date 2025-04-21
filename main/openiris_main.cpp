@@ -13,6 +13,7 @@
 #include <openiris_logo.hpp>
 #include <wifiManager.hpp>
 #include <ProjectConfig.hpp>
+#include <StateManager.hpp>
 #include <LEDManager.hpp>
 #include <MDNSManager.hpp>
 #include <CameraManager.hpp>
@@ -32,20 +33,22 @@
 
 static const char *TAG = "[MAIN]";
 
-QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(DeviceStates::LEDStates_e));
+QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
+QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
 
-std::shared_ptr<DependencyRegistry> dependencyRegistry = std::make_unique<DependencyRegistry>();
+StateManager *stateManager = new StateManager(eventQueue, ledStateQueue);
+std::shared_ptr<DependencyRegistry> dependencyRegistry = std::make_shared<DependencyRegistry>();
 std::shared_ptr<CommandManager> commandManager = std::make_shared<CommandManager>(dependencyRegistry);
 
 WebSocketLogger webSocketLogger;
 Preferences preferences;
 
 std::shared_ptr<ProjectConfig> deviceConfig = std::make_shared<ProjectConfig>(&preferences);
-WiFiManager wifiManager(deviceConfig);
-MDNSManager mdnsManager(deviceConfig);
+WiFiManager wifiManager(deviceConfig, eventQueue, stateManager);
+MDNSManager mdnsManager(deviceConfig, eventQueue);
 
-std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig);
-StreamServer streamServer(80);
+std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig, eventQueue);
+StreamServer streamServer(80, stateManager);
 
 RestAPI *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
@@ -107,20 +110,19 @@ extern "C" void app_main(void)
     // here I can decouple the loading, initializing and saving logic from the config class and move
     // that into the separate modules, and have the config class only act as a container
 
-    // rethink led manager - we need to move the state change sending into a queue and rethink the state lighting logic
-    // also, the entire led manager needs to be moved to a task
+    // rethink led manager - we need to move the state change sending into a queue and rethink the state lighting logic - DONE
+    // also, the entire led manager needs to be moved to a task - DONE
     // with that, I couuld use vtaskdelayuntil to advance and display states
     // and with that, I should rethink how state management works
 
+    // rethink state management - DONE
+
     // port serial manager
-    // implement OTA stuff, but prepare it for future use
+    // add support of commands to UVC
     // add endpoint to check firmware version
     // add firmware version somewhere
     // setup CI and building for other boards
-
-    // then port the Elegant OTA stuff - I'll roll my own
     // finish todos, overhaul stuff a bit
-    // maybe swich websocket logging to udp logging
 
     Logo::printASCII();
     initNVSStorage();
@@ -129,13 +131,21 @@ extern "C" void app_main(void)
     ledManager->setup();
 
     xTaskCreate(
+        HandleStateManagerTask,
+        "HandleLEDDisplayTask",
+        1024 * 2,
+        stateManager,
+        3,
+        NULL // it's fine for us not get a handle back, we don't need it
+    );
+
+    xTaskCreate(
         HandleLEDDisplayTask,
         "HandleLEDDisplayTask",
         1024 * 2,
         ledManager,
         3,
-        NULL // // it's fine for us not get a handle back, we don't need it
-    );
+        NULL);
 
     deviceConfig->load();
     wifiManager.Begin();
@@ -150,9 +160,8 @@ extern "C" void app_main(void)
         "HandleRestAPIPollTask",
         1024 * 2,
         restAPI,
-        1,   // it's the rest API, we only serve commands over it so we don't really need a higher priority
-        NULL // // it's fine for us not get a handle back, we don't need iti
-    );
+        1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
+        NULL);
 
 #ifdef CONFIG_WIRED_MODE
     uvcStream.setup();

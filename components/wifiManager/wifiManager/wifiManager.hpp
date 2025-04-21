@@ -31,6 +31,8 @@ class WiFiManager
 private:
   uint8_t channel;
   std::shared_ptr<ProjectConfig> deviceConfig;
+  QueueHandle_t eventQueue;
+  StateManager *stateManager;
   wifi_init_config_t _wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
   wifi_config_t _wifi_cfg = {};
 
@@ -45,7 +47,7 @@ private:
   void SetupAccessPoint();
 
 public:
-  WiFiManager(std::shared_ptr<ProjectConfig> deviceConfig);
+  WiFiManager(std::shared_ptr<ProjectConfig> deviceConfig, QueueHandle_t eventQueue, StateManager *stateManager);
   void Begin();
 };
 

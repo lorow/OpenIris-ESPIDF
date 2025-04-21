@@ -170,7 +170,7 @@ void LEDManager::toggleLED(bool state) const
 
 void HandleLEDDisplayTask(void *pvParameter)
 {
-  LEDManager *ledManager = (LEDManager *)pvParameter;
+  LEDManager *ledManager = static_cast<LEDManager *>(pvParameter);
 
   while (1)
   {

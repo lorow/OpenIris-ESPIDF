@@ -8,6 +8,9 @@
 #include "esp_psram.h"
 #include "sdkconfig.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+
 #include <StateManager.hpp>
 #include <ProjectConfig.hpp>
 
@@ -22,10 +25,11 @@ class CameraManager
 private:
   sensor_t *camera_sensor;
   std::shared_ptr<ProjectConfig> projectConfig;
+  QueueHandle_t eventQueue;
   camera_config_t config;
 
 public:
-  CameraManager(std::shared_ptr<ProjectConfig> projectConfigl);
+  CameraManager(std::shared_ptr<ProjectConfig> projectConfig, QueueHandle_t eventQueue);
   int setCameraResolution(framesize_t frameSize);
   bool setupCamera(); // todo, once we have observers, make it private
 

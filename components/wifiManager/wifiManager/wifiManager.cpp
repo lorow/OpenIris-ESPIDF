@@ -36,7 +36,7 @@ void WiFiManagerHelpers::event_handler(void *arg, esp_event_base_t event_base,
   }
 }
 
-WiFiManager::WiFiManager(std::shared_ptr<ProjectConfig> deviceConfig) : deviceConfig(deviceConfig) {}
+WiFiManager::WiFiManager(std::shared_ptr<ProjectConfig> deviceConfig, QueueHandle_t eventQueue, StateManager *stateManager) : deviceConfig(deviceConfig), eventQueue(eventQueue), stateManager(stateManager) {}
 
 void WiFiManager::SetCredentials(const char *ssid, const char *password)
 {
@@ -47,13 +47,17 @@ void WiFiManager::SetCredentials(const char *ssid, const char *password)
 
 void WiFiManager::ConnectWithHardcodedCredentials()
 {
+  SystemEvent event = {EventSource::WIFI, WiFiState_e::WiFiState_ReadyToConect};
+
   this->SetCredentials(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSOWRD);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg));
 
-  wifiStateManager.setState(WiFiState_e::WiFiState_ReadyToConect);
+  xQueueSend(this->eventQueue, &event, 10);
   esp_wifi_start();
 
-  wifiStateManager.setState(WiFiState_e::WiFiState_Connecting);
+  event.value = WiFiState_e::WiFiState_Connecting;
+  xQueueSend(this->eventQueue, &event, 10);
+
   EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                          pdFALSE,
@@ -67,14 +71,17 @@ void WiFiManager::ConnectWithHardcodedCredentials()
     ESP_LOGI(WIFI_MAMANGER_TAG, "connected to ap SSID:%s password:%s",
              _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
 
-    wifiStateManager.setState(WiFiState_e::WiFiState_Connected);
+    event.value = WiFiState_e::WiFiState_Connected;
+    xQueueSend(this->eventQueue, &event, 10);
   }
 
   else if (bits & WIFI_FAIL_BIT)
   {
     ESP_LOGE(WIFI_MAMANGER_TAG, "Failed to connect to SSID:%s, password:%s",
              _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
-    wifiStateManager.setState(WiFiState_e::WiFiState_Error);
+
+    event.value = WiFiState_e::WiFiState_Error;
+    xQueueSend(this->eventQueue, &event, 10);
   }
   else
   {
@@ -84,6 +91,8 @@ void WiFiManager::ConnectWithHardcodedCredentials()
 
 void WiFiManager::ConnectWithStoredCredentials()
 {
+  SystemEvent event = {EventSource::WIFI, WiFiState_e::WiFiState_ReadyToConect};
+
   auto networks = this->deviceConfig->getWifiConfigs();
   for (auto network : networks)
   {
@@ -92,11 +101,12 @@ void WiFiManager::ConnectWithStoredCredentials()
 
     // we need to update the config after every credentials change
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg));
-
-    wifiStateManager.setState(WiFiState_e::WiFiState_ReadyToConect);
+    xQueueSend(this->eventQueue, &event, 10);
 
     esp_wifi_start();
-    wifiStateManager.setState(WiFiState_e::WiFiState_Connecting);
+
+    event.value = WiFiState_e::WiFiState_Connecting;
+    xQueueSend(this->eventQueue, &event, 10);
 
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
@@ -108,14 +118,17 @@ void WiFiManager::ConnectWithStoredCredentials()
       ESP_LOGI(WIFI_MAMANGER_TAG, "connected to ap SSID:%s password:%s",
                _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
 
-      wifiStateManager.setState(WiFiState_e::WiFiState_Connected);
+      event.value = WiFiState_e::WiFiState_Connected;
+      xQueueSend(this->eventQueue, &event, 10);
+
       return;
     }
     ESP_LOGE(WIFI_MAMANGER_TAG, "Failed to connect to SSID:%s, password:%s, trying next stored network",
              _wifi_cfg.sta.ssid, _wifi_cfg.sta.password);
   }
 
-  wifiStateManager.setState(WiFiState_e::WiFiState_Error);
+  event.value = WiFiState_e::WiFiState_Error;
+  xQueueSend(this->eventQueue, &event, 10);
   ESP_LOGE(WIFI_MAMANGER_TAG, "Failed to connect to all saved networks");
 }
 
@@ -141,7 +154,6 @@ void WiFiManager::SetupAccessPoint()
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_LOGI(WIFI_MAMANGER_TAG, "AP started.");
-  wifiStateManager.setState(WiFiState_e::WiFiState_ADHOC);
 }
 
 void WiFiManager::Begin()
@@ -181,14 +193,14 @@ void WiFiManager::Begin()
     this->ConnectWithHardcodedCredentials();
   }
 
-  if (wifiStateManager.getCurrentState() != WiFiState_e::WiFiState_Connected || !hasHardcodedCredentials)
+  if (this->stateManager->GetWifiState() != WiFiState_e::WiFiState_Connected || !hasHardcodedCredentials)
   {
     ESP_LOGI(WIFI_MAMANGER_TAG, "Hardcoded credentials failed or missing, trying stored credentials");
     xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);
     this->ConnectWithStoredCredentials();
   }
 
-  if (wifiStateManager.getCurrentState() != WiFiState_e::WiFiState_Connected)
+  if (this->stateManager->GetWifiState() != WiFiState_e::WiFiState_Connected)
   {
     ESP_LOGI(WIFI_MAMANGER_TAG, "Stored netoworks failed or hardcoded credentials missing, starting AP");
     xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);

@@ -24,10 +24,11 @@ class StreamServer
 {
 private:
   int STREAM_SERVER_PORT;
+  StateManager *stateManager;
   httpd_handle_t camera_stream = nullptr;
 
 public:
-  StreamServer(const int STREAM_PORT);
+  StreamServer(const int STREAM_PORT, StateManager *StateManager);
   esp_err_t startStreamServer();
 
   esp_err_t stream(httpd_req_t *req);

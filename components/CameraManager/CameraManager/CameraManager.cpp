@@ -2,8 +2,8 @@
 
 const char *CAMERA_MANAGER_TAG = "[CAMERA_MANAGER]";
 
-CameraManager::CameraManager(std::shared_ptr<ProjectConfig> projectConfig)
-    : projectConfig(projectConfig) {}
+CameraManager::CameraManager(std::shared_ptr<ProjectConfig> projectConfig, QueueHandle_t eventQueue)
+    : projectConfig(projectConfig), eventQueue(eventQueue) {}
 
 void CameraManager::setupCameraPinout()
 {
@@ -184,7 +184,8 @@ bool CameraManager::setupCamera()
     ESP_LOGI(CAMERA_MANAGER_TAG, "Camera initialized: %s \r\n",
              esp_err_to_name(hasCameraBeenInitialized));
 
-    cameraStateManager.setState(CameraState_e::Camera_Success);
+    SystemEvent event = {EventSource::CAMERA, CameraState_e::Camera_Success};
+    xQueueSend(this->eventQueue, &event, 10);
   }
   else
   {
@@ -194,8 +195,8 @@ bool CameraManager::setupCamera()
                                  "Please "
                                  "fix the "
                                  "camera and reboot the device.\r\n");
-    ledStateManager.setState(LEDStates_e::_Camera_Error);
-    cameraStateManager.setState(CameraState_e::Camera_Error);
+    SystemEvent event = {EventSource::CAMERA, CameraState_e::Camera_Error};
+    xQueueSend(this->eventQueue, &event, 10);
     return false;
   }
 

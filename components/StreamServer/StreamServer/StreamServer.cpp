@@ -6,7 +6,7 @@ constexpr static const char *STREAM_PART = "Content-Type: image/jpeg\r\nContent-
 
 static const char *STREAM_SERVER_TAG = "[STREAM_SERVER]";
 
-StreamServer::StreamServer(const int STREAM_PORT) : STREAM_SERVER_PORT(STREAM_PORT)
+StreamServer::StreamServer(const int STREAM_PORT, StateManager *stateManager) : STREAM_SERVER_PORT(STREAM_PORT), stateManager(stateManager)
 {
 }
 
@@ -87,7 +87,6 @@ esp_err_t StreamHelpers::ws_logs_handle(httpd_req_t *req)
 
 esp_err_t StreamServer::startStreamServer()
 {
-
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.stack_size = 20480;
   config.max_uri_handlers = 1;
@@ -117,8 +116,9 @@ esp_err_t StreamServer::startStreamServer()
     return status;
   }
 
-  httpd_register_uri_handler(camera_stream, &logs_ws);
-  if (cameraStateManager.getCurrentState() != CameraState_e::Camera_Success)
+  // this is bugged, figure this out. When logs_ws is enabled, we get no stream
+  // httpd_register_uri_handler(camera_stream, &logs_ws);
+  if (this->stateManager->GetCameraState() != CameraState_e::Camera_Success)
   {
     ESP_LOGE(STREAM_SERVER_TAG, "Camera not initialized. Cannot start stream server. Logs server will be running.");
     return ESP_FAIL;

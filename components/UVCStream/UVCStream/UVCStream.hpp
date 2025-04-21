@@ -4,12 +4,18 @@
 #include "esp_timer.h"
 #include "esp_camera.h"
 #include <CameraManager.hpp>
+#include <StateManager.hpp>
 #include "esp_log.h"
 #include "usb_device_uvc.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 // we need access to the camera manager
 // in order to update the frame settings
 extern std::shared_ptr<CameraManager> cameraHandler;
+
+// we also need a way to inform the rest of the system of what's happening
+extern QueueHandle_t eventQueue;
 
 namespace UVCStreamHelpers
 {
