@@ -49,7 +49,7 @@ void WiFiManager::ConnectWithHardcodedCredentials()
 {
   SystemEvent event = {EventSource::WIFI, WiFiState_e::WiFiState_ReadyToConect};
 
-  this->SetCredentials(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSOWRD);
+  this->SetCredentials(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg));
 
   xQueueSend(this->eventQueue, &event, 10);
