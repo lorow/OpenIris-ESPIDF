@@ -89,9 +89,12 @@ esp_err_t StreamServer::startStreamServer()
 {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.stack_size = 20480;
-  config.max_uri_handlers = 1;
+  // todo bring this back to 1 once we're done with logs over websockets
+  config.max_uri_handlers = 10;
   config.server_port = STREAM_SERVER_PORT;
   config.ctrl_port = STREAM_SERVER_PORT;
+  config.recv_wait_timeout = 100;
+  config.send_wait_timeout = 100;
 
   httpd_uri_t stream_page = {
       .uri = "/",
@@ -116,8 +119,7 @@ esp_err_t StreamServer::startStreamServer()
     return status;
   }
 
-  // this is bugged, figure this out. When logs_ws is enabled, we get no stream
-  // httpd_register_uri_handler(camera_stream, &logs_ws);
+  httpd_register_uri_handler(camera_stream, &logs_ws);
   if (this->stateManager->GetCameraState() != CameraState_e::Camera_Success)
   {
     ESP_LOGE(STREAM_SERVER_TAG, "Camera not initialized. Cannot start stream server. Logs server will be running.");
