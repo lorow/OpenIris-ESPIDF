@@ -20,6 +20,7 @@
 #include <WebSocketLogger.hpp>
 #include <StreamServer.hpp>
 #include <CommandManager.hpp>
+#include <SerialManager.hpp>
 #include <RestAPI.hpp>
 
 #include <stdarg.h>
@@ -57,6 +58,8 @@ UVCStreamManager uvcStream;
 #endif
 
 LEDManager *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
+
+SerialManager *serialManager = new SerialManager(commandManager);
 
 static void initNVSStorage()
 {
@@ -117,8 +120,9 @@ extern "C" void app_main(void)
 
     // rethink state management - DONE
 
-    // port serial manager
-    // add support of commands to UVC
+    // port serial manager - DONE - needs rewrite
+    // instead of the UVCCDC thing - give the board 30s for serial commands and then determine if we should reboot into UVC
+
     // add endpoint to check firmware version
     // add firmware version somewhere
     // setup CI and building for other boards
@@ -148,6 +152,16 @@ extern "C" void app_main(void)
         NULL);
 
     deviceConfig->load();
+    serialManager->setup();
+
+    xTaskCreate(
+        HandleSerialManagerTask,
+        "HandleSerialManagerTask",
+        1024 * 6,
+        serialManager,
+        3,
+        NULL);
+
     wifiManager.Begin();
     mdnsManager.start();
     restAPI->begin();
