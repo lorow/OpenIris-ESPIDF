@@ -4,8 +4,17 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"ping", CommandType::PING},
     {"set_wifi", CommandType::SET_WIFI},
     {"update_wifi", CommandType::UPDATE_WIFI},
+    {"update_device", CommandType::UPDATE_DEVICE},
     {"delete_network", CommandType::DELETE_NETWORK},
+    {"update_ap_wifi", CommandType::UPDATE_AP_WIFI},
+    {"update_mdns", CommandType::UPDATE_MDNS},
+    {"set_mdns", CommandType::SET_MDNS},
+    {"update_camera", CommandType::UPDATE_CAMERA},
+    {"restart_camera", CommandType::RESTART_CAMERA},
     {"save_config", CommandType::SAVE_CONFIG},
+    {"get_config", CommandType::GET_CONFIG},
+    {"reset_config", CommandType::RESET_CONFIG},
+    {"restart_device", CommandType::RESTART_DEVICE},
 };
 
 std::function<CommandResult()> CommandManager::createCommand(CommandType type, std::string_view json)
