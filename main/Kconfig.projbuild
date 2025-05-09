@@ -42,7 +42,7 @@ menu "OpenIris basic configuration"
         string "WiFi network name"
         default ""
     
-    config WIFI_PASSOWRD
+    config WIFI_PASSWORD
         string "WiFi password"
         default ""
 
