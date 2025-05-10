@@ -7,7 +7,7 @@ ledStateMap_t LEDManager::ledStateMap = {
         LEDStates_e::_LedStateNone,
         {
             false,
-            true,
+            false,
             {{LED_OFF, 1000}},
         },
     },
