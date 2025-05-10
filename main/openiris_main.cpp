@@ -159,7 +159,7 @@ extern "C" void app_main(void)
         "HandleSerialManagerTask",
         1024 * 6,
         serialManager,
-        3,
+        1, // we only rely on the serial manager during provisioning, we can run it slower
         NULL);
 
     wifiManager.Begin();

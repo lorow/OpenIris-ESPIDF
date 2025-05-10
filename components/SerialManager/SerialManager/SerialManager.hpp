@@ -26,6 +26,7 @@ public:
 private:
   QueueHandle_t serialQueue;
   std::shared_ptr<CommandManager> commandManager;
+  uint8_t *data;
 };
 
 void HandleSerialManagerTask(void *pvParameters);
