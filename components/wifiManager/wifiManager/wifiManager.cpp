@@ -48,7 +48,6 @@ void WiFiManager::SetCredentials(const char *ssid, const char *password)
 void WiFiManager::ConnectWithHardcodedCredentials()
 {
   SystemEvent event = {EventSource::WIFI, WiFiState_e::WiFiState_ReadyToConect};
-
   this->SetCredentials(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg));
 
@@ -94,6 +93,15 @@ void WiFiManager::ConnectWithStoredCredentials()
   SystemEvent event = {EventSource::WIFI, WiFiState_e::WiFiState_ReadyToConect};
 
   auto networks = this->deviceConfig->getWifiConfigs();
+
+  if (networks.size() == 0)
+  {
+    event.value = WiFiState_e::WiFiState_Disconnected;
+    xQueueSend(this->eventQueue, &event, 10);
+    ESP_LOGE(WIFI_MAMANGER_TAG, "No networks stored, cannot connect");
+    return;
+  }
+
   for (auto network : networks)
   {
     xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);
