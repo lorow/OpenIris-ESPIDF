@@ -79,9 +79,7 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
 
     std::string commandPayloadString = "";
     if (commandPayload != nullptr)
-    {
-      std::string commandPayloadString = std::string(cJSON_Print(commandPayload));
-    }
+      commandPayloadString = std::string(cJSON_Print(commandPayload));
 
     auto command = createCommand(commandType, commandPayloadString);
     if (command == nullptr)
