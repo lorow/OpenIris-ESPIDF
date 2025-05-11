@@ -57,6 +57,8 @@ std::function<CommandResult()> CommandManager::createCommand(CommandType type, s
 
 CommandResult CommandManager::executeFromJson(std::string_view json)
 {
+  std::string results = "";
+
   cJSON *parsedJson = cJSON_Parse(json.data());
   if (parsedJson == nullptr)
     return CommandResult::getErrorResult("Initial JSON Parse: Invalid JSON");
@@ -64,8 +66,12 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
   const cJSON *commandData = nullptr;
   const cJSON *commands = cJSON_GetObjectItem(parsedJson, "commands");
 
-  // I wrote it in a way that only the first command will be executed
-  // merge the results of all commands and then return, god damn it
+  if (cJSON_GetArraySize(commands) == 0)
+  {
+    cJSON_Delete(parsedJson);
+    return CommandResult::getErrorResult("Commands missing");
+  }
+
   cJSON_ArrayForEach(commandData, commands)
   {
     const cJSON *commandTypeString = cJSON_GetObjectItem(commandData, "command");
@@ -88,12 +94,12 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
       return CommandResult::getErrorResult("Unknown command");
     }
 
-    cJSON_Delete(parsedJson);
-    return command();
+    // todo, make it a proper json later
+    results += command().getResult() + ", \n";
   }
 
   cJSON_Delete(parsedJson);
-  return CommandResult::getErrorResult("Commands missing");
+  return CommandResult::getSuccessResult(results);
 }
 
 CommandResult CommandManager::executeFromType(CommandType type, std::string_view json)
