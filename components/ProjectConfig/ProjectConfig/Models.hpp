@@ -181,9 +181,7 @@ struct WiFiConfig_t : BaseConfigModel
   std::string toRepresentation()
   {
     return Helpers::format_string(
-        "{\"name\": \"%s\", \"ssid\": \"%s\", \"password\": \"%s\", "
-        "\"channel\": "
-        "%u, \"power\": %u}",
+        "{\"name\": \"%s\", \"ssid\": \"%s\", \"password\": \"%s\", \"channel\": %u, \"power\": %u}",
         this->name.c_str(), this->ssid.c_str(), this->password.c_str(),
         this->channel, this->power);
   };
@@ -268,18 +266,30 @@ public:
   {
     std::string WifiConfigRepresentation = "";
 
-    for (auto &network : this->networks)
+    // we need a valid json representation, so we can't have a dangling comma at the end
+    if (this->networks.size() > 0)
     {
-      WifiConfigRepresentation += Helpers::format_string(", %s", network.toRepresentation());
+      if (this->networks.size() > 1)
+      {
+        for (auto i = 0; i < this->networks.size() - 1; i++)
+        {
+          printf("we're at %d while networks size is %d ", i, this->networks.size() - 2);
+          WifiConfigRepresentation += Helpers::format_string("%s, ", this->networks[i].toRepresentation().c_str());
+        }
+      }
+
+      WifiConfigRepresentation += Helpers::format_string("%s", this->networks[networks.size() - 1].toRepresentation().c_str());
+      printf(WifiConfigRepresentation.c_str());
+      printf("\n");
     }
 
     return Helpers::format_string(
-        "%s, %s, %s, %s, %s, %s",
+        "%s, %s, %s, networks: [%s], %s, %s",
         this->device.toRepresentation().c_str(),
         this->mdns.toRepresentation().c_str(),
         this->camera.toRepresentation().c_str(),
         WifiConfigRepresentation.c_str(),
-        this->mdns.toRepresentation().c_str(),
+        this->ap_network.toRepresentation().c_str(),
         this->txpower.toRepresentation().c_str());
   }
 };
