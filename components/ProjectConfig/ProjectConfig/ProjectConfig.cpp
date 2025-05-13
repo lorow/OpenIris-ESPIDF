@@ -2,7 +2,7 @@
 
 int getNetworkCount(Preferences *pref)
 {
-  return pref->getInt("netowrkcount", 0);
+  return pref->getInt("networkcount", 0);
 }
 
 void saveNetworkCount(Preferences *pref, int count)
@@ -65,6 +65,8 @@ void ProjectConfig::load()
   this->config.txpower.load();
   this->config.ap_network.load();
 
+  auto networks_count = getNetworkCount(this->pref);
+  ESP_LOGD(CONFIGURATION_TAG, "Loading networks: %d", networks_count);
   for (int i = 0; i < getNetworkCount(this->pref); i++)
   {
     auto networkConfig = WiFiConfig_t(this->pref);
@@ -146,7 +148,16 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     return;
   }
 
-  if (size < 3 && size > 0)
+  if (size == 0)
+  {
+    ESP_LOGI(CONFIGURATION_TAG, "No networks, We're adding a new network");
+    this->config.networks.emplace_back(this->pref, (uint8_t)0, networkName, ssid, password, channel,
+                                       power);
+    return;
+  }
+
+  // we're allowing to store up to three additional networks
+  if (size < 3)
   {
     ESP_LOGI(CONFIGURATION_TAG, "We're adding a new network");
     // we don't have that network yet, we can add it as we still have some
@@ -156,13 +167,9 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     this->config.networks.emplace_back(this->pref, last_index, networkName, ssid, password, channel,
                                        power);
   }
-
-  // we're allowing to store up to three additional networks
-  if (size == 0)
+  else
   {
-    ESP_LOGI(CONFIGURATION_TAG, "No networks, We're adding a new network");
-    this->config.networks.emplace_back(this->pref, (uint8_t)0, networkName, ssid, password, channel,
-                                       power);
+    ESP_LOGE(CONFIGURATION_TAG, "No more space for additional networks");
   }
 }
 
