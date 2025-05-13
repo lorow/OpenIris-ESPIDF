@@ -127,7 +127,7 @@ struct CameraConfig_t : BaseConfigModel
 // save them under an indexed name and load them as such.
 struct WiFiConfig_t : BaseConfigModel
 {
-  // default construcotr used for loading
+  // default constructor used for loading
   WiFiConfig_t(Preferences *pref) : BaseConfigModel(pref) {}
 
   WiFiConfig_t(
@@ -284,7 +284,7 @@ public:
     }
 
     return Helpers::format_string(
-        "%s, %s, %s, networks: [%s], %s, %s",
+        "{%s, %s, %s, \"networks\": [%s], %s, %s}",
         this->device.toRepresentation().c_str(),
         this->mdns.toRepresentation().c_str(),
         this->camera.toRepresentation().c_str(),

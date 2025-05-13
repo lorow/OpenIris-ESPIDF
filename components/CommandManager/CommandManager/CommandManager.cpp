@@ -57,14 +57,17 @@ std::function<CommandResult()> CommandManager::createCommand(CommandType type, s
 
 CommandResult CommandManager::executeFromJson(std::string_view json)
 {
-  std::string results = "";
-
   cJSON *parsedJson = cJSON_Parse(json.data());
   if (parsedJson == nullptr)
     return CommandResult::getErrorResult("Initial JSON Parse: Invalid JSON");
 
   const cJSON *commandData = nullptr;
   const cJSON *commands = cJSON_GetObjectItem(parsedJson, "commands");
+  cJSON *responseDocument = cJSON_CreateObject();
+  cJSON *responses = cJSON_CreateArray();
+  cJSON *response = nullptr;
+
+  cJSON_AddItemToObject(responseDocument, "results", responses);
 
   if (cJSON_GetArraySize(commands) == 0)
   {
@@ -93,13 +96,15 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
       cJSON_Delete(parsedJson);
       return CommandResult::getErrorResult("Unknown command");
     }
-
-    // todo, make it a proper json later
-    results += command().getResult() + ", \n";
+    response = cJSON_CreateString(command().getResult().c_str());
+    cJSON_AddItemToArray(responses, response);
   }
 
+  auto jsonString = cJSON_Print(responseDocument);
+  cJSON_Delete(responseDocument);
   cJSON_Delete(parsedJson);
-  return CommandResult::getSuccessResult(results);
+
+  return CommandResult::getSuccessResult(jsonString);
 }
 
 CommandResult CommandManager::executeFromType(CommandType type, std::string_view json)
