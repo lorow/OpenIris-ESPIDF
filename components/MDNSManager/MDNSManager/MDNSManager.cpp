@@ -37,8 +37,7 @@ esp_err_t MDNSManager::start()
       {"api_port", "81"},
   };
 
-  result = mdns_service_add(nullptr, mdnsName.c_str(), "_tcp", 80, serviceTxtData, 2);
-
+  mdns_service_add(nullptr, mdnsName.c_str(), "_tcp", 80, serviceTxtData, 2);
   result = mdns_service_instance_name_set(mdnsName.c_str(), "_tcp", mdnsName.c_str());
   if (result != ESP_OK)
   {

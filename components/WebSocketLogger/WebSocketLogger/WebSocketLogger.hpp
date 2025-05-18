@@ -20,9 +20,8 @@ namespace LoggerHelpers
 
 class WebSocketLogger
 {
-private:
-  async_resp_arg connected_socket_client;
-  char ws_log_buffer[WS_LOG_BUFFER_LEN];
+  async_resp_arg connected_socket_client{};
+  char ws_log_buffer[WS_LOG_BUFFER_LEN]{};
 
 public:
   WebSocketLogger();

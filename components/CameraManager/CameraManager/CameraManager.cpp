@@ -99,10 +99,8 @@ void CameraManager::setupBasicResolution()
     config.fb_count = 2;
     return;
   }
-  else
-  {
-    ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
-  }
+
+  ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
 }
 
 void CameraManager::setupCameraSensor()
@@ -177,14 +175,13 @@ bool CameraManager::setupCamera()
   // this->setupBasicResolution();
 
   ESP_LOGI(CAMERA_MANAGER_TAG, "Initializing camera...");
-  esp_err_t hasCameraBeenInitialized = esp_camera_init(&config);
 
-  if (hasCameraBeenInitialized == ESP_OK)
+  if (auto const hasCameraBeenInitialized = esp_camera_init(&config); hasCameraBeenInitialized == ESP_OK)
   {
     ESP_LOGI(CAMERA_MANAGER_TAG, "Camera initialized: %s \r\n",
              esp_err_to_name(hasCameraBeenInitialized));
 
-    SystemEvent event = {EventSource::CAMERA, CameraState_e::Camera_Success};
+    constexpr auto event = SystemEvent{EventSource::CAMERA, CameraState_e::Camera_Success};
     xQueueSend(this->eventQueue, &event, 10);
   }
   else
@@ -195,27 +192,23 @@ bool CameraManager::setupCamera()
                                  "Please "
                                  "fix the "
                                  "camera and reboot the device.\r\n");
-    SystemEvent event = {EventSource::CAMERA, CameraState_e::Camera_Error};
+    constexpr auto event = SystemEvent{EventSource::CAMERA, CameraState_e::Camera_Error};
     xQueueSend(this->eventQueue, &event, 10);
     return false;
   }
 
 #if CONFIG_WIRED_MODE
-  auto temp_sensor = esp_camera_sensor_get();
-  auto camera_id = temp_sensor->id.PID;
-  switch (camera_id)
-  {
+  const auto temp_sensor = esp_camera_sensor_get();
+
   // Thanks to lick_it, we discovered that OV5640 likes to overheat when
   // running at higher than usual xclk frequencies.
-  // Hence why we're limit the faster ones for OV2640
-  case OV5640_PID:
+  // Hence, why we're limiting the faster ones for OV2640
+  if (const auto camera_id = temp_sensor->id.PID; camera_id == OV5640_PID) {
     config.xclk_freq_hz = OV5640_XCLK_FREQ_HZ;
     esp_camera_deinit();
     esp_camera_init(&config);
-    break;
-  default:
-    break;
   }
+
 #endif
 
   this->setupCameraSensor();
@@ -229,13 +222,13 @@ void CameraManager::loadConfigData()
   CameraConfig_t cameraConfig = projectConfig->getCameraConfig();
   this->setHFlip(cameraConfig.href);
   this->setVFlip(cameraConfig.vflip);
-  this->setCameraResolution((framesize_t)cameraConfig.framesize);
+  this->setCameraResolution(static_cast<framesize_t>(cameraConfig.framesize));
   camera_sensor->set_quality(camera_sensor, cameraConfig.quality);
   camera_sensor->set_agc_gain(camera_sensor, cameraConfig.brightness);
   ESP_LOGD(CAMERA_MANAGER_TAG, "Loading camera config data done");
 }
 
-int CameraManager::setCameraResolution(framesize_t frameSize)
+int CameraManager::setCameraResolution(const framesize_t frameSize)
 {
   if (camera_sensor->pixformat == PIXFORMAT_JPEG)
   {
@@ -244,12 +237,12 @@ int CameraManager::setCameraResolution(framesize_t frameSize)
   return -1;
 }
 
-int CameraManager::setVFlip(int direction)
+int CameraManager::setVFlip(const int direction)
 {
   return camera_sensor->set_vflip(camera_sensor, direction);
 }
 
-int CameraManager::setHFlip(int direction)
+int CameraManager::setHFlip(const int direction)
 {
   return camera_sensor->set_hmirror(camera_sensor, direction);
 }

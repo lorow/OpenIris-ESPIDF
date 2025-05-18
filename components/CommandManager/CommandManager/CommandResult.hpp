@@ -16,7 +16,7 @@ private:
   Status status;
   std::string message;
 
-  CommandResult(std::string message, Status status)
+  CommandResult(std::string message, const Status status)
   {
     this->status = status;
     if (status == Status::SUCCESS)
@@ -33,12 +33,12 @@ private:
 public:
   bool isSuccess() const { return status == Status::SUCCESS; }
 
-  static CommandResult getSuccessResult(std::string message)
+  static CommandResult getSuccessResult(const std::string &message)
   {
     return CommandResult(message, Status::SUCCESS);
   }
 
-  static CommandResult getErrorResult(std::string message)
+  static CommandResult getErrorResult(const std::string &message)
   {
     return CommandResult(message, Status::FAILURE);
   }

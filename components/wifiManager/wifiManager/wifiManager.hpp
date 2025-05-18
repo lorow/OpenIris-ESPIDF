@@ -18,7 +18,6 @@
 
 static int s_retry_num = 0;
 static EventGroupHandle_t s_wifi_event_group;
-static const char *WIFI_MAMANGER_TAG = "[WIFI_MANAGER]";
 
 namespace WiFiManagerHelpers
 {

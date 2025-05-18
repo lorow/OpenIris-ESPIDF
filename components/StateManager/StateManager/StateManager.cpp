@@ -5,7 +5,7 @@ StateManager::StateManager(QueueHandle_t eventQueue, QueueHandle_t ledStateQueue
 void StateManager::HandleUpdateState()
 {
   SystemEvent eventBuffer;
-  auto ledStreamState = LEDStates_e::_LedStateNone;
+  auto ledStreamState = LEDStates_e::LedStateNone;
 
   if (xQueueReceive(this->eventQueue, &eventBuffer, portMAX_DELAY))
   {
@@ -18,17 +18,17 @@ void StateManager::HandleUpdateState()
 
       if (this->wifi_state == WiFiState_e::WiFiState_Connecting)
       {
-        ledStreamState = LEDStates_e::_WiFiState_Connecting;
+        ledStreamState = LEDStates_e::WiFiStateConnecting;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
       if (this->wifi_state == WiFiState_e::WiFiState_Connected)
       {
-        ledStreamState = LEDStates_e::_WiFiState_Connected;
+        ledStreamState = LEDStates_e::WiFiStateConnected;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
       if (this->wifi_state == WiFiState_e::WiFiState_Error)
       {
-        ledStreamState = LEDStates_e::_WiFiState_Error;
+        ledStreamState = LEDStates_e::WiFiStateError;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
 
@@ -47,7 +47,7 @@ void StateManager::HandleUpdateState()
 
       if (this->camera_state == CameraState_e::Camera_Error)
       {
-        ledStreamState = LEDStates_e::_Camera_Error;
+        ledStreamState = LEDStates_e::CameraError;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
 
@@ -60,12 +60,12 @@ void StateManager::HandleUpdateState()
 
       if (this->stream_state == StreamState_e::Stream_ON)
       {
-        ledStreamState = LEDStates_e::_LedStateStreaming;
+        ledStreamState = LEDStates_e::LedStateStreaming;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
       if (this->stream_state == StreamState_e::Stream_ON)
       {
-        ledStreamState = LEDStates_e::_LedStateStreaming;
+        ledStreamState = LEDStates_e::LedStateStreaming;
         xQueueSend(this->ledStateQueue, &ledStreamState, 10);
       }
       break;
@@ -89,9 +89,9 @@ CameraState_e StateManager::GetCameraState()
 
 void HandleStateManagerTask(void *pvParameters)
 {
-  StateManager *stateManager = static_cast<StateManager *>(pvParameters);
+  auto *stateManager = static_cast<StateManager *>(pvParameters);
 
-  while (1)
+  while (true)
   {
     stateManager->HandleUpdateState();
   }

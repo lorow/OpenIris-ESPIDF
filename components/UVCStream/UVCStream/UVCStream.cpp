@@ -9,7 +9,6 @@ static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int widt
   ESP_LOGI(UVC_STREAM_TAG, "Camera Start");
   ESP_LOGI(UVC_STREAM_TAG, "Format: %d, width: %d, height: %d, rate: %d", format, width, height, rate);
   framesize_t frame_size = FRAMESIZE_QVGA;
-  int jpeg_quality = 10;
 
   if (format != UVC_FORMAT_JPEG)
   {
@@ -20,7 +19,6 @@ static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int widt
   if (width == 240 && height == 240)
   {
     frame_size = FRAMESIZE_240X240;
-    jpeg_quality = 10;
   }
   else
   {
@@ -29,9 +27,9 @@ static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int widt
   }
 
   cameraHandler->setCameraResolution(frame_size);
-  cameraHandler->resetCamera(0);
+  cameraHandler->resetCamera(false);
 
-  SystemEvent event = {EventSource::STREAM, StreamState_e::Stream_ON};
+  constexpr SystemEvent event = {EventSource::STREAM, StreamState_e::Stream_ON};
   xQueueSend(eventQueue, &event, 10);
 
   return ESP_OK;
@@ -46,7 +44,7 @@ static void UVCStreamHelpers::camera_stop_cb(void *cb_ctx)
     s_fb.cam_fb_p = nullptr;
   }
 
-  SystemEvent event = {EventSource::STREAM, StreamState_e::Stream_OFF};
+  constexpr SystemEvent event = {EventSource::STREAM, StreamState_e::Stream_OFF};
   xQueueSend(eventQueue, &event, 10);
 }
 
@@ -88,7 +86,7 @@ esp_err_t UVCStreamManager::setup()
 {
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");
 
-  uvc_buffer = (uint8_t *)malloc(UVC_MAX_FRAMESIZE_SIZE);
+  uvc_buffer = static_cast<uint8_t *>(malloc(UVC_MAX_FRAMESIZE_SIZE));
   if (uvc_buffer == nullptr)
   {
     ESP_LOGE(UVC_STREAM_TAG, "Allocating buffer for UVC Device failed");
@@ -110,10 +108,7 @@ esp_err_t UVCStreamManager::setup()
     ESP_LOGE(UVC_STREAM_TAG, "Configuring UVC Device failed: %s", esp_err_to_name(ret));
     return ret;
   }
-  else
-  {
-    ESP_LOGI(UVC_STREAM_TAG, "Configured UVC Device");
-  }
+  ESP_LOGI(UVC_STREAM_TAG, "Configured UVC Device");
 
   ESP_LOGI(UVC_STREAM_TAG, "Initializing UVC Device");
   ret = uvc_device_init();
@@ -122,10 +117,7 @@ esp_err_t UVCStreamManager::setup()
     ESP_LOGE(UVC_STREAM_TAG, "Initializing UVC Device failed: %s", esp_err_to_name(ret));
     return ret;
   }
-  else
-  {
-    ESP_LOGI(UVC_STREAM_TAG, "Initialized UVC Device");
-  }
+  ESP_LOGI(UVC_STREAM_TAG, "Initialized UVC Device");
 
   return ESP_OK;
 }

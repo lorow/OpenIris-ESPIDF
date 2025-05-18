@@ -3,7 +3,7 @@
 void OpenIrisTasks::ScheduleRestart(int milliseconds)
 {
   taskYIELD();
-  int initialTime = Helpers::getTimeInMillis();
+  const auto initialTime = Helpers::getTimeInMillis();
   while (Helpers::getTimeInMillis() - initialTime <= milliseconds)
   {
     continue;

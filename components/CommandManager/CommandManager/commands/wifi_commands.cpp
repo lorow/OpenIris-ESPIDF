@@ -8,11 +8,11 @@ std::optional<WifiPayload> parseSetWiFiCommandPayload(std::string_view jsonPaylo
   if (parsedJson == nullptr)
     return std::nullopt;
 
-  cJSON *networkName = cJSON_GetObjectItem(parsedJson, "name");
-  cJSON *ssidPtr = cJSON_GetObjectItem(parsedJson, "ssid");
-  cJSON *passwordPtr = cJSON_GetObjectItem(parsedJson, "password");
-  cJSON *channelPtr = cJSON_GetObjectItem(parsedJson, "channel");
-  cJSON *powerPtr = cJSON_GetObjectItem(parsedJson, "power");
+  const cJSON *networkName = cJSON_GetObjectItem(parsedJson, "name");
+  const cJSON *ssidPtr = cJSON_GetObjectItem(parsedJson, "ssid");
+  const cJSON *passwordPtr = cJSON_GetObjectItem(parsedJson, "password");
+  const cJSON *channelPtr = cJSON_GetObjectItem(parsedJson, "channel");
+  const cJSON *powerPtr = cJSON_GetObjectItem(parsedJson, "power");
 
   if (ssidPtr == nullptr)
   {
@@ -50,12 +50,12 @@ std::optional<WifiPayload> parseSetWiFiCommandPayload(std::string_view jsonPaylo
 std::optional<deleteNetworkPayload> parseDeleteWifiCommandPayload(std::string_view jsonPayload)
 {
   deleteNetworkPayload payload;
-  cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
+  auto *parsedJson = cJSON_Parse(jsonPayload.data());
 
   if (parsedJson == nullptr)
     return std::nullopt;
 
-  cJSON *networkName = cJSON_GetObjectItem(parsedJson, "name");
+  const auto *networkName = cJSON_GetObjectItem(parsedJson, "name");
   if (networkName == nullptr)
   {
     cJSON_Delete(parsedJson);
@@ -76,7 +76,7 @@ std::optional<UpdateWifiPayload> parseUpdateWifiCommandPayload(std::string_view 
   if (parsedJson == nullptr)
     return std::nullopt;
 
-  cJSON *networkName = cJSON_GetObjectItem(parsedJson, "name");
+  const cJSON *networkName = cJSON_GetObjectItem(parsedJson, "name");
   if (networkName == nullptr)
   {
     cJSON_Delete(parsedJson);
@@ -85,10 +85,10 @@ std::optional<UpdateWifiPayload> parseUpdateWifiCommandPayload(std::string_view 
 
   payload.networkName = std::string(networkName->valuestring);
 
-  cJSON *ssidObject = cJSON_GetObjectItem(parsedJson, "ssid");
-  cJSON *passwordObject = cJSON_GetObjectItem(parsedJson, "password");
-  cJSON *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
-  cJSON *powerObject = cJSON_GetObjectItem(parsedJson, "power");
+  const auto *ssidObject = cJSON_GetObjectItem(parsedJson, "ssid");
+  const auto *passwordObject = cJSON_GetObjectItem(parsedJson, "password");
+  const auto *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
+  const auto *powerObject = cJSON_GetObjectItem(parsedJson, "power");
 
   if (ssidObject != nullptr && (strcmp(ssidObject->valuestring, "") == 0))
   {
@@ -113,7 +113,7 @@ std::optional<UpdateWifiPayload> parseUpdateWifiCommandPayload(std::string_view 
   return payload;
 }
 
-std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(std::string_view jsonPayload)
+std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(const std::string_view jsonPayload)
 {
   UpdateAPWiFiPayload payload;
   cJSON *parsedJson = cJSON_Parse(jsonPayload.data());
@@ -123,9 +123,9 @@ std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(std::string_v
     return std::nullopt;
   }
 
-  cJSON *ssidObject = cJSON_GetObjectItem(parsedJson, "ssid");
-  cJSON *passwordObject = cJSON_GetObjectItem(parsedJson, "password");
-  cJSON *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
+  const cJSON *ssidObject = cJSON_GetObjectItem(parsedJson, "ssid");
+  const cJSON *passwordObject = cJSON_GetObjectItem(parsedJson, "password");
+  const cJSON *channelObject = cJSON_GetObjectItem(parsedJson, "channel");
 
   if (ssidObject != nullptr)
     payload.ssid = std::string(ssidObject->valuestring);
@@ -142,13 +142,13 @@ std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(std::string_v
 
 CommandResult setWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parseSetWiFiCommandPayload(jsonPayload);
+  const auto payload = parseSetWiFiCommandPayload(jsonPayload);
 
   if (!payload.has_value())
   {
     return CommandResult::getErrorResult("Invalid payload");
   }
-  auto wifiConfig = payload.value();
+  const auto wifiConfig = payload.value();
 
   std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
   projectConfig->setWifiConfig(
@@ -163,11 +163,11 @@ CommandResult setWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::
 
 CommandResult deleteWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parseDeleteWifiCommandPayload(jsonPayload);
+  const auto payload = parseDeleteWifiCommandPayload(jsonPayload);
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
-  std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+  auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
 
   projectConfig->deleteWifiConfig(payload.value().networkName);
   return CommandResult::getSuccessResult("Config updated");
@@ -175,7 +175,7 @@ CommandResult deleteWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
 CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parseUpdateWifiCommandPayload(jsonPayload);
+  const auto payload = parseUpdateWifiCommandPayload(jsonPayload);
   if (!payload.has_value())
   {
     return CommandResult::getErrorResult("Invalid payload");
@@ -183,13 +183,12 @@ CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
   auto updatedConfig = payload.value();
 
-  std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+  auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
   auto storedNetworks = projectConfig->getWifiConfigs();
-  if (auto networkToUpdate = std::find_if(
-          storedNetworks.begin(),
-          storedNetworks.end(),
-          [&](auto &network)
-          { return network.name == updatedConfig.networkName; });
+  if (const auto networkToUpdate = std::ranges::find_if(
+    storedNetworks,
+    [&](auto &network){ return network.name == updatedConfig.networkName; }
+    );
       networkToUpdate != storedNetworks.end())
   {
     projectConfig->setWifiConfig(
@@ -207,15 +206,15 @@ CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
 CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
-  auto payload = parseUpdateAPWiFiCommandPayload(jsonPayload);
+  const auto payload = parseUpdateAPWiFiCommandPayload(jsonPayload);
 
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
 
   auto updatedConfig = payload.value();
 
-  std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
-  auto previousAPConfig = projectConfig->getAPWifiConfig();
+  auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+  const auto previousAPConfig = projectConfig->getAPWifiConfig();
 
   projectConfig->setAPWifiConfig(
       updatedConfig.ssid.has_value() ? updatedConfig.ssid.value() : previousAPConfig.ssid,

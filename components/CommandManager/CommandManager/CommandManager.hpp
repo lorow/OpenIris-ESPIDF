@@ -19,7 +19,7 @@
 #include "commands/device_commands.hpp"
 #include <cJSON.h>
 
-enum CommandType
+enum class CommandType
 {
   None,
   PING,
@@ -44,11 +44,11 @@ private:
   std::shared_ptr<DependencyRegistry> registry;
 
 public:
-  CommandManager(std::shared_ptr<DependencyRegistry> DependencyRegistry) : registry(DependencyRegistry) {};
-  std::function<CommandResult()> createCommand(CommandType type, std::string_view json);
+  explicit CommandManager(const std::shared_ptr<DependencyRegistry> &DependencyRegistry) : registry(DependencyRegistry) {};
+  std::function<CommandResult()> createCommand(CommandType type, std::string_view json) const;
 
-  CommandResult executeFromJson(std::string_view json);
-  CommandResult executeFromType(CommandType type, std::string_view json);
+  CommandResult executeFromJson(std::string_view json) const;
+  CommandResult executeFromType(CommandType type, std::string_view json) const;
 };
 
 #endif

@@ -4,7 +4,7 @@
 #include <memory>
 #include <unordered_map>
 
-enum DependencyType
+enum class DependencyType
 {
   project_config,
   camera_manager

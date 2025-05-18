@@ -1,11 +1,13 @@
 #include "ProjectConfig.hpp"
 
+static auto CONFIGURATION_TAG = "[CONFIGURATION]";
+
 int getNetworkCount(Preferences *pref)
 {
   return pref->getInt("networkcount", 0);
 }
 
-void saveNetworkCount(Preferences *pref, int count)
+void saveNetworkCount(Preferences *pref, const int count)
 {
   pref->putInt("networkcount", count);
 }
@@ -19,10 +21,9 @@ ProjectConfig::ProjectConfig(Preferences *pref) : pref(pref),
                                                          MDNSConfig_t(pref),
                                                          WiFiTxPower_t(pref)) {}
 
-ProjectConfig::~ProjectConfig() {}
+ProjectConfig::~ProjectConfig() = default;
 
-void ProjectConfig::save()
-{
+void ProjectConfig::save() const {
   ESP_LOGD(CONFIGURATION_TAG, "Saving project config");
   this->config.device.save();
   this->config.camera.save();
@@ -30,7 +31,7 @@ void ProjectConfig::save()
   this->config.txpower.save();
   this->config.ap_network.save();
 
-  auto networks_count = this->config.networks.size();
+  auto const networks_count = static_cast<int>(this->config.networks.size());
   for (int i = 0; i < networks_count; i++)
   {
     this->config.networks[i].save();
@@ -54,7 +55,7 @@ void ProjectConfig::load()
     return;
   }
 
-  bool success = this->pref->begin("openiris");
+  const bool success = this->pref->begin("openiris");
 
   ESP_LOGI(CONFIGURATION_TAG, "Config name: openiris");
   ESP_LOGI(CONFIGURATION_TAG, "Config loaded: %s", success ? "true" : "false");
@@ -65,7 +66,7 @@ void ProjectConfig::load()
   this->config.txpower.load();
   this->config.ap_network.load();
 
-  auto networks_count = getNetworkCount(this->pref);
+  const auto networks_count = getNetworkCount(this->pref);
   ESP_LOGD(CONFIGURATION_TAG, "Loading networks: %d", networks_count);
   for (int i = 0; i < getNetworkCount(this->pref); i++)
   {
@@ -90,7 +91,7 @@ bool ProjectConfig::reset()
 //**********************************************************************************************************************
 void ProjectConfig::setDeviceConfig(const std::string &OTALogin,
                                     const std::string &OTAPassword,
-                                    int OTAPort)
+                                    const int OTAPort)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating device config");
   this->config.device.OTALogin.assign(OTALogin);
@@ -104,11 +105,11 @@ void ProjectConfig::setMDNSConfig(const std::string &hostname)
   this->config.mdns.hostname.assign(hostname);
 }
 
-void ProjectConfig::setCameraConfig(uint8_t vflip,
-                                    uint8_t framesize,
-                                    uint8_t href,
-                                    uint8_t quality,
-                                    uint8_t brightness)
+void ProjectConfig::setCameraConfig(const uint8_t vflip,
+                                    const uint8_t framesize,
+                                    const uint8_t href,
+                                    const uint8_t quality,
+                                    const uint8_t brightness)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating camera config");
   this->config.camera.vflip = vflip;
@@ -126,13 +127,11 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
                                   uint8_t channel,
                                   uint8_t power)
 {
-  size_t size = this->config.networks.size();
+  const auto size = this->config.networks.size();
 
-  auto it = std::find_if(
-      this->config.networks.begin(),
-      this->config.networks.end(),
-      [&](WiFiConfig_t &network)
-      { return network.name == networkName; });
+  const auto it = std::ranges::find_if(this->config.networks,
+                                 [&](const WiFiConfig_t &network)
+                                 { return network.name == networkName; });
 
   if (it != this->config.networks.end())
   {
@@ -151,7 +150,7 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
   if (size == 0)
   {
     ESP_LOGI(CONFIGURATION_TAG, "No networks, We're adding a new network");
-    this->config.networks.emplace_back(this->pref, (uint8_t)0, networkName, ssid, password, channel,
+    this->config.networks.emplace_back(this->pref, static_cast<uint8_t>(0), networkName, ssid, password, channel,
                                        power);
     return;
   }
@@ -175,17 +174,14 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
 
 void ProjectConfig::deleteWifiConfig(const std::string &networkName)
 {
-  size_t size = this->config.networks.size();
-  if (size == 0)
+  if (const auto size = this->config.networks.size(); size == 0)
   {
     ESP_LOGI(CONFIGURATION_TAG, "No networks, nothing to delete");
   }
 
-  auto it = std::find_if(
-      this->config.networks.begin(),
-      this->config.networks.end(),
-      [&](WiFiConfig_t &network)
-      { return network.name == networkName; });
+  const auto it = std::ranges::find_if(this->config.networks,
+                                 [&](const WiFiConfig_t &network)
+                                 { return network.name == networkName; });
 
   if (it != this->config.networks.end())
   {
@@ -203,7 +199,7 @@ void ProjectConfig::setWiFiTxPower(uint8_t power)
 
 void ProjectConfig::setAPWifiConfig(const std::string &ssid,
                                     const std::string &password,
-                                    uint8_t channel)
+                                    const uint8_t channel)
 {
   this->config.ap_network.ssid.assign(ssid);
   this->config.ap_network.password.assign(password);

@@ -1,10 +1,12 @@
 #include "RestAPI.hpp"
 
+#include <utility>
+
 #define POST_METHOD "POST"
 
 RestAPI::RestAPI(std::string url, std::shared_ptr<CommandManager> commandManager) : command_manager(commandManager)
 {
-  this->url = url;
+  this->url = std::move(url);
   // updates
   routes.emplace("/api/update/wifi/", &RestAPI::handle_update_wifi);
   routes.emplace("/api/update/device/", &RestAPI::handle_update_device);
@@ -40,13 +42,12 @@ void RestAPI::handle_request(struct mg_connection *connection, int event, void *
 {
   if (event == MG_EV_HTTP_MSG)
   {
-    struct mg_http_message *message = (struct mg_http_message *)event_data;
-    std::string uri = std::string(message->uri.buf, message->uri.len);
-    auto handler = this->routes[uri];
+    auto const *message = static_cast<struct mg_http_message *>(event_data);
+    auto const uri = std::string(message->uri.buf, message->uri.len);
 
-    if (handler)
+    if (auto const handler = this->routes[uri])
     {
-      RequestContext *context = new RequestContext{
+      auto *context = new RequestContext{
           .connection = connection,
           .method = std::string(message->method.buf, message->method.len),
           .body = std::string(message->body.buf, message->body.len),
@@ -62,7 +63,7 @@ void RestAPI::handle_request(struct mg_connection *connection, int event, void *
 
 void RestAPIHelpers::event_handler(struct mg_connection *connection, int event, void *event_data)
 {
-  RestAPI *rest_api_handler = static_cast<RestAPI *>(connection->fn_data);
+  auto *rest_api_handler = static_cast<RestAPI *>(connection->fn_data);
   rest_api_handler->handle_request(connection, event, event_data);
 }
 
@@ -73,8 +74,8 @@ void RestAPI::poll()
 
 void HandleRestAPIPollTask(void *pvParameter)
 {
-  RestAPI *rest_api_handler = static_cast<RestAPI *>(pvParameter);
-  while (1)
+  auto *rest_api_handler = static_cast<RestAPI *>(pvParameter);
+  while (true)
   {
     rest_api_handler->poll();
     vTaskDelay(1000);
@@ -83,72 +84,66 @@ void HandleRestAPIPollTask(void *pvParameter)
 
 // COMMANDS
 // updates
-void RestAPI::handle_update_wifi(RequestContext *context)
-{
+void RestAPI::handle_update_wifi(RequestContext *context) {
   if (context->method != POST_METHOD)
   {
     mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
     return;
   }
 
-  auto result = command_manager->executeFromType(CommandType::UPDATE_WIFI, context->body);
-  int code = result.isSuccess() ? 200 : 500;
+  auto const result = command_manager->executeFromType(CommandType::UPDATE_WIFI, context->body);
+  auto const code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
-void RestAPI::handle_update_device(RequestContext *context)
-{
+void RestAPI::handle_update_device(RequestContext *context) {
   if (context->method != POST_METHOD)
   {
     mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
     return;
   }
 
-  auto result = command_manager->executeFromType(CommandType::UPDATE_DEVICE, context->body);
-  int code = result.isSuccess() ? 200 : 500;
+  auto const result = command_manager->executeFromType(CommandType::UPDATE_DEVICE, context->body);
+  auto const  code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
-void RestAPI::handle_update_camera(RequestContext *context)
-{
+void RestAPI::handle_update_camera(RequestContext *context) {
   if (context->method != POST_METHOD)
   {
     mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
     return;
   }
 
-  auto result = command_manager->executeFromType(CommandType::UPDATE_CAMERA, context->body);
-  int code = result.isSuccess() ? 200 : 500;
+  auto const  result = command_manager->executeFromType(CommandType::UPDATE_CAMERA, context->body);
+  auto const  code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 // gets
 
-void RestAPI::handle_get_config(RequestContext *context)
-{
-  auto result = this->command_manager->executeFromType(CommandType::GET_CONFIG, "");
+void RestAPI::handle_get_config(RequestContext *context) {
+  auto const result = this->command_manager->executeFromType(CommandType::GET_CONFIG, "");
   mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), result.getResult());
 }
 
 // resets
 
-void RestAPI::handle_reset_config(RequestContext *context)
-{
+void RestAPI::handle_reset_config(RequestContext *context) {
   if (context->method != POST_METHOD)
   {
     mg_http_reply(context->connection, 401, JSON_RESPONSE, "{%m:%m}", MG_ESC("error"), "Method not allowed");
     return;
   }
 
-  auto result = this->command_manager->executeFromType(CommandType::RESET_CONFIG, "{\"section\": \"all\"}");
-  int code = result.isSuccess() ? 200 : 500;
+  auto const result = this->command_manager->executeFromType(CommandType::RESET_CONFIG, "{\"section\": \"all\"}");
+  auto const code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), result.getResult());
 }
 
 // reboots
-void RestAPI::handle_reboot(RequestContext *context)
-{
-  auto result = this->command_manager->executeFromType(CommandType::RESTART_DEVICE, "");
+void RestAPI::handle_reboot(RequestContext *context) {
+  auto const result = this->command_manager->executeFromType(CommandType::RESTART_DEVICE, "");
   mg_http_reply(context->connection, 200, JSON_RESPONSE, "{%m:%m}", MG_ESC("result"), "Ok");
 }
 
@@ -159,18 +154,16 @@ void RestAPI::handle_camera_reboot(RequestContext *context)
 
 // heartbeat
 
-void RestAPI::pong(RequestContext *context)
-{
-  CommandResult result = this->command_manager->executeFromType(CommandType::PING, "");
-  int code = result.isSuccess() ? 200 : 500;
+void RestAPI::pong(RequestContext *context) {
+  auto const result = this->command_manager->executeFromType(CommandType::PING, "");
+  auto const code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }
 
 // special
 
-void RestAPI::handle_save(RequestContext *context)
-{
-  CommandResult result = this->command_manager->executeFromType(CommandType::SAVE_CONFIG, "");
-  int code = result.isSuccess() ? 200 : 500;
+void RestAPI::handle_save(RequestContext *context) {
+  auto const result = this->command_manager->executeFromType(CommandType::SAVE_CONFIG, "");
+  auto const code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }

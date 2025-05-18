@@ -14,13 +14,13 @@ void LoggerHelpers::ws_async_send(void *arg)
 {
   char *log_buffer = webSocketLogger.get_websocket_log_buffer();
 
-  struct async_resp_arg *resp_arg = (struct async_resp_arg *)arg;
-  httpd_handle_t hd = resp_arg->hd;
-  int fd = resp_arg->fd;
+  const auto *resp_arg = static_cast<struct async_resp_arg *>(arg);
+  const auto hd = resp_arg->hd;
+  const auto fd = resp_arg->fd;
 
-  httpd_ws_frame_t websocket_packet = httpd_ws_frame_t{};
+  auto websocket_packet = httpd_ws_frame_t{};
 
-  websocket_packet.payload = (uint8_t *)log_buffer;
+  websocket_packet.payload = reinterpret_cast<uint8_t *>(log_buffer);
   websocket_packet.len = strlen(log_buffer);
   websocket_packet.type = HTTPD_WS_TYPE_TEXT;
 

@@ -3,6 +3,7 @@
 #define _PROJECT_CONFIG_MODELS_HPP_
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <helpers.hpp>
 #include "sdkconfig.h"
@@ -29,19 +30,18 @@ struct DeviceConfig_t : BaseConfigModel
 
   void load()
   {
-    this->OTALogin = this->pref->getString("OTALogin", "openiris").c_str();
-    this->OTAPassword = this->pref->getString("OTAPassword", "openiris").c_str();
+    this->OTALogin = this->pref->getString("OTALogin", "openiris");
+    this->OTAPassword = this->pref->getString("OTAPassword", "openiris");
     this->OTAPort = this->pref->getInt("OTAPort", 3232);
   };
 
-  void save()
-  {
+  void save() const {
     this->pref->putString("OTALogin", this->OTALogin.c_str());
     this->pref->putString("OTAPassword", this->OTAPassword.c_str());
     this->pref->putInt("OTAPort", this->OTAPort);
   };
 
-  std::string toRepresentation()
+  std::string toRepresentation() const
   {
     return Helpers::format_string(
         "\"device_config\": {\"OTALogin\": \"%s\", \"OTAPassword\": \"%s\", "
@@ -50,7 +50,7 @@ struct DeviceConfig_t : BaseConfigModel
   };
 };
 
-struct MDNSConfig_t : public BaseConfigModel
+struct MDNSConfig_t : BaseConfigModel
 {
   MDNSConfig_t(Preferences *pref) : BaseConfigModel(pref) {}
 
@@ -67,11 +67,10 @@ struct MDNSConfig_t : public BaseConfigModel
       default_hostname = "openiristracker";
     }
 
-    this->hostname = this->pref->getString("hostname", default_hostname).c_str();
+    this->hostname = this->pref->getString("hostname", default_hostname);
   };
 
-  void save()
-  {
+  void save() const {
     this->pref->putString("hostname", this->hostname.c_str());
   };
 
@@ -102,8 +101,7 @@ struct CameraConfig_t : BaseConfigModel
     this->brightness = this->pref->getInt("brightness", 2);
   };
 
-  void save()
-  {
+  void save() const {
     this->pref->putInt("vflip", this->vflip);
     this->pref->putInt("href", this->href);
     this->pref->putInt("framesize", this->framesize);
@@ -132,12 +130,12 @@ struct WiFiConfig_t : BaseConfigModel
 
   WiFiConfig_t(
       Preferences *pref,
-      uint8_t index,
-      const std::string &name,
-      const std::string &ssid,
-      const std::string &password,
-      uint8_t channel,
-      uint8_t power)
+      const uint8_t index,
+      std::string name,
+      std::string ssid,
+      std::string password,
+      const uint8_t channel,
+      const uint8_t power)
       : BaseConfigModel(pref),
         index(index),
         name(std::move(name)),
@@ -153,23 +151,22 @@ struct WiFiConfig_t : BaseConfigModel
   uint8_t channel;
   uint8_t power;
 
-  void load(uint8_t index)
+  void load(const uint8_t index)
   {
     this->index = index;
     char buffer[2];
 
-    std::string iter_str = Helpers::itoa(index, buffer, 10);
-    this->name = this->pref->getString(("name" + iter_str).c_str(), "").c_str();
-    this->ssid = this->pref->getString(("ssid" + iter_str).c_str(), "").c_str();
-    this->password = this->pref->getString(("password" + iter_str).c_str(), "").c_str();
+    auto const iter_str = std::string(Helpers::itoa(index, buffer, 10));
+    this->name = this->pref->getString(("name" + iter_str).c_str(), "");
+    this->ssid = this->pref->getString(("ssid" + iter_str).c_str(), "");
+    this->password = this->pref->getString(("password" + iter_str).c_str(), "");
     this->channel = this->pref->getUInt(("channel" + iter_str).c_str());
     this->power = this->pref->getUInt(("power" + iter_str).c_str());
   };
 
-  void save()
-  {
+  void save() const {
     char buffer[2];
-    std::string iter_str = Helpers::itoa(this->index, buffer, 10);
+    auto const iter_str = std::string(Helpers::itoa(this->index, buffer, 10));
 
     this->pref->putString(("name" + iter_str).c_str(), this->name.c_str());
     this->pref->putString(("ssid" + iter_str).c_str(), this->ssid.c_str());
@@ -197,12 +194,11 @@ struct AP_WiFiConfig_t : BaseConfigModel
 
   void load()
   {
-    this->ssid = this->pref->getString("apSSID", CONFIG_AP_WIFI_SSID).c_str();
-    this->password = this->pref->getString("apPassword", CONFIG_AP_WIFI_PASSWORD).c_str();
+    this->ssid = this->pref->getString("apSSID", CONFIG_AP_WIFI_SSID);
+    this->password = this->pref->getString("apPassword", CONFIG_AP_WIFI_PASSWORD);
   };
 
-  void save()
-  {
+  void save() const {
     this->pref->putString("apSSID", this->ssid.c_str());
     this->pref->putString("apPass", this->password.c_str());
     this->pref->putUInt("apChannel", this->channel);
@@ -228,8 +224,7 @@ struct WiFiTxPower_t : BaseConfigModel
     this->power = this->pref->getUInt("txpower", 52);
   };
 
-  void save()
-  {
+  void save() const {
     this->pref->putUInt("txpower", this->power);
   };
 
@@ -255,19 +250,19 @@ public:
       std::vector<WiFiConfig_t> networks,
       AP_WiFiConfig_t ap_network,
       MDNSConfig_t mdns,
-      WiFiTxPower_t txpower) : device(device),
+      WiFiTxPower_t txpower) : device(std::move(device)),
                                camera(camera),
-                               networks(networks),
-                               ap_network(ap_network),
-                               mdns(mdns),
+                               networks(std::move(networks)),
+                               ap_network(std::move(ap_network)),
+                               mdns(std::move(mdns)),
                                txpower(txpower) {}
 
   std::string toRepresentation()
   {
-    std::string WifiConfigRepresentation = "";
+    std::string WifiConfigRepresentation;
 
     // we need a valid json representation, so we can't have a dangling comma at the end
-    if (this->networks.size() > 0)
+    if (!this->networks.empty())
     {
       if (this->networks.size() > 1)
       {

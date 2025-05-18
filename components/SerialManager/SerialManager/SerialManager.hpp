@@ -19,12 +19,12 @@
 class SerialManager
 {
 public:
-  SerialManager(std::shared_ptr<CommandManager> commandManager);
+  explicit SerialManager(std::shared_ptr<CommandManager> commandManager);
   void setup();
   void try_receive();
 
 private:
-  QueueHandle_t serialQueue;
+  // QueueHandle_t serialQueue;
   std::shared_ptr<CommandManager> commandManager;
   uint8_t *data;
   uint8_t *temp_data;

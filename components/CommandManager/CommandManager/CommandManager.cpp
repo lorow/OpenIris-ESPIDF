@@ -17,45 +17,42 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"restart_device", CommandType::RESTART_DEVICE},
 };
 
-std::function<CommandResult()> CommandManager::createCommand(CommandType type, std::string_view json)
-{
-  typedef std::function<CommandResult()> CommandFunction;
-
+std::function<CommandResult()> CommandManager::createCommand(CommandType type, std::string_view json) const {
   switch (type)
   {
   case CommandType::PING:
-    return CommandFunction(PingCommand);
+    return { PingCommand };
   case CommandType::SET_WIFI:
-    return CommandFunction(std::bind(setWiFiCommand, this->registry, json));
+    return [this, json] { return setWiFiCommand(this->registry, json); };
   case CommandType::UPDATE_WIFI:
-    return CommandFunction(std::bind(updateWiFiCommand, this->registry, json));
+    return [this, json] { return updateWiFiCommand(this->registry, json); };
   case CommandType::UPDATE_AP_WIFI:
-    return CommandFunction(std::bind(updateAPWiFiCommand, this->registry, json));
+    return [this, json] { return updateAPWiFiCommand(this->registry, json); };
   case CommandType::DELETE_NETWORK:
-    return CommandFunction(std::bind(deleteWiFiCommand, this->registry, json));
+    return [this, json] { return deleteWiFiCommand(this->registry, json); };
   case CommandType::SET_MDNS:
-    return CommandFunction(std::bind(setMDNSCommand, this->registry, json));
+    return [this, json] { return setMDNSCommand(this->registry, json); };
   // updating the mnds name is essentially the same operation
   case CommandType::UPDATE_MDNS:
-    return CommandFunction(std::bind(setMDNSCommand, this->registry, json));
+    return [this, json] { return setMDNSCommand(this->registry, json); };
   case CommandType::UPDATE_CAMERA:
-    return CommandFunction(std::bind(updateCameraCommand, this->registry, json));
+      return [this, json] { return updateCameraCommand(this->registry, json); };
   case CommandType::RESTART_CAMERA:
-    return CommandFunction(std::bind(restartCameraCommand, this->registry, json));
+    return [this, json] { return restartCameraCommand(this->registry, json); };
   case CommandType::GET_CONFIG:
-    return CommandFunction(std::bind(getConfigCommand, this->registry));
+    return [this] { return getConfigCommand(this->registry); };
   case CommandType::SAVE_CONFIG:
-    return CommandFunction(std::bind(saveConfigCommand, this->registry));
+    return [this] { return saveConfigCommand(this->registry); };
   case CommandType::RESET_CONFIG:
-    return CommandFunction(std::bind(resetConfigCommand, this->registry, json));
+    return [this, json] { return resetConfigCommand(this->registry, json); };
   case CommandType::RESTART_DEVICE:
-    return CommandFunction(restartDeviceCommand);
+    return restartDeviceCommand;
   default:
     return nullptr;
   }
 }
 
-CommandResult CommandManager::executeFromJson(std::string_view json)
+CommandResult CommandManager::executeFromJson(const std::string_view json) const
 {
   cJSON *parsedJson = cJSON_Parse(json.data());
   if (parsedJson == nullptr)
@@ -84,9 +81,9 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
     }
 
     const cJSON *commandPayload = cJSON_GetObjectItem(commandData, "data");
-    auto commandType = commandTypeMap.at(std::string(commandTypeString->valuestring));
+    const auto commandType = commandTypeMap.at(std::string(commandTypeString->valuestring));
 
-    std::string commandPayloadString = "";
+    std::string commandPayloadString;
     if (commandPayload != nullptr)
       commandPayloadString = std::string(cJSON_Print(commandPayload));
 
@@ -100,16 +97,16 @@ CommandResult CommandManager::executeFromJson(std::string_view json)
     cJSON_AddItemToArray(responses, response);
   }
 
-  auto jsonString = cJSON_Print(responseDocument);
+  const auto jsonString = cJSON_Print(responseDocument);
   cJSON_Delete(responseDocument);
   cJSON_Delete(parsedJson);
 
   return CommandResult::getSuccessResult(jsonString);
 }
 
-CommandResult CommandManager::executeFromType(CommandType type, std::string_view json)
+CommandResult CommandManager::executeFromType(const CommandType type, const std::string_view json) const
 {
-  auto command = createCommand(type, json);
+  const auto command = createCommand(type, json);
 
   if (command == nullptr)
   {

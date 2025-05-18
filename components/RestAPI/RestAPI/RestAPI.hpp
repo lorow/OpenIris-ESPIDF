@@ -25,7 +25,7 @@ class RestAPI
   std::string url;
   route_map routes;
 
-  struct mg_mgr mgr;
+  mg_mgr mgr;
   std::shared_ptr<CommandManager> command_manager;
 
 private:

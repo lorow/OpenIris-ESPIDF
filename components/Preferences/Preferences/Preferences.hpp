@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 #include <cstring>
-#include <math.h>
+#include <cmath>
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "nvs.h"

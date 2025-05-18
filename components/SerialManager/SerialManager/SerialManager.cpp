@@ -10,7 +10,10 @@
 
 #define BUF_SIZE (1024)
 
-SerialManager::SerialManager(std::shared_ptr<CommandManager> commandManager) : commandManager(commandManager) {}
+SerialManager::SerialManager(std::shared_ptr<CommandManager> commandManager) : commandManager(commandManager) {
+  this->data = static_cast<uint8_t *>(malloc(BUF_SIZE));
+  this->temp_data = static_cast<uint8_t *>(malloc(256));
+}
 
 void SerialManager::setup()
 {
@@ -18,9 +21,6 @@ void SerialManager::setup()
   usb_serial_jtag_config.rx_buffer_size = BUF_SIZE;
   usb_serial_jtag_config.tx_buffer_size = BUF_SIZE;
   usb_serial_jtag_driver_install(&usb_serial_jtag_config);
-  // Configure a temporary buffer for the incoming data
-  this->data = (uint8_t *)malloc(BUF_SIZE);
-  this->temp_data = (uint8_t *)malloc(256);
 }
 
 void SerialManager::try_receive()
@@ -43,17 +43,17 @@ void SerialManager::try_receive()
     data[current_position] = '\0';
     current_position = 0;
 
-    auto result = this->commandManager->executeFromJson(std::string_view((const char *)this->data));
-    auto resultMessage = result.getResult();
+    const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
+    const auto resultMessage = result.getResult();
     usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
   }
 }
 
 void HandleSerialManagerTask(void *pvParameters)
 {
-  auto serialManager = static_cast<SerialManager *>(pvParameters);
+  auto const serialManager = static_cast<SerialManager *>(pvParameters);
 
-  while (1)
+  while (true)
   {
     serialManager->try_receive();
   }

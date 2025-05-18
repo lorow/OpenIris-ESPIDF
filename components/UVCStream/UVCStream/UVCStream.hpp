@@ -19,7 +19,7 @@ extern QueueHandle_t eventQueue;
 
 namespace UVCStreamHelpers
 {
-  // TODO move the camera handling code to the camera manager and have the uvc maanger initialize it in wired mode
+  // TODO move the camera handling code to the camera manager and have the uvc manager initialize it in wired mode
 
   typedef struct
   {

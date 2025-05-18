@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _PROJECT_CONFIG_HPP_
-#define _PROJECT_CONFIG_HPP_
+#ifndef PROJECT_CONFIG_HPP
+#define PROJECT_CONFIG_HPP
 #include "esp_log.h"
 #include <algorithm>
 #include <vector>
@@ -9,7 +9,6 @@
 #include "Models.hpp"
 #include <Preferences.hpp>
 
-static const char *CONFIGURATION_TAG = "[CONFIGURATION]";
 
 int getNetworkCount(Preferences *pref);
 
@@ -18,11 +17,11 @@ void saveNetworkCount(Preferences *pref, int count);
 class ProjectConfig
 {
 public:
-  ProjectConfig(Preferences *pref);
+  explicit ProjectConfig(Preferences *pref);
   virtual ~ProjectConfig();
 
   void load();
-  void save();
+  void save() const;
 
   void wifiConfigSave();
   void cameraConfigSave();

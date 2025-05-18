@@ -6,22 +6,22 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
-enum LEDStates_e
+enum class LEDStates_e
 {
-  _LedStateNone,
-  _LedStateStreaming,
-  _LedStateStoppedStreaming,
-  _Camera_Error,
-  _WiFiState_Error,
-  _WiFiState_Connecting,
-  _WiFiState_Connected
+  LedStateNone,
+  LedStateStreaming,
+  LedStateStoppedStreaming,
+  CameraError,
+  WiFiStateError,
+  WiFiStateConnecting,
+  WiFiStateConnected
 };
 
-enum WiFiState_e
+enum class WiFiState_e
 {
   WiFiState_NotInitialized,
   WiFiState_Initialized,
-  WiFiState_ReadyToConect,
+  WiFiState_ReadyToConnect,
   WiFiState_Connecting,
   WiFiState_WaitingForIp,
   WiFiState_Connected,
@@ -29,7 +29,7 @@ enum WiFiState_e
   WiFiState_Error
 };
 
-enum MDNSState_e
+enum class MDNSState_e
 {
   MDNSState_Stopped,
   MDNSState_Starting,
@@ -40,14 +40,14 @@ enum MDNSState_e
   MDNSState_QueryComplete
 };
 
-enum CameraState_e
+enum class CameraState_e
 {
   Camera_Disconnected,
   Camera_Success,
   Camera_Error
 };
 
-enum StreamState_e
+enum class StreamState_e
 {
   Stream_OFF,
   Stream_ON,

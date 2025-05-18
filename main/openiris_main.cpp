@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -6,9 +6,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
-#include "esp_camera.h"
 #include "nvs_flash.h"
-#include "esp_psram.h"
 
 #include <openiris_logo.hpp>
 #include <wifiManager.hpp>
@@ -23,8 +21,6 @@
 #include <SerialManager.hpp>
 #include <RestAPI.hpp>
 
-#include <stdarg.h>
-
 #ifdef CONFIG_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
@@ -32,34 +28,31 @@
 #define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
 
-static const char *TAG = "[MAIN]";
-
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
 
-StateManager *stateManager = new StateManager(eventQueue, ledStateQueue);
-std::shared_ptr<DependencyRegistry> dependencyRegistry = std::make_shared<DependencyRegistry>();
-std::shared_ptr<CommandManager> commandManager = std::make_shared<CommandManager>(dependencyRegistry);
+auto *stateManager = new StateManager(eventQueue, ledStateQueue);
+auto dependencyRegistry = std::make_shared<DependencyRegistry>();
+auto commandManager = std::make_shared<CommandManager>(dependencyRegistry);
 
 WebSocketLogger webSocketLogger;
 Preferences preferences;
 
-std::shared_ptr<ProjectConfig> deviceConfig = std::make_shared<ProjectConfig>(&preferences);
+auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 WiFiManager wifiManager(deviceConfig, eventQueue, stateManager);
 MDNSManager mdnsManager(deviceConfig, eventQueue);
 
 std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig, eventQueue);
 StreamServer streamServer(80, stateManager);
 
-RestAPI *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
+auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
 #ifdef CONFIG_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
-LEDManager *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
-
-SerialManager *serialManager = new SerialManager(commandManager);
+auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
+auto *serialManager = new SerialManager(commandManager);
 
 static void initNVSStorage()
 {
@@ -140,7 +133,7 @@ extern "C" void app_main(void)
         1024 * 2,
         stateManager,
         3,
-        NULL // it's fine for us not get a handle back, we don't need it
+        nullptr // it's fine for us not get a handle back, we don't need it
     );
 
     xTaskCreate(
@@ -149,7 +142,7 @@ extern "C" void app_main(void)
         1024 * 2,
         ledManager,
         3,
-        NULL);
+        nullptr);
 
     deviceConfig->load();
     serialManager->setup();
@@ -160,7 +153,7 @@ extern "C" void app_main(void)
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        NULL);
+        nullptr);
 
     wifiManager.Begin();
     mdnsManager.start();
@@ -175,7 +168,7 @@ extern "C" void app_main(void)
         1024 * 2,
         restAPI,
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
-        NULL);
+        nullptr);
 
 #ifdef CONFIG_WIRED_MODE
     uvcStream.setup();
