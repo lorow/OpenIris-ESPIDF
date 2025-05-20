@@ -28,6 +28,7 @@
 #define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
 
+esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
 
@@ -52,7 +53,7 @@ UVCStreamManager uvcStream;
 #endif
 
 auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
-auto *serialManager = new SerialManager(commandManager);
+auto *serialManager = new SerialManager(commandManager, &timerHandle);
 
 static void initNVSStorage()
 {
@@ -71,8 +72,57 @@ int test_log(const char *format, va_list args)
     return vprintf(format, args);
 }
 
+void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
+{
+    vTaskDelete(serialManagerHandle);
+}
+
+// the idea here is pretty simple.
+// After setting everything up, we start a 30s timer with this as a callback
+// if we get anything on the serial, we stop the timer and reset it after the commands are done
+// this is done to ensure the user has enough time to configure the board if need be
+//
+// todo: check the initial PR by Summer and port the device mode from that, should be useful
+// but we'll have to rethink it
+void start_video_streaming(void *arg)
+{
+    if (!deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0) {
+        // make sure the server runs on a separate core
+        ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
+        streamServer.startStreamServer();
+    } else {
+#ifdef CONFIG_WIRED_MODE
+        ESP_LOGI("[MAIN]", "UVC setup detected, starting UVC streaming.");
+        uvcStream.setup();
+#else
+        ESP_LOGE("[MAIN]", "The board does not support UVC, please, setup WiFi connection.");
+#endif
+    }
+
+    ESP_LOGI("[MAIN]", "Setup window expired, started streaming services, quitting serial manager.");
+    const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
+    disable_serial_manager_task(serialTaskHandle);
+}
+
+esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter)
+{
+    esp_timer_handle_t handle;
+    const esp_timer_create_args_t args = {
+        .callback = &start_video_streaming,
+        .arg = pvParameter,
+        .name = "startVideoStreaming"};
+
+    if (const auto result = esp_timer_create(&args, &handle); result != ESP_OK)
+    {
+        ESP_LOGE("[MAIN]", "Failed to create timer: %s", esp_err_to_name(result));
+    }
+
+    return handle;
+}
+
 extern "C" void app_main(void)
 {
+    TaskHandle_t *serialManagerHandle = nullptr;
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     // uvc plan
@@ -153,14 +203,12 @@ extern "C" void app_main(void)
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        nullptr);
+        serialManagerHandle);
 
     wifiManager.Begin();
     mdnsManager.start();
     restAPI->begin();
     cameraHandler->setupCamera();
-    // make sure the server runs on a separate core
-    streamServer.startStreamServer();
 
     xTaskCreate(
         HandleRestAPIPollTask,
@@ -170,7 +218,9 @@ extern "C" void app_main(void)
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
 
-#ifdef CONFIG_WIRED_MODE
-    uvcStream.setup();
-#endif
+    timerHandle = createStartVideoStreamingTimer(serialManagerHandle);
+    if (timerHandle != nullptr)
+    {
+        esp_timer_start_once(timerHandle, 30000000); // 30s
+    }
 }

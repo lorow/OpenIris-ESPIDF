@@ -19,13 +19,13 @@
 class SerialManager
 {
 public:
-  explicit SerialManager(std::shared_ptr<CommandManager> commandManager);
+  explicit SerialManager(std::shared_ptr<CommandManager> commandManager, esp_timer_handle_t *timerHandle);
   void setup();
   void try_receive();
 
 private:
-  // QueueHandle_t serialQueue;
   std::shared_ptr<CommandManager> commandManager;
+  esp_timer_handle_t *timerHandle;
   uint8_t *data;
   uint8_t *temp_data;
 };
