@@ -4,6 +4,7 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"ping", CommandType::PING},
     {"set_wifi", CommandType::SET_WIFI},
     {"update_wifi", CommandType::UPDATE_WIFI},
+    {"set_streaming_mode", CommandType::SET_STREAMING_MODE},
     {"update_device", CommandType::UPDATE_DEVICE},
     {"delete_network", CommandType::DELETE_NETWORK},
     {"update_ap_wifi", CommandType::UPDATE_AP_WIFI},
@@ -22,6 +23,8 @@ std::function<CommandResult()> CommandManager::createCommand(CommandType type, s
   {
   case CommandType::PING:
     return { PingCommand };
+    case CommandType::SET_STREAMING_MODE:
+      return [this, json] {return setDeviceModeCommand(this->registry, json); };
   case CommandType::SET_WIFI:
     return [this, json] { return setWiFiCommand(this->registry, json); };
   case CommandType::UPDATE_WIFI:

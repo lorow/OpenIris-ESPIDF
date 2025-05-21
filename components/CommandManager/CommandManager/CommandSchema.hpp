@@ -1,9 +1,7 @@
 #ifndef COMMAND_SCHEMA_HPP
 #define COMMAND_SCHEMA_HPP
 
-struct BasePayload
-{
-};
+struct BasePayload {};
 
 struct WifiPayload : BasePayload
 {
@@ -28,7 +26,6 @@ struct deleteNetworkPayload : BasePayload
   std::string networkName;
 };
 
-// implement
 struct UpdateAPWiFiPayload : BasePayload
 {
   std::optional<std::string> ssid;
@@ -36,7 +33,7 @@ struct UpdateAPWiFiPayload : BasePayload
   std::optional<uint8_t> channel;
 };
 
-struct MDNSPayload : public BasePayload
+struct MDNSPayload : BasePayload
 {
   std::string hostname;
 };

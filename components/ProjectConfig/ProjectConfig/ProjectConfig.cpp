@@ -15,6 +15,7 @@ void saveNetworkCount(Preferences *pref, const int count)
 ProjectConfig::ProjectConfig(Preferences *pref) : pref(pref),
                                                   _already_loaded(false),
                                                   config(DeviceConfig_t(pref),
+                                                         DeviceMode_t(pref),
                                                          CameraConfig_t(pref),
                                                          std::vector<WiFiConfig_t>{},
                                                          AP_WiFiConfig_t(pref),
@@ -26,6 +27,7 @@ ProjectConfig::~ProjectConfig() = default;
 void ProjectConfig::save() const {
   ESP_LOGD(CONFIGURATION_TAG, "Saving project config");
   this->config.device.save();
+  this->config.device_mode.save();
   this->config.camera.save();
   this->config.mdns.save();
   this->config.txpower.save();
@@ -61,6 +63,7 @@ void ProjectConfig::load()
   ESP_LOGI(CONFIGURATION_TAG, "Config loaded: %s", success ? "true" : "false");
 
   this->config.device.load();
+  this->config.device_mode.load();
   this->config.camera.load();
   this->config.mdns.load();
   this->config.txpower.load();
@@ -207,6 +210,10 @@ void ProjectConfig::setAPWifiConfig(const std::string &ssid,
   ESP_LOGD(CONFIGURATION_TAG, "Updating access point config");
 }
 
+void ProjectConfig::setDeviceMode(const StreamingMode deviceMode) {
+  this->config.device_mode.mode = deviceMode;
+}
+
 //**********************************************************************************************************************
 //*
 //!                                                Get Methods
@@ -240,4 +247,8 @@ WiFiTxPower_t &ProjectConfig::getWiFiTxPowerConfig()
 TrackerConfig_t &ProjectConfig::getTrackerConfig()
 {
   return this->config;
+}
+
+DeviceMode_t &ProjectConfig::getDeviceMode() {
+  return this->config.device_mode;
 }

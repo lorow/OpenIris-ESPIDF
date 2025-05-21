@@ -25,6 +25,7 @@ enum class CommandType
   PING,
   SET_WIFI,
   UPDATE_DEVICE,
+  SET_STREAMING_MODE,
   UPDATE_WIFI,
   DELETE_NETWORK,
   UPDATE_AP_WIFI,
@@ -40,7 +41,6 @@ enum class CommandType
 
 class CommandManager
 {
-private:
   std::shared_ptr<DependencyRegistry> registry;
 
 public:

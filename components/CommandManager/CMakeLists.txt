@@ -10,5 +10,5 @@ idf_component_register(
   INCLUDE_DIRS
      "CommandManager"
      "CommandManager/commands"
-  REQUIRES ProjectConfig cJSON CameraManager
+  REQUIRES ProjectConfig cJSON CameraManager OpenIrisTasks
 )

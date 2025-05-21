@@ -29,6 +29,7 @@ CommandResult saveConfigCommand(std::shared_ptr<DependencyRegistry> registry)
   projectConfig->save();
   return CommandResult::getSuccessResult("Config saved");
 }
+
 CommandResult getConfigCommand(std::shared_ptr<DependencyRegistry> registry)
 {
   std::shared_ptr<ProjectConfig> projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);

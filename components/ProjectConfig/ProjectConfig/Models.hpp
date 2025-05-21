@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _PROJECT_CONFIG_MODELS_HPP_
-#define _PROJECT_CONFIG_MODELS_HPP_
+#ifndef PROJECT_CONFIG_MODELS_HPP
+#define PROJECT_CONFIG_MODELS_HPP
 
 #include <string>
 #include <utility>
@@ -19,6 +19,26 @@ struct BaseConfigModel
 
   Preferences *pref;
 };
+
+enum class StreamingMode {
+  AUTO,
+  UVC,
+  WIFI,
+};
+
+struct DeviceMode_t : BaseConfigModel {
+  StreamingMode mode;
+  explicit DeviceMode_t(  Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO){}
+
+  void load() {
+    this->mode = static_cast<StreamingMode>(this->pref->getInt("mode", 0));
+  }
+
+  void save() const {
+    this->pref->putInt("mode", static_cast<int>(this->mode));
+  }
+};
+
 
 struct DeviceConfig_t : BaseConfigModel
 {
@@ -238,6 +258,7 @@ class TrackerConfig_t
 {
 public:
   DeviceConfig_t device;
+  DeviceMode_t device_mode;
   CameraConfig_t camera;
   std::vector<WiFiConfig_t> networks;
   AP_WiFiConfig_t ap_network;
@@ -246,16 +267,18 @@ public:
 
   TrackerConfig_t(
       DeviceConfig_t device,
+      DeviceMode_t device_mode,
       CameraConfig_t camera,
       std::vector<WiFiConfig_t> networks,
       AP_WiFiConfig_t ap_network,
       MDNSConfig_t mdns,
       WiFiTxPower_t txpower) : device(std::move(device)),
-                               camera(camera),
+                               device_mode(std::move(device_mode)),
+                               camera(std::move(camera)),
                                networks(std::move(networks)),
                                ap_network(std::move(ap_network)),
                                mdns(std::move(mdns)),
-                               txpower(txpower) {}
+                               txpower(std::move(txpower)) {}
 
   std::string toRepresentation()
   {
