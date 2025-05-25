@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _CAMERAMANAGER_HPP_
-#define _CAMERAMANAGER_HPP_
+#ifndef CAMERAMANAGER_HPP
+#define CAMERAMANAGER_HPP
 
 #include "esp_log.h"
 #include "esp_camera.h"
@@ -31,12 +31,11 @@ private:
 public:
   CameraManager(std::shared_ptr<ProjectConfig> projectConfig, QueueHandle_t eventQueue);
   int setCameraResolution(framesize_t frameSize);
-  bool setupCamera(); // todo, once we have observers, make it private
-
+  bool setupCamera();
   int setVFlip(int direction);
   int setHFlip(int direction);
   int setVieWindow(int offsetX, int offsetY, int outputX, int outputY);
-  void resetCamera(bool type = 0);
+  void resetCamera(bool type);
 
 private:
   void loadConfigData();
@@ -45,4 +44,4 @@ private:
   void setupBasicResolution();
 };
 
-#endif // _CAMERAMANAGER_HPP_
+#endif // CAMERAMANAGER_HPP

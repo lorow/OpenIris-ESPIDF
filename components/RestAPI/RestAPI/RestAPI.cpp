@@ -103,7 +103,7 @@ void RestAPI::handle_update_device(RequestContext *context) {
     return;
   }
 
-  auto const result = command_manager->executeFromType(CommandType::UPDATE_DEVICE, context->body);
+  auto const result = command_manager->executeFromType(CommandType::UPDATE_OTA_CREDENTIALS, context->body);
   auto const  code = result.isSuccess() ? 200 : 500;
   mg_http_reply(context->connection, code, JSON_RESPONSE, result.getResult().c_str());
 }

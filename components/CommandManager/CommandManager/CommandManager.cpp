@@ -5,10 +5,9 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"set_wifi", CommandType::SET_WIFI},
     {"update_wifi", CommandType::UPDATE_WIFI},
     {"set_streaming_mode", CommandType::SET_STREAMING_MODE},
-    {"update_device", CommandType::UPDATE_DEVICE},
+    {"update_ota_credentials", CommandType::UPDATE_OTA_CREDENTIALS},
     {"delete_network", CommandType::DELETE_NETWORK},
     {"update_ap_wifi", CommandType::UPDATE_AP_WIFI},
-    {"update_mdns", CommandType::UPDATE_MDNS},
     {"set_mdns", CommandType::SET_MDNS},
     {"update_camera", CommandType::UPDATE_CAMERA},
     {"restart_camera", CommandType::RESTART_CAMERA},
@@ -18,13 +17,15 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"restart_device", CommandType::RESTART_DEVICE},
 };
 
-std::function<CommandResult()> CommandManager::createCommand(CommandType type, std::string_view json) const {
+std::function<CommandResult()> CommandManager::createCommand(const CommandType type, std::string_view json) const {
   switch (type)
   {
   case CommandType::PING:
     return { PingCommand };
-    case CommandType::SET_STREAMING_MODE:
+  case CommandType::SET_STREAMING_MODE:
       return [this, json] {return setDeviceModeCommand(this->registry, json); };
+  case CommandType::UPDATE_OTA_CREDENTIALS:
+      return [this, json] { return updateOTACredentialsCommand(this->registry, json); };
   case CommandType::SET_WIFI:
     return [this, json] { return setWiFiCommand(this->registry, json); };
   case CommandType::UPDATE_WIFI:
@@ -34,9 +35,6 @@ std::function<CommandResult()> CommandManager::createCommand(CommandType type, s
   case CommandType::DELETE_NETWORK:
     return [this, json] { return deleteWiFiCommand(this->registry, json); };
   case CommandType::SET_MDNS:
-    return [this, json] { return setMDNSCommand(this->registry, json); };
-  // updating the mnds name is essentially the same operation
-  case CommandType::UPDATE_MDNS:
     return [this, json] { return setMDNSCommand(this->registry, json); };
   case CommandType::UPDATE_CAMERA:
       return [this, json] { return updateCameraCommand(this->registry, json); };
