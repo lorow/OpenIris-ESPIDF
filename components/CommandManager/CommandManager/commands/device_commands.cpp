@@ -46,7 +46,7 @@ CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> re
         }
     }
 
-    if (const auto OTAPasswordObject = cJSON_GetObjectItem(parsedJson, s"password"); OTAPasswordObject != nullptr) {
+    if (const auto OTAPasswordObject = cJSON_GetObjectItem(parsedJson, "password"); OTAPasswordObject != nullptr) {
         OTAPassword = OTAPasswordObject->valuestring;
     }
 
