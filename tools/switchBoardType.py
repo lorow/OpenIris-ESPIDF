@@ -9,6 +9,13 @@ ENDC = '\033[0m'
 
 sdkconfig_defaults = "sdkconfig.base_defaults"
 supported_boards = [
+  "esp32AIThinker",
+  "esp32Cam",
+  "esp32M5Stack",
+  "esp_eye",
+  "wrover",
+  "wrooms3",
+  "wrooms3QIO",
   "xiao-esp32s3",
   "project_babble"
 ]
