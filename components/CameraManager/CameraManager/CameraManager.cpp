@@ -71,36 +71,18 @@ void CameraManager::setupCameraPinout()
       .pin_href = CONFIG_HREF_GPIO_NUM,   // CAM_PIN_HREF,
       .pin_pclk = CONFIG_PCLK_GPIO_NUM,   // CAM_PIN_PCLK,
 
-      // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-      .xclk_freq_hz = xclk_freq_hz, // 20000000,
+      .xclk_freq_hz = xclk_freq_hz, // think about bumping it to 24000000,
       .ledc_timer = LEDC_TIMER_0,
       .ledc_channel = LEDC_CHANNEL_0,
 
-      // this causes problems
       .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
       .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-      .jpeg_quality = 7,                   // 0-63, for OV series camera sensors, lower number means higher quality
+      .jpeg_quality = 6,                   // 0-63, for OV series camera sensors, lower number means higher quality
       .fb_count = 2,                       // 3                    // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-      .fb_location = CAMERA_FB_IN_PSRAM,   // maybe it cannot put them fully in psram?
-      .grab_mode = CAMERA_GRAB_WHEN_EMPTY, // CAMERA_GRAB_LATEST
+      .fb_location = CAMERA_FB_IN_DRAM,
+      .grab_mode = CAMERA_GRAB_WHEN_EMPTY, //CAMERA_GRAB_WHEN_EMPTY, // CAMERA_GRAB_LATEST
   };
-}
-
-void CameraManager::setupBasicResolution()
-{
-
-  if (!esp_psram_is_initialized())
-  {
-    ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM not initialized!");
-    ESP_LOGD(CAMERA_MANAGER_TAG, "Setting fb_location to CAMERA_FB_IN_DRAM with lower picture quality");
-    config.fb_location = CAMERA_FB_IN_DRAM;
-    config.jpeg_quality = 9;
-    config.fb_count = 2;
-    return;
-  }
-
-  ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
 }
 
 void CameraManager::setupCameraSensor()
@@ -139,7 +121,7 @@ void CameraManager::setupCameraSensor()
   // automatic gain control gain, controls by how much the resulting image
   // should be amplified
   camera_sensor->set_agc_gain(camera_sensor, 2);                   // 0 to 30
-  camera_sensor->set_gainceiling(camera_sensor, (gainceiling_t)6); // 0 to 6
+  camera_sensor->set_gainceiling(camera_sensor, static_cast<gainceiling_t>(6)); // 0 to 6
 
   // black and white pixel correction, averages the white and black spots
   camera_sensor->set_bpc(camera_sensor, 1); // 0 = disable , 1 = enable
@@ -163,6 +145,7 @@ void CameraManager::setupCameraSensor()
           // 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
 
   // it gets overriden somewhere somehow
+  // todo check if this is still a bug
   camera_sensor->set_framesize(camera_sensor, FRAMESIZE_240X240);
   ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera sensor done");
 }
@@ -171,9 +154,6 @@ bool CameraManager::setupCamera()
 {
   ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera pinout");
   this->setupCameraPinout();
-  ESP_LOGI(CAMERA_MANAGER_TAG, "Setting up camera with resolution");
-  // this->setupBasicResolution();
-
   ESP_LOGI(CAMERA_MANAGER_TAG, "Initializing camera...");
 
   if (auto const hasCameraBeenInitialized = esp_camera_init(&config); hasCameraBeenInitialized == ESP_OK)
@@ -212,7 +192,6 @@ bool CameraManager::setupCamera()
 #endif
 
   this->setupCameraSensor();
-  // this->loadConfigData(); // move this to update method once implemented
   return true;
 }
 
