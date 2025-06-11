@@ -151,3 +151,10 @@ esp_err_t UVCStreamManager::setup()
 
   return ESP_OK;
 }
+
+esp_err_t UVCStreamManager::start()
+{
+  ESP_LOGI(UVC_STREAM_TAG, "Starting UVC streaming");
+  // UVC device is already initialized in setup(), just log that we're starting
+  return ESP_OK;
+}

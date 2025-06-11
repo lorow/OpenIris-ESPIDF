@@ -147,6 +147,8 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     it->password = password;
     it->channel = channel;
     it->power = power;
+    // Save the updated network immediately
+    it->save();
     return;
   }
 
@@ -155,6 +157,9 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     ESP_LOGI(CONFIGURATION_TAG, "No networks, We're adding a new network");
     this->config.networks.emplace_back(this->pref, static_cast<uint8_t>(0), networkName, ssid, password, channel,
                                        power);
+    // Save the new network immediately
+    this->config.networks.back().save();
+    saveNetworkCount(this->pref, 1);
     return;
   }
 
@@ -168,6 +173,9 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
     uint8_t last_index = getNetworkCount(this->pref);
     this->config.networks.emplace_back(this->pref, last_index, networkName, ssid, password, channel,
                                        power);
+    // Save the new network immediately
+    this->config.networks.back().save();
+    saveNetworkCount(this->pref, static_cast<int>(this->config.networks.size()));
   }
   else
   {
@@ -212,6 +220,7 @@ void ProjectConfig::setAPWifiConfig(const std::string &ssid,
 
 void ProjectConfig::setDeviceMode(const StreamingMode deviceMode) {
   this->config.device_mode.mode = deviceMode;
+  this->config.device_mode.save();  // Save immediately
 }
 
 //**********************************************************************************************************************
@@ -249,6 +258,10 @@ TrackerConfig_t &ProjectConfig::getTrackerConfig()
   return this->config;
 }
 
-DeviceMode_t &ProjectConfig::getDeviceMode() {
+DeviceMode_t &ProjectConfig::getDeviceModeConfig() {
   return this->config.device_mode;
+}
+
+StreamingMode ProjectConfig::getDeviceMode() {
+  return this->config.device_mode.mode;
 }

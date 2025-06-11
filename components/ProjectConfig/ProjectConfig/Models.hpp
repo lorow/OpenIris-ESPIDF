@@ -8,6 +8,7 @@
 #include <helpers.hpp>
 #include "sdkconfig.h"
 #include <Preferences.hpp>
+#include "esp_log.h"
 
 struct BaseConfigModel
 {
@@ -31,11 +32,14 @@ struct DeviceMode_t : BaseConfigModel {
   explicit DeviceMode_t(  Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO){}
 
   void load() {
-    this->mode = static_cast<StreamingMode>(this->pref->getInt("mode", 0));
+    int stored_mode = this->pref->getInt("mode", 0);
+    this->mode = static_cast<StreamingMode>(stored_mode);
+    ESP_LOGI("DeviceMode", "Loaded device mode: %d", stored_mode);
   }
 
   void save() const {
     this->pref->putInt("mode", static_cast<int>(this->mode));
+    ESP_LOGI("DeviceMode", "Saved device mode: %d", static_cast<int>(this->mode));
   }
 };
 
@@ -182,6 +186,9 @@ struct WiFiConfig_t : BaseConfigModel
     this->password = this->pref->getString(("password" + iter_str).c_str(), "");
     this->channel = this->pref->getUInt(("channel" + iter_str).c_str());
     this->power = this->pref->getUInt(("power" + iter_str).c_str());
+    
+    ESP_LOGI("WiFiConfig", "Loaded network %d: name=%s, ssid=%s, channel=%d", 
+             index, this->name.c_str(), this->ssid.c_str(), this->channel);
   };
 
   void save() const {
@@ -193,6 +200,9 @@ struct WiFiConfig_t : BaseConfigModel
     this->pref->putString(("password" + iter_str).c_str(), this->password.c_str());
     this->pref->putUInt(("channel" + iter_str).c_str(), this->channel);
     this->pref->putUInt(("power" + iter_str).c_str(), this->power);
+    
+    ESP_LOGI("WiFiConfig", "Saved network %d: name=%s, ssid=%s, channel=%d", 
+             this->index, this->name.c_str(), this->ssid.c_str(), this->channel);
   };
 
   std::string toRepresentation()
