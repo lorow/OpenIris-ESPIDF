@@ -1,4 +1,6 @@
 #include <ProjectConfig.hpp>
+#include <wifiManager.hpp>
+#include <StateManager.hpp>
 #include <memory>
 #include <string>
 #include <optional>
@@ -18,3 +20,6 @@ CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
 std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(std::string_view jsonPayload);
 CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
+
+CommandResult getWiFiStatusCommand(std::shared_ptr<DependencyRegistry> registry);
+CommandResult connectWiFiCommand(std::shared_ptr<DependencyRegistry> registry);

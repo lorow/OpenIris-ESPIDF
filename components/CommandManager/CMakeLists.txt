@@ -7,8 +7,9 @@ idf_component_register(
     "CommandManager/commands/config_commands.cpp"
     "CommandManager/commands/mdns_commands.cpp"
     "CommandManager/commands/device_commands.cpp"
+    "CommandManager/commands/scan_commands.cpp"
   INCLUDE_DIRS
      "CommandManager"
      "CommandManager/commands"
-  REQUIRES ProjectConfig cJSON CameraManager OpenIrisTasks
+  REQUIRES ProjectConfig cJSON CameraManager OpenIrisTasks wifiManager Helpers
 )

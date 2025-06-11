@@ -17,12 +17,14 @@
 #include "commands/mdns_commands.hpp"
 #include "commands/wifi_commands.hpp"
 #include "commands/device_commands.hpp"
+#include "commands/scan_commands.hpp"
 #include <cJSON.h>
 
 enum class CommandType
 {
   None,
   PING,
+  PAUSE,
   SET_WIFI,
   UPDATE_OTA_CREDENTIALS,
   SET_STREAMING_MODE,
@@ -36,6 +38,12 @@ enum class CommandType
   GET_CONFIG,
   RESET_CONFIG,
   RESTART_DEVICE,
+  SCAN_NETWORKS,
+  START_STREAMING,
+  GET_WIFI_STATUS,
+  CONNECT_WIFI,
+  SWITCH_MODE,
+  GET_DEVICE_MODE,
 };
 
 class CommandManager

@@ -7,7 +7,8 @@
 enum class DependencyType
 {
   project_config,
-  camera_manager
+  camera_manager,
+  wifi_manager
 };
 
 class DependencyRegistry

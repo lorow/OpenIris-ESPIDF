@@ -7,3 +7,9 @@ CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry,
 CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
 CommandResult restartDeviceCommand();
+
+CommandResult startStreamingCommand();
+
+CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
+
+CommandResult getDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry);

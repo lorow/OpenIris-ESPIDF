@@ -31,7 +31,7 @@ public:
   bool reset();
 
   DeviceConfig_t &getDeviceConfig();
-  DeviceMode_t &getDeviceMode();
+  DeviceMode_t &getDeviceModeConfig();
   CameraConfig_t &getCameraConfig();
   std::vector<WiFiConfig_t> &getWifiConfigs();
   AP_WiFiConfig_t &getAPWifiConfig();
@@ -61,6 +61,7 @@ public:
                        uint8_t channel);
   void setWiFiTxPower(uint8_t power);
     void setDeviceMode(StreamingMode deviceMode);
+  StreamingMode getDeviceMode();
 
 private:
   Preferences *pref;
