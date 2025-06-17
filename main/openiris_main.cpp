@@ -39,7 +39,7 @@ auto commandManager = std::make_shared<CommandManager>(dependencyRegistry);
 WebSocketLogger webSocketLogger;
 Preferences preferences;
 
-auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
+std::shared_ptr<ProjectConfig> deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 WiFiManager wifiManager(deviceConfig, eventQueue, stateManager);
 MDNSManager mdnsManager(deviceConfig, eventQueue);
 
@@ -55,25 +55,21 @@ UVCStreamManager uvcStream;
 auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
 auto *serialManager = new SerialManager(commandManager, &timerHandle);
 
-static void initNVSStorage()
-{
+static void initNVSStorage() {
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 }
 
-int test_log(const char *format, va_list args)
-{
+int test_log(const char *format, va_list args) {
     webSocketLogger.log_message(format, args);
     return vprintf(format, args);
 }
 
-void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
-{
+void disable_serial_manager_task(TaskHandle_t serialManagerHandle) {
     vTaskDelete(serialManagerHandle);
 }
 
@@ -84,8 +80,7 @@ void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
 //
 // todo: check the initial PR by Summer and port the device mode from that, should be useful
 // but we'll have to rethink it
-void start_video_streaming(void *arg)
-{
+void start_video_streaming(void *arg) {
     if (!deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0) {
         // make sure the server runs on a separate core
         ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
@@ -104,24 +99,22 @@ void start_video_streaming(void *arg)
     disable_serial_manager_task(serialTaskHandle);
 }
 
-esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter)
-{
+esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter) {
     esp_timer_handle_t handle;
     const esp_timer_create_args_t args = {
         .callback = &start_video_streaming,
         .arg = pvParameter,
-        .name = "startVideoStreaming"};
+        .name = "startVideoStreaming"
+    };
 
-    if (const auto result = esp_timer_create(&args, &handle); result != ESP_OK)
-    {
+    if (const auto result = esp_timer_create(&args, &handle); result != ESP_OK) {
         ESP_LOGE("[MAIN]", "Failed to create timer: %s", esp_err_to_name(result));
     }
 
     return handle;
 }
 
-extern "C" void app_main(void)
-{
+extern "C" void app_main(void) {
     TaskHandle_t *serialManagerHandle = nullptr;
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
@@ -219,8 +212,7 @@ extern "C" void app_main(void)
         nullptr);
 
     timerHandle = createStartVideoStreamingTimer(serialManagerHandle);
-    if (timerHandle != nullptr)
-    {
+    if (timerHandle != nullptr) {
         esp_timer_start_once(timerHandle, 30000000); // 30s
     }
 }

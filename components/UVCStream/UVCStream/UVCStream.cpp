@@ -3,6 +3,30 @@ constexpr int UVC_MAX_FRAMESIZE_SIZE(75 * 1024);
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
+extern "C" {
+  static char serial_number_str[13];
+
+  const char *get_uvc_device_name() {
+    return deviceConfig->getMDNSConfig().hostname.c_str();
+  }
+
+  const char *get_serial_number(void) {
+    if (serial_number_str[0] == '\0') {
+      uint8_t mac_address[6];
+      esp_err_t result = esp_efuse_mac_get_default(mac_address);
+      if (result != ESP_OK) {
+        ESP_LOGE(UVC_STREAM_TAG, "Failed to get MAC address of the board, returning default serial number");
+        return CONFIG_TUSB_SERIAL_NUM;
+      }
+
+      sniprintf(serial_number_str, sizeof(serial_number_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+          mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
+      );
+    }
+    return serial_number_str;
+  }
+}
+
 static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int width, int height, int rate, void *cb_ctx)
 {
   (void)cb_ctx;
