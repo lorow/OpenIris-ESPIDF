@@ -2,6 +2,7 @@
 #ifndef UVCSTREAM_HPP
 #define UVCSTREAM_HPP
 #include "esp_timer.h"
+#include "esp_mac.h"
 #include "esp_camera.h"
 #include <CameraManager.hpp>
 #include <StateManager.hpp>
@@ -13,6 +14,18 @@
 // we need access to the camera manager
 // in order to update the frame settings
 extern std::shared_ptr<CameraManager> cameraHandler;
+extern std::shared_ptr<ProjectConfig> deviceConfig;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  const char *get_uvc_device_name();
+  const char *get_serial_number(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 // we also need a way to inform the rest of the system of what's happening
 extern QueueHandle_t eventQueue;
