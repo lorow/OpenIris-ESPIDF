@@ -10,12 +10,12 @@ dependencies:
       type: service
     version: 1.1.1
   espressif/esp32-camera:
-    component_hash: a82de4ee0b383bd34695935385c6a6c720129084580c2bbb55dce76eb2a3788f
+    component_hash: c3eb05fbeeae884a23bed9b17d48d5f0da8872beadae0c0e747d2fbea6094f06
     dependencies: []
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 2.0.13
+    version: 2.0.15
   espressif/led_strip:
     component_hash: 28c6509a727ef74925b372ed404772aeedf11cce10b78c3f69b3c66799095e2d
     dependencies:
@@ -27,7 +27,7 @@ dependencies:
       type: service
     version: 2.5.5
   espressif/mdns:
-    component_hash: af6306fe65d637a3683d1cf671508fcedd6b05f9ca029a8815abeab64001fb8d
+    component_hash: 3ec0af5f6bce310512e90f482388d21cc7c0e99668172d2f895356165fc6f7c5
     dependencies:
     - name: idf
       require: private
@@ -35,9 +35,9 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 1.4.0
+    version: 1.8.2
   espressif/tinyusb:
-    component_hash: 10703da2c3cd39a944711ee3d320c6dda54debabf13b4b933a7c90daf102372b
+    component_hash: 214989d502fc168241a4a4f83b097d8ac44a93cd6f1787b4ac10069a8b3bebd3
     dependencies:
     - name: idf
       require: private
@@ -49,7 +49,7 @@ dependencies:
     - esp32s2
     - esp32s3
     - esp32p4
-    version: 0.18.0~2
+    version: 0.15.0~10
   idf:
     source:
       type: idf
@@ -61,6 +61,6 @@ direct_dependencies:
 - espressif/mdns
 - espressif/tinyusb
 - idf
-manifest_hash: 1f812e7723bfe7dc357c54a3f01b77580502ba368553b7d186d3a0fbc2a82bab
+manifest_hash: b8a462b847225cdc561c820962ae0cb021d5ff7d688964bd6786f78b99dfa205
 target: esp32s3
 version: 2.0.0
