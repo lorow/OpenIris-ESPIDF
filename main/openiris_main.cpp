@@ -64,7 +64,7 @@ static void initNVSStorage() {
     ESP_ERROR_CHECK(ret);
 }
 
-int test_log(const char *format, va_list args) {
+int websocket_logger(const char *format, va_list args) {
     webSocketLogger.log_message(format, args);
     return vprintf(format, args);
 }
@@ -77,24 +77,31 @@ void disable_serial_manager_task(TaskHandle_t serialManagerHandle) {
 // After setting everything up, we start a 30s timer with this as a callback
 // if we get anything on the serial, we stop the timer and reset it after the commands are done
 // this is done to ensure the user has enough time to configure the board if need be
-//
-// todo: check the initial PR by Summer and port the device mode from that, should be useful
-// but we'll have to rethink it
 void start_video_streaming(void *arg) {
-    if (!deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0) {
-        // make sure the server runs on a separate core
-        ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
-        streamServer.startStreamServer();
-    } else {
-#ifdef CONFIG_WIRED_MODE
-        ESP_LOGI("[MAIN]", "UVC setup detected, starting UVC streaming.");
-        uvcStream.setup();
-#else
-        ESP_LOGE("[MAIN]", "The board does not support UVC, please, setup WiFi connection.");
-#endif
+    // if we're in auto-mode, we can decide which streaming helper to start based on the
+    // presence of Wi-Fi credentials
+    ESP_LOGI("[MAIN]", "Setup window expired, starting streaming services, quitting serial manager.");
+    switch (deviceConfig->getDeviceMode().mode) {
+        case StreamingMode::AUTO:
+            if (!deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0) {
+                // todo make sure the server runs on a separate core
+                ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
+                streamServer.startStreamServer();
+            } else {
+                ESP_LOGI("[MAIN]", "UVC setup detected, starting UVC streaming.");
+                uvcStream.setup();
+            }
+            break;
+        case StreamingMode::UVC:
+            ESP_LOGI("[MAIN]", "Device set to UVC Mode, starting UVC streaming.");
+            uvcStream.setup();
+            break;
+        case StreamingMode::WIFI:
+            ESP_LOGI("[MAIN]", "Device set to Wi-Fi mode, starting WiFi streaming.");
+            streamServer.startStreamServer();
+            break;
     }
 
-    ESP_LOGI("[MAIN]", "Setup window expired, started streaming services, quitting serial manager.");
     const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
     disable_serial_manager_task(serialTaskHandle);
 }
@@ -151,13 +158,13 @@ extern "C" void app_main(void) {
 
     // rethink led manager - we need to move the state change sending into a queue and rethink the state lighting logic - DONE
     // also, the entire led manager needs to be moved to a task - DONE
-    // with that, I couuld use vtaskdelayuntil to advance and display states
-    // and with that, I should rethink how state management works
+    // with that, I couuld use vtaskdelayuntil to advance and display states - DONE
+    // and with that, I should rethink how state management works - DONE
 
     // rethink state management - DONE
 
-    // port serial manager - DONE - needs rewrite
-    // instead of the UVCCDC thing - give the board 30s for serial commands and then determine if we should reboot into UVC
+    // port serial manager - DONE
+    // instead of the UVCCDC thing - give the board 30s for serial commands and then determine if we should reboot into UVC - DONE
 
     // add endpoint to check firmware version
     // add firmware version somewhere
@@ -167,7 +174,7 @@ extern "C" void app_main(void) {
     Logo::printASCII();
     initNVSStorage();
 
-    // esp_log_set_vprintf(&test_log);
+    // esp_log_set_vprintf(&websocket_logger);
     ledManager->setup();
 
     xTaskCreate(

@@ -108,6 +108,12 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 
 esp_err_t UVCStreamManager::setup()
 {
+
+#ifndef CONFIG_WIRED_MODE
+  ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
+  return;
+#endif
+
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");
 
   uvc_buffer = static_cast<uint8_t *>(malloc(UVC_MAX_FRAMESIZE_SIZE));
