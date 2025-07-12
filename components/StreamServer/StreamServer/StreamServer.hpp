@@ -10,7 +10,7 @@
 #include "esp_timer.h"
 #include <StateManager.hpp>
 #include <WebSocketLogger.hpp>
-#include <Helpers.hpp>
+#include <helpers.hpp>
 
 extern WebSocketLogger webSocketLogger;
 
