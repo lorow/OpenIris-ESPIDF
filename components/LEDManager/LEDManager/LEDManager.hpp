@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include <vector>
 #include <StateManager.hpp>
-#include <Helpers.hpp>
+#include <helpers.hpp>
 
 // it kinda looks like different boards have these states swapped
 #define LED_OFF 1
