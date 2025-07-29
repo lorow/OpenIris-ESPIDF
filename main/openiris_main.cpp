@@ -42,7 +42,7 @@ auto commandManager = std::make_shared<CommandManager>(dependencyRegistry);
 WebSocketLogger webSocketLogger;
 Preferences preferences;
 
-auto deviceConfig = std::make_shared<ProjectConfig>(&preferences);
+std::shared_ptr<ProjectConfig> deviceConfig = std::make_shared<ProjectConfig>(&preferences);
 auto wifiManager = std::make_shared<WiFiManager>(deviceConfig, eventQueue, stateManager);
 MDNSManager mdnsManager(deviceConfig, eventQueue);
 
@@ -58,21 +58,25 @@ UVCStreamManager uvcStream;
 auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 
-static void initNVSStorage() {
+static void initNVSStorage()
+{
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 }
 
-int websocket_logger(const char *format, va_list args) {
+int websocket_logger(const char *format, va_list args)
+{
     webSocketLogger.log_message(format, args);
     return vprintf(format, args);
 }
 
-void disable_serial_manager_task(TaskHandle_t serialManagerHandle) {
+void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
+{
     vTaskDelete(serialManagerHandle);
 }
 
@@ -91,15 +95,18 @@ void start_video_streaming(void *arg)
     bool hasWifiCredentials = !deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0;
     bool wifiConnected = (wifiManager->GetCurrentWiFiState() == WiFiState_e::WiFiState_Connected);
 
-    if (deviceMode == StreamingMode::UVC) {
+    if (deviceMode == StreamingMode::UVC)
+    {
 #ifdef CONFIG_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
         // Initialize UVC if not already done
         static bool uvcInitialized = false;
-        if (!uvcInitialized) {
+        if (!uvcInitialized)
+        {
             ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
             esp_err_t ret = uvcStream.setup();
-            if (ret != ESP_OK) {
+            if (ret != ESP_OK)
+            {
                 ESP_LOGE("[MAIN]", "Failed to initialize UVC: %s", esp_err_to_name(ret));
                 return;
             }
@@ -113,13 +120,19 @@ void start_video_streaming(void *arg)
 #endif
     }
 
-    if ((deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO) && hasWifiCredentials && wifiConnected) {
+    if ((deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO) && hasWifiCredentials && wifiConnected)
+    {
         ESP_LOGI("[MAIN]", "Starting WiFi streaming mode.");
         streamServer.startStreamServer();
-    } else {
-        if (hasWifiCredentials && !wifiConnected) {
+    }
+    else
+    {
+        if (hasWifiCredentials && !wifiConnected)
+        {
             ESP_LOGE("[MAIN]", "WiFi credentials configured but not connected. Try connecting first.");
-        } else {
+        }
+        else
+        {
             ESP_LOGE("[MAIN]", "No streaming mode available. Please configure WiFi.");
         }
         return;
@@ -128,7 +141,8 @@ void start_video_streaming(void *arg)
     ESP_LOGI("[MAIN]", "Streaming started successfully.");
 
     // Optionally disable serial manager after explicit streaming start
-    if (arg != nullptr) {
+    if (arg != nullptr)
+    {
         ESP_LOGI("[MAIN]", "Disabling setup interfaces after streaming start.");
         const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
         disable_serial_manager_task(serialTaskHandle);
@@ -142,13 +156,14 @@ void activate_streaming(TaskHandle_t serialTaskHandle = nullptr)
 }
 
 // Callback for automatic startup after delay
-void startup_timer_callback(void* arg)
+void startup_timer_callback(void *arg)
 {
     ESP_LOGI("[MAIN]", "Startup timer fired, startupCommandReceived=%s, startupPaused=%s",
              startupCommandReceived ? "true" : "false",
              startupPaused ? "true" : "false");
 
-    if (!startupCommandReceived && !startupPaused) {
+    if (!startupCommandReceived && !startupPaused)
+    {
         ESP_LOGI("[MAIN]", "No command received during startup delay, proceeding with automatic mode startup");
 
         // Get the stored device mode
@@ -156,10 +171,11 @@ void startup_timer_callback(void* arg)
         ESP_LOGI("[MAIN]", "Stored device mode: %d", (int)deviceMode);
 
         // Get the serial manager handle to disable it after streaming starts
-        TaskHandle_t* serialHandle = getSerialManagerHandle();
+        TaskHandle_t *serialHandle = getSerialManagerHandle();
         TaskHandle_t serialTaskHandle = (serialHandle && *serialHandle) ? *serialHandle : nullptr;
 
-        if (deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO) {
+        if (deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO)
+        {
             // For WiFi mode, check if we have credentials and are connected
             bool hasWifiCredentials = !deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0;
             bool wifiConnected = (wifiManager->GetCurrentWiFiState() == WiFiState_e::WiFiState_Connected);
@@ -168,17 +184,23 @@ void startup_timer_callback(void* arg)
                      hasWifiCredentials ? "true" : "false",
                      wifiConnected ? "true" : "false");
 
-            if (hasWifiCredentials && wifiConnected) {
+            if (hasWifiCredentials && wifiConnected)
+            {
                 ESP_LOGI("[MAIN]", "Starting WiFi streaming automatically");
                 activate_streaming(serialTaskHandle);
-            } else if (hasWifiCredentials && !wifiConnected) {
+            }
+            else if (hasWifiCredentials && !wifiConnected)
+            {
                 ESP_LOGI("[MAIN]", "WiFi credentials exist but not connected, waiting...");
                 // Could retry connection here
-            } else {
+            }
+            else
+            {
                 ESP_LOGI("[MAIN]", "No WiFi credentials, staying in setup mode");
             }
         }
-        else if (deviceMode == StreamingMode::UVC) {
+        else if (deviceMode == StreamingMode::UVC)
+        {
 #ifdef CONFIG_WIRED_MODE
             ESP_LOGI("[MAIN]", "Starting UVC streaming automatically");
             activate_streaming(serialTaskHandle);
@@ -187,13 +209,19 @@ void startup_timer_callback(void* arg)
             ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_WIRED_MODE and rebuild.");
 #endif
         }
-        else {
+        else
+        {
             ESP_LOGI("[MAIN]", "Unknown device mode: %d", (int)deviceMode);
         }
-    } else {
-        if (startupPaused) {
+    }
+    else
+    {
+        if (startupPaused)
+        {
             ESP_LOGI("[MAIN]", "Startup paused, staying in heartbeat mode");
-        } else {
+        }
+        else
+        {
             ESP_LOGI("[MAIN]", "Command received during startup, staying in heartbeat mode");
         }
     }
@@ -209,7 +237,8 @@ void notify_startup_command_received()
     startupCommandReceived = true;
 
     // Cancel the startup timer if it's still running
-    if (startupTimerHandle != nullptr) {
+    if (startupTimerHandle != nullptr)
+    {
         esp_timer_stop(startupTimerHandle);
         esp_timer_delete(startupTimerHandle);
         startupTimerHandle = nullptr;
@@ -217,7 +246,8 @@ void notify_startup_command_received()
     }
 }
 
-extern "C" void app_main(void) {
+extern "C" void app_main(void)
+{
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
@@ -327,12 +357,13 @@ extern "C" void app_main(void) {
     // Get the stored device mode
     StreamingMode deviceMode = deviceConfig->getDeviceMode();
     ESP_LOGI("[MAIN]", "Stored device mode: %s (value: %d)",
-             deviceMode == StreamingMode::UVC ? "UVC" :
-             deviceMode == StreamingMode::WIFI ? "WiFi" :
-             "Auto", (int)deviceMode);
+             deviceMode == StreamingMode::UVC ? "UVC" : deviceMode == StreamingMode::WIFI ? "WiFi"
+                                                                                          : "Auto",
+             (int)deviceMode);
 
     // If WiFi credentials exist, attempt connection but stay in setup mode
-    if (!deviceConfig->getWifiConfigs().empty()) {
+    if (!deviceConfig->getWifiConfigs().empty())
+    {
         ESP_LOGI("[MAIN]", "WiFi credentials found, attempting connection in background");
         // WiFi connection happens in wifiManager->Begin() above
     }
@@ -346,8 +377,7 @@ extern "C" void app_main(void) {
         .arg = nullptr,
         .dispatch_method = ESP_TIMER_TASK,
         .name = "startup_timer",
-        .skip_unhandled_events = false
-    };
+        .skip_unhandled_events = false};
 
     ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &startupTimerHandle));
     ESP_ERROR_CHECK(esp_timer_start_once(startupTimerHandle, 20000000)); // 20 seconds in microseconds
