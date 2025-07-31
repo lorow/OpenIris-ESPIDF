@@ -4,7 +4,7 @@ constexpr int UVC_MAX_FRAMESIZE_SIZE(75 * 1024);
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
 extern "C" {
-  static char serial_number_str[13];
+  static char serial_number_str[18];
 
   const char *get_uvc_device_name() {
     return deviceConfig->getMDNSConfig().hostname.c_str();
@@ -19,7 +19,7 @@ extern "C" {
         return CONFIG_TUSB_SERIAL_NUM;
       }
 
-      sniprintf(serial_number_str, sizeof(serial_number_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+      sniprintf(serial_number_str, sizeof(serial_number_str), "%02X:%02X:%02X:%02X:%02X:%02X",
           mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
       );
     }
