@@ -78,6 +78,8 @@ void disable_serial_manager_task(TaskHandle_t serialManagerHandle) {
 // if we get anything on the serial, we stop the timer and reset it after the commands are done
 // this is done to ensure the user has enough time to configure the board if need be
 void start_video_streaming(void *arg) {
+    TaskHandle_t serialTaskHandle = (TaskHandle_t)arg; // retrieve task handle from arg
+
     // if we're in auto-mode, we can decide which streaming helper to start based on the
     // presence of Wi-Fi credentials
     ESP_LOGI("[MAIN]", "Setup window expired, starting streaming services, quitting serial manager.");
@@ -102,8 +104,9 @@ void start_video_streaming(void *arg) {
             break;
     }
 
-    const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
-    disable_serial_manager_task(serialTaskHandle);
+    if (serialTaskHandle != nullptr) {
+        disable_serial_manager_task(serialTaskHandle);
+    }
 }
 
 esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter) {
@@ -122,7 +125,12 @@ esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter) {
 }
 
 extern "C" void app_main(void) {
-    TaskHandle_t *serialManagerHandle = nullptr;
+    // --- FIX: Use a real TaskHandle_t variable instead of a pointer ---
+    // Previously: TaskHandle_t* serialManagerHandle = nullptr;
+    // This caused xTaskCreate() to never store a valid handle,
+    // leading to random failures when deleting the task in the timer callback.
+    TaskHandle_t serialManagerHandle = nullptr;
+
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     // uvc plan
@@ -197,13 +205,15 @@ extern "C" void app_main(void) {
     deviceConfig->load();
     serialManager->setup();
 
+    // Pass address of variable so xTaskCreate() stores the actual task handle
     xTaskCreate(
         HandleSerialManagerTask,
         "HandleSerialManagerTask",
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        serialManagerHandle);
+        &serialManagerHandle
+    );
 
     wifiManager.Begin();
     mdnsManager.start();
@@ -218,7 +228,8 @@ extern "C" void app_main(void) {
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
 
-    timerHandle = createStartVideoStreamingTimer(serialManagerHandle);
+    // Pass the actual TaskHandle_t value into the timer
+    timerHandle = createStartVideoStreamingTimer((void*)serialManagerHandle);
     if (timerHandle != nullptr) {
         esp_timer_start_once(timerHandle, 30000000); // 30s
     }
