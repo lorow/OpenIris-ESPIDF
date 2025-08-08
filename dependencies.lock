@@ -77,7 +77,7 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.3.3
+    version: 5.4.2
 direct_dependencies:
 - espressif/esp32-camera
 - espressif/led_strip
