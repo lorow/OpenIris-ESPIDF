@@ -231,6 +231,6 @@ extern "C" void app_main(void) {
     // Pass the actual TaskHandle_t value into the timer
     timerHandle = createStartVideoStreamingTimer((void*)serialManagerHandle);
     if (timerHandle != nullptr) {
-        esp_timer_start_once(timerHandle, 30000000); // 30s
+        esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000);
     }
 }

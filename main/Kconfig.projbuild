@@ -10,6 +10,24 @@ menu "OpenIris: General Configuration"
         bool "Wired mode"
         default false
 
+    config GENERAL_UVC_DELAY
+        int "UVC delay (s)"
+        default 30
+        range 10 10000
+        help
+            Delay in seconds before the ESP reports itself as a UVC device.
+
+endmenu
+
+menu "OpenIris: Camera Configuration"
+
+    config Camera_USB_XCLK_FREQ
+        int "USB XCLK frequency (Hz)"
+        default 20000000
+        range 1 40000000
+        help
+            USB XCLK frequency in Hertz.
+
 endmenu
 
 menu "OpenIris: WiFi Configuration"

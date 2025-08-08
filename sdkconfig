@@ -554,7 +554,14 @@ CONFIG_ENV_GPIO_OUT_RANGE_MAX=48
 # OpenIris: General Configuration
 #
 CONFIG_WIRED_MODE=y
+CONFIG_GENERAL_UVC_DELAY=30
 # end of OpenIris: General Configuration
+
+#
+# OpenIris: Camera Configuration
+#
+CONFIG_Camera_USB_XCLK_FREQ=23000000
+# end of OpenIris: Camera Configuration
 
 #
 # OpenIris: WiFi Configuration
