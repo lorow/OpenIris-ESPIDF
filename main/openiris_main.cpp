@@ -25,8 +25,8 @@
 #include <UVCStream.hpp>
 #endif
 
-#define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
-#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
+#define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
+#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
