@@ -111,7 +111,7 @@ esp_err_t UVCStreamManager::setup()
 
 #ifndef CONFIG_GENERAL_WIRED_MODE
   ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
-  return;
+  return ESP_FAIL;
 #endif
 
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");

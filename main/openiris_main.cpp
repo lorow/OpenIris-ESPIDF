@@ -90,13 +90,21 @@ void start_video_streaming(void *arg) {
                 ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
                 streamServer.startStreamServer();
             } else {
+            #ifdef CONFIG_GENERAL_WIRED_MODE
                 ESP_LOGI("[MAIN]", "UVC setup detected, starting UVC streaming.");
                 uvcStream.setup();
+            #else
+                ESP_LOGW("[MAIN]", "UVC streaming not supported in this configuration.");
+            #endif
             }
             break;
         case StreamingMode::UVC:
+        #ifdef CONFIG_GENERAL_WIRED_MODE
             ESP_LOGI("[MAIN]", "Device set to UVC Mode, starting UVC streaming.");
             uvcStream.setup();
+        #else
+            ESP_LOGW("[MAIN]", "UVC streaming not supported in this configuration.");
+        #endif
             break;
         case StreamingMode::WIFI:
             ESP_LOGI("[MAIN]", "Device set to Wi-Fi mode, starting WiFi streaming.");
