@@ -21,7 +21,7 @@
 #include <SerialManager.hpp>
 #include <RestAPI.hpp>
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
 
@@ -48,7 +48,7 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 

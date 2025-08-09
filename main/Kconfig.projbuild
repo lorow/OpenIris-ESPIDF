@@ -6,7 +6,7 @@ endmenu
 
 menu "OpenIris: General Configuration"
 
-    config WIRED_MODE
+    config GENERAL_WIRED_MODE
         bool "Wired mode"
         default false
 
@@ -39,7 +39,7 @@ endmenu
 
 menu "OpenIris: WiFi Configuration"
 
-    config MDNS_HOSTNAME
+    config WIFI_MDNS_HOSTNAME
         string "mDNS hostname"
         default "openiristracker"
 
@@ -51,11 +51,11 @@ menu "OpenIris: WiFi Configuration"
         string "WiFi password"
         default ""
 
-    config AP_WIFI_SSID
+    config WIFI_AP_SSID
         string "Access Point WiFi network name (SSID)"
         default "EyeTrackVR"
 
-    config AP_WIFI_PASSWORD
+    config WIFI_AP_PASSWORD
         string "Access Point WiFi password"
         default "12345678"
 
