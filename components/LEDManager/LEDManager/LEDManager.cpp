@@ -78,32 +78,35 @@ void LEDManager::setup() {
     gpio_set_direction(blink_led_pin, GPIO_MODE_OUTPUT);
     this->toggleLED(LED_OFF);
 
-#ifdef CONFIG_SUPPORTS_EXTERNAL_LED_CONTROL
-  ESP_LOGD(LED_MANAGER_TAG, "Setting up illuminator led.");
-  const int freq = 5000;
-  const auto resolution = LEDC_TIMER_8_BIT;
-  const int dutyCycle = 255;
+#ifdef CONFIG_LED_EXTERNAL_CONTROL
+    ESP_LOGD(LED_MANAGER_TAG, "Setting up illuminator led.");
+    const int freq = CONFIG_LED_EXTERNAL_PWM_FREQ;
+    const auto resolution = LEDC_TIMER_8_BIT;
+    const int dutyCycle = (CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE * 255) / 100;
 
-  ledc_timer_config_t ledc_timer = {
-      .speed_mode = LEDC_LOW_SPEED_MODE,
-      .duty_resolution = resolution,
-      .timer_num = LEDC_TIMER_0,
-      .freq_hz = freq,
-      .clk_cfg = LEDC_AUTO_CLK};
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = resolution,
+        .timer_num = LEDC_TIMER_0,
+        .freq_hz = freq,
+        .clk_cfg = LEDC_AUTO_CLK
+    };
 
-  ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
-  ledc_channel_config_t ledc_channel = {
-      .gpio_num = this->illumninator_led_pin,
-      .speed_mode = LEDC_LOW_SPEED_MODE,
-      .channel = LEDC_CHANNEL_0,
-      .intr_type = LEDC_INTR_DISABLE,
-      .timer_sel = LEDC_TIMER_0,
-      .duty = dutyCycle,
-      .hpoint = 0};
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num = this->illumninator_led_pin,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = dutyCycle,
+        .hpoint = 0
+    };
 
-  ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 #endif
+
     ESP_LOGD(LED_MANAGER_TAG, "Done.");
 }
 

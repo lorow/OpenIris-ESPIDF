@@ -18,8 +18,8 @@ void CameraManager::setupCameraPinout()
   // 10000000 stable
   // 16500000 optimal freq on ESP32-CAM (default)
   // 20000000 max freq on ESP32-CAM
-  // 24000000 optimal freq on ESP32-S3
-  int xclk_freq_hz = DEFAULT_XCLK_FREQ_HZ;
+  // 24000000 optimal freq on ESP32-S3 // 23MHz same fps
+  int xclk_freq_hz = CONFIG_CAMERA_WIFI_XCLK_FREQ;
 
 #if CONFIG_CAMERA_MODULE_ESP_EYE
   /* IO13, IO14 is designed for JTAG by default,
@@ -48,8 +48,8 @@ void CameraManager::setupCameraPinout()
 
   ESP_LOGI(CAMERA_MANAGER_TAG, "CAM_BOARD");
 #endif
-#if CONFIG_WIRED_MODE
-  xclk_freq_hz = USB_DEFAULT_XCLK_FREQ_HZ;
+#if CONFIG_GENERAL_WIRED_MODE
+  xclk_freq_hz = CONFIG_CAMERA_USB_XCLK_FREQ;
 #endif
 
   config = {
@@ -71,8 +71,7 @@ void CameraManager::setupCameraPinout()
       .pin_href = CONFIG_HREF_GPIO_NUM,   // CAM_PIN_HREF,
       .pin_pclk = CONFIG_PCLK_GPIO_NUM,   // CAM_PIN_PCLK,
 
-      // XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-      .xclk_freq_hz = xclk_freq_hz, // 20000000,
+      .xclk_freq_hz = xclk_freq_hz, // Set in config
       .ledc_timer = LEDC_TIMER_0,
       .ledc_channel = LEDC_CHANNEL_0,
 
@@ -80,10 +79,10 @@ void CameraManager::setupCameraPinout()
       .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
       .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-      .jpeg_quality = 7,                   // 0-63, for OV series camera sensors, lower number means higher quality
-      .fb_count = 2,                       // 3                    // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-      .fb_location = CAMERA_FB_IN_PSRAM,   // maybe it cannot put them fully in psram?
-      .grab_mode = CAMERA_GRAB_WHEN_EMPTY, // CAMERA_GRAB_LATEST
+      .jpeg_quality = 7,                   // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
+      .fb_count = 2,                       // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+      .fb_location = CAMERA_FB_IN_DRAM,   
+      .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
   };
 }
 
@@ -95,7 +94,7 @@ void CameraManager::setupBasicResolution()
     ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM not initialized!");
     ESP_LOGD(CAMERA_MANAGER_TAG, "Setting fb_location to CAMERA_FB_IN_DRAM with lower picture quality");
     config.fb_location = CAMERA_FB_IN_DRAM;
-    config.jpeg_quality = 9;
+    config.jpeg_quality = 7;
     config.fb_count = 2;
     return;
   }
@@ -197,7 +196,7 @@ bool CameraManager::setupCamera()
     return false;
   }
 
-#if CONFIG_WIRED_MODE
+#if CONFIG_GENERAL_WIRED_MODE
   const auto temp_sensor = esp_camera_sensor_get();
 
   // Thanks to lick_it, we discovered that OV5640 likes to overheat when

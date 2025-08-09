@@ -1,56 +1,104 @@
-menu "OpenIris basic configuration"
+menu "ENV_Caps"
 
     orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
-    config BLINK_GPIO
-        int "Blink GPIO number"
-        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-        default 8
-        help
-            GPIO number (IOxx) to blink on and off the LED.
-            Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
+endmenu
 
-    config SUPPORTS_EXTERNAL_LED_CONTROL
-        bool "Tick if your board supports the control of external IR leds (Project Babble)"
-        default false
-        help
-            GPIO number (IOxx) to the pin controlling the LEDs found on Babble boards.
-        
-    config LED_C_PIN
-        int "Pin number of the pin controlling the external leds (Project Babble)"
-        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-        default 1
-        help
-            GPIO number (IOxx) to the pin controlling the LEDs found on Babble boards.
-    
-    config BLINK_PERIOD
-        int "Blink period in ms"
-        range 10 3600000
-        default 1000
-        help
-            Define the blinking period in milliseconds.
+menu "OpenIris: General Configuration"
 
-    config WIRED_MODE
-        bool "WIred mode"
+    config GENERAL_WIRED_MODE
+        bool "Wired mode"
         default false
 
-    config MDNS_HOSTNAME
-        string "mDNS name"
+    config GENERAL_UVC_DELAY
+        int "UVC delay (s)"
+        default 30
+        range 10 10000
+        help
+            Delay in seconds before the ESP reports itself as a UVC device.
+
+endmenu
+
+menu "OpenIris: Camera Configuration"
+
+    config CAMERA_USB_XCLK_FREQ
+        int "USB XCLK frequency (Hz)"
+        default 10000000 # should be set in individual board config 
+        range 1 24000000
+        help
+            USB XCLK frequency in Hz.
+
+    config CAMERA_WIFI_XCLK_FREQ
+        int "WIFI XCLK frequency (Hz)"
+        default 16500000
+        range 1 24000000
+        help
+            WIFI XCLK frequency in Hz.
+
+endmenu
+
+menu "OpenIris: WiFi Configuration"
+
+    config WIFI_MDNS_HOSTNAME
+        string "mDNS hostname"
         default "openiristracker"
 
     config WIFI_SSID
-        string "WiFi network name"
+        string "WiFi network name (SSID)"
         default ""
-    
+
     config WIFI_PASSWORD
         string "WiFi password"
         default ""
 
-    config AP_WIFI_SSID
-        string "AP WiFi network name"
+    config WIFI_AP_SSID
+        string "Access Point WiFi network name (SSID)"
         default "EyeTrackVR"
-    
-    config AP_WIFI_PASSWORD
-        string "AP WiFi password"
+
+    config WIFI_AP_PASSWORD
+        string "Access Point WiFi password"
         default "12345678"
+
+endmenu
+
+menu "OpenIris: LED Configuration"
+
+    config LED_BLINK_GPIO
+        int "Blink GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 8
+        help
+            GPIO number (IOxx) used to blink an onboard LED.
+            Some GPIOs are reserved for other functions (e.g. flash) and cannot be used.
+
+    config LED_EXTERNAL_GPIO
+        int "GPIO pin controlling external LEDs"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 1
+        help
+            GPIO number connected to the control line of the external IR LEDs.
+
+    config LED_EXTERNAL_CONTROL
+        bool "Board supports external IR LED control"
+        default false
+        help
+            Enable this if your board can control external IR LEDs.
+
+    config LED_EXTERNAL_PWM_FREQ
+        int "External LED PWM frequency (Hz)"
+        default 5000
+        range 1 40000
+        depends on LED_EXTERNAL_CONTROL
+        help
+            Frequency of the PWM signal driving the external IR LEDs.
+
+    config LED_EXTERNAL_PWM_DUTY_CYCLE
+        int "External LED PWM duty cycle (%)"
+        default 50
+        range 0 100
+        depends on LED_EXTERNAL_CONTROL
+        help
+            Duty cycle of the PWM signal for external IR LEDs, in percent.
+            0 means always off, 100 means always on.
+
 endmenu

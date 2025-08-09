@@ -152,8 +152,8 @@ void WiFiManager::SetupAccessPoint()
 
   wifi_config_t ap_wifi_config = {
       .ap = {
-          .ssid = CONFIG_AP_WIFI_SSID,
-          .password = CONFIG_AP_WIFI_PASSWORD,
+          .ssid = CONFIG_WIFI_AP_SSID,
+          .password = CONFIG_WIFI_AP_PASSWORD,
           .max_connection = 1,
 
       },
