@@ -11,7 +11,8 @@ sdkconfig_defaults = "sdkconfig.base_defaults"
 supported_boards = [
   "xiao-esp32s3",
   "project_babble",
-  "facefocusvr_face"
+  "facefocusvr_face",
+  "facefocusvr_eye"
 ]
 
 parser = argparse.ArgumentParser()
