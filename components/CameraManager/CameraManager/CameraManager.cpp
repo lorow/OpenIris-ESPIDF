@@ -18,7 +18,7 @@ void CameraManager::setupCameraPinout()
   // 10000000 stable
   // 16500000 optimal freq on ESP32-CAM (default)
   // 20000000 max freq on ESP32-CAM
-  // 24000000 optimal freq on ESP32-S3
+  // 24000000 optimal freq on ESP32-S3 // 23MHz same fps
   int xclk_freq_hz = DEFAULT_XCLK_FREQ_HZ;
 
 #if CONFIG_CAMERA_MODULE_ESP_EYE

@@ -21,12 +21,19 @@ endmenu
 
 menu "OpenIris: Camera Configuration"
 
-    config Camera_USB_XCLK_FREQ
+    config CAMERA_USB_XCLK_FREQ
         int "USB XCLK frequency (Hz)"
-        default 20000000
-        range 1 40000000
+        default 10000000 # should be set in individual board config 
+        range 1 24000000
         help
-            USB XCLK frequency in Hertz.
+            USB XCLK frequency in Hz.
+
+    config CAMERA_WIFI_XCLK_FREQ
+        int "WIFI XCLK frequency (Hz)"
+        default 16500000
+        range 1 24000000
+        help
+            WIFI XCLK frequency in Hz.
 
 endmenu
 
