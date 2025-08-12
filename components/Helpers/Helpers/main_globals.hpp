@@ -7,22 +7,18 @@
 #include "freertos/task.h"
 
 // Functions for main to set global handles
-void setStreamingTimerHandle(esp_timer_handle_t* handle);
-void setSerialManagerHandle(TaskHandle_t* handle);
 
 // Functions to access global handles from components
-esp_timer_handle_t* getStreamingTimerHandle();
-TaskHandle_t* getSerialManagerHandle();
+TaskHandle_t *getSerialManagerHandle();
+void setSerialManagerHandle(TaskHandle_t *serialManagerHandle);
 
 // Function to manually activate streaming
 void activateStreaming(bool disableSetup = false);
 
-// Function to notify that a command was received during startup
-extern void notify_startup_command_received();
+bool getStartupCommandReceived();
+void setStartupCommandReceived(bool startupCommandReceived);
 
-// Global variables for startup state
-extern bool startupCommandReceived;
-extern esp_timer_handle_t startupTimerHandle;
-extern bool startupPaused;
+bool getStartupPaused();
+void setStartupPaused(bool startupPaused);
 
 #endif

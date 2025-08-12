@@ -9,7 +9,6 @@
 #include "Models.hpp"
 #include <Preferences.hpp>
 
-
 int getNetworkCount(Preferences *pref);
 
 void saveNetworkCount(Preferences *pref, int count);
@@ -60,7 +59,7 @@ public:
                        const std::string &password,
                        uint8_t channel);
   void setWiFiTxPower(uint8_t power);
-    void setDeviceMode(StreamingMode deviceMode);
+  void setDeviceMode(StreamingMode deviceMode);
   StreamingMode getDeviceMode();
 
 private:

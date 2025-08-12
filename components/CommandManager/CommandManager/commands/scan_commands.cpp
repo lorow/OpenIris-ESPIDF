@@ -1,11 +1,10 @@
 #include "scan_commands.hpp"
-#include "cJSON.h"
-#include "esp_log.h"
-#include <string>
 
-CommandResult scanNetworksCommand(std::shared_ptr<DependencyRegistry> registry) {
+CommandResult scanNetworksCommand(std::shared_ptr<DependencyRegistry> registry)
+{
     auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
-    if (!wifiManager) {
+    if (!wifiManager)
+    {
         return CommandResult::getErrorResult("WiFiManager not available");
     }
 
@@ -15,7 +14,8 @@ CommandResult scanNetworksCommand(std::shared_ptr<DependencyRegistry> registry) 
     cJSON *networksArray = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "networks", networksArray);
 
-    for (const auto& network : networks) {
+    for (const auto &network : networks)
+    {
         cJSON *networkObject = cJSON_CreateObject();
         cJSON_AddStringToObject(networkObject, "ssid", network.ssid.c_str());
         cJSON_AddNumberToObject(networkObject, "channel", network.channel);

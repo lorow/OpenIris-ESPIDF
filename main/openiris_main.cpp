@@ -30,10 +30,8 @@
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
 
 esp_timer_handle_t timerHandle;
-esp_timer_handle_t startupTimerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
-bool startupCommandReceived = false;
 
 auto *stateManager = new StateManager(eventQueue, ledStateQueue);
 auto dependencyRegistry = std::make_shared<DependencyRegistry>();
@@ -99,22 +97,16 @@ void start_video_streaming(void *arg)
     {
 #ifdef CONFIG_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
-        // Initialize UVC if not already done
-        static bool uvcInitialized = false;
-        if (!uvcInitialized)
+        ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
+        esp_err_t ret = uvcStream.setup();
+        if (ret != ESP_OK)
         {
-            ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
-            esp_err_t ret = uvcStream.setup();
-            if (ret != ESP_OK)
-            {
-                ESP_LOGE("[MAIN]", "Failed to initialize UVC: %s", esp_err_to_name(ret));
-                return;
-            }
-            uvcInitialized = true;
+            ESP_LOGE("[MAIN]", "Failed to initialize UVC: %s", esp_err_to_name(ret));
+            return;
         }
         uvcStream.start();
 #else
-        ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_WIRED_MODE not enabled in build!");
+        ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
         ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
         deviceMode = StreamingMode::WIFI;
 #endif
@@ -159,10 +151,10 @@ void activate_streaming(TaskHandle_t serialTaskHandle = nullptr)
 void startup_timer_callback(void *arg)
 {
     ESP_LOGI("[MAIN]", "Startup timer fired, startupCommandReceived=%s, startupPaused=%s",
-             startupCommandReceived ? "true" : "false",
-             startupPaused ? "true" : "false");
+             getStartupCommandReceived() ? "true" : "false",
+             getStartupPaused() ? "true" : "false");
 
-    if (!startupCommandReceived && !startupPaused)
+    if (!getStartupCommandReceived() && !getStartupPaused())
     {
         ESP_LOGI("[MAIN]", "No command received during startup delay, proceeding with automatic mode startup");
 
@@ -216,7 +208,7 @@ void startup_timer_callback(void *arg)
     }
     else
     {
-        if (startupPaused)
+        if (getStartupPaused())
         {
             ESP_LOGI("[MAIN]", "Startup paused, staying in heartbeat mode");
         }
@@ -227,23 +219,8 @@ void startup_timer_callback(void *arg)
     }
 
     // Delete the timer after it fires
-    esp_timer_delete(startupTimerHandle);
-    startupTimerHandle = nullptr;
-}
-
-// Function to notify that a command was received during startup
-void notify_startup_command_received()
-{
-    startupCommandReceived = true;
-
-    // Cancel the startup timer if it's still running
-    if (startupTimerHandle != nullptr)
-    {
-        esp_timer_stop(startupTimerHandle);
-        esp_timer_delete(startupTimerHandle);
-        startupTimerHandle = nullptr;
-        ESP_LOGI("[MAIN]", "Startup timer cancelled, staying in heartbeat mode");
-    }
+    esp_timer_delete(timerHandle);
+    timerHandle = nullptr;
 }
 
 extern "C" void app_main(void)
@@ -337,9 +314,6 @@ extern "C" void app_main(void)
     restAPI->begin();
     cameraHandler->setupCamera();
 
-    // Don't initialize UVC here - wait for the timer to decide
-    // UVC will be initialized when streaming actually starts
-
     xTaskCreate(
         HandleRestAPIPollTask,
         "HandleRestAPIPollTask",
@@ -354,23 +328,6 @@ extern "C" void app_main(void)
     ESP_LOGI("[MAIN]", "=====================================");
     ESP_LOGI("[MAIN]", "Device will wait 20 seconds for commands...");
 
-    // Get the stored device mode
-    StreamingMode deviceMode = deviceConfig->getDeviceMode();
-    ESP_LOGI("[MAIN]", "Stored device mode: %s (value: %d)",
-             deviceMode == StreamingMode::UVC ? "UVC" : deviceMode == StreamingMode::WIFI ? "WiFi"
-                                                                                          : "Auto",
-             (int)deviceMode);
-
-    // If WiFi credentials exist, attempt connection but stay in setup mode
-    if (!deviceConfig->getWifiConfigs().empty())
-    {
-        ESP_LOGI("[MAIN]", "WiFi credentials found, attempting connection in background");
-        // WiFi connection happens in wifiManager->Begin() above
-    }
-
-    // Reset startup state
-    startupCommandReceived = false;
-
     // Create a one-shot timer for 20 seconds
     const esp_timer_create_args_t startup_timer_args = {
         .callback = &startup_timer_callback,
@@ -379,13 +336,10 @@ extern "C" void app_main(void)
         .name = "startup_timer",
         .skip_unhandled_events = false};
 
-    ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &startupTimerHandle));
-    ESP_ERROR_CHECK(esp_timer_start_once(startupTimerHandle, 20000000)); // 20 seconds in microseconds
+    ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &timerHandle));
+    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, 20000000)); // 20 seconds in microseconds
 
     ESP_LOGI("[MAIN]", "Started 20-second startup timer");
     ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
-
-    // Set global handles for component access
-    setStreamingTimerHandle(&timerHandle);
     setSerialManagerHandle(&serialManagerHandle);
 }

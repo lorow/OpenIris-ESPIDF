@@ -28,7 +28,7 @@ class ESPWiFiScanner:
 
         self.serial.reset_input_buffer()
         
-        command = '{"commands":[{"command":"scan_networks","data":{}}]}\n'
+        command = '{"commands":[{"command":"scan_networks"}]}\n'
         self.serial.write(command.encode())
         
         timeout_start = time.time()
@@ -92,7 +92,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='ESP32 WiFi Scanner')
-    parser.add_argument('port', nargs='?', default='COM15', help='Serial port (default: COM9)')
+    parser.add_argument('port', nargs='?', help='Serial port - COM1, /dev/ttyUSB0, etc.')
     parser.add_argument('-t', '--timeout', type=int, default=30, 
                         help='Scan timeout in seconds (default: 30)')
     args = parser.parse_args()
