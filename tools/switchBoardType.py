@@ -10,7 +10,9 @@ ENDC = '\033[0m'
 sdkconfig_defaults = "sdkconfig.base_defaults"
 supported_boards = [
   "xiao-esp32s3",
-  "project_babble"
+  "project_babble",
+  "facefocusvr_face",
+  "facefocusvr_eye"
 ]
 
 parser = argparse.ArgumentParser()

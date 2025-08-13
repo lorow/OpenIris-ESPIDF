@@ -22,12 +22,12 @@
 #include <RestAPI.hpp>
 #include <main_globals.hpp>
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
 
-#define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
-#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
+#define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
+#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
@@ -49,7 +49,7 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
@@ -95,7 +95,7 @@ void start_video_streaming(void *arg)
 
     if (deviceMode == StreamingMode::UVC)
     {
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
         ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
         esp_err_t ret = uvcStream.setup();
@@ -193,12 +193,12 @@ void startup_timer_callback(void *arg)
         }
         else if (deviceMode == StreamingMode::UVC)
         {
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
             ESP_LOGI("[MAIN]", "Starting UVC streaming automatically");
             activate_streaming(serialTaskHandle);
 #else
-            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_WIRED_MODE not enabled in build!");
-            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_WIRED_MODE and rebuild.");
+            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_WIRED_MODE not enabled in build!");
+            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_WIRED_MODE and rebuild.");
 #endif
         }
         else
@@ -301,13 +301,15 @@ extern "C" void app_main(void)
     serialManager->setup();
 
     static TaskHandle_t serialManagerHandle = nullptr;
+    // Pass address of variable so xTaskCreate() stores the actual task handle
     xTaskCreate(
         HandleSerialManagerTask,
         "HandleSerialManagerTask",
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        &serialManagerHandle);
+        &serialManagerHandle
+    );
 
     wifiManager->Begin();
     mdnsManager.start();
@@ -337,8 +339,7 @@ extern "C" void app_main(void)
         .skip_unhandled_events = false};
 
     ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &timerHandle));
-    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, 20000000)); // 20 seconds in microseconds
-
+    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000));
     ESP_LOGI("[MAIN]", "Started 20-second startup timer");
     ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
     setSerialManagerHandle(&serialManagerHandle);

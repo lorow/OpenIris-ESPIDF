@@ -6,7 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
-#ifdef CONFIG_SUPPORTS_EXTERNAL_LED_CONTROL
+#ifdef CONFIG_LED_EXTERNAL_CONTROL
 #include "driver/ledc.h"
 #endif
 
