@@ -22,19 +22,18 @@ public:
   CommandResult(std::string message, const Status status)
   {
     this->status = status;
+
     // Escape quotes and backslashes in the message for JSON
     std::string escapedMessage = message;
     size_t pos = 0;
     // First escape backslashes
-    while ((pos = escapedMessage.find('\\', pos)) != std::string::npos)
-    {
+    while ((pos = escapedMessage.find('\\', pos)) != std::string::npos) {
       escapedMessage.replace(pos, 1, "\\\\");
       pos += 2;
     }
     // Then escape quotes
     pos = 0;
-    while ((pos = escapedMessage.find('"', pos)) != std::string::npos)
-    {
+    while ((pos = escapedMessage.find('"', pos)) != std::string::npos) {
       escapedMessage.replace(pos, 1, "\\\"");
       pos += 2;
     }

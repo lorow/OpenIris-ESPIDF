@@ -93,7 +93,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='ESP32 WiFi Scanner')
     parser.add_argument('port', nargs='?', help='Serial port - COM1, /dev/ttyUSB0, etc.')
-    parser.add_argument('-t', '--timeout', type=int, default=30, 
+    parser.add_argument('-t', '--timeout', type=int, default=30,
                         help='Scan timeout in seconds (default: 30)')
     args = parser.parse_args()
     

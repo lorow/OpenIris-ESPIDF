@@ -300,7 +300,7 @@ class OpenIrisDevice:
         
         print("✅ WiFi credentials set successfully")
         return True
-    
+
     def set_mdns_name(self, name: str) -> bool:
         """Configure the MDNS hostname"""
 
@@ -308,7 +308,7 @@ class OpenIrisDevice:
         print("    The device should be accessible under")
         print(f"http://{name}.local/")
         print("\n    Note, this will also modify the name of the UVC device")
-        
+
         params = {
             "hostname": name
         }
@@ -317,7 +317,7 @@ class OpenIrisDevice:
         if "error" in response:
             print(f"❌ MDNS name setup failed: {response['error']}")
             return False
-        
+
         print("✅ MDNS name set successfully")
         return True
 
@@ -600,14 +600,14 @@ def configure_wifi(device: OpenIrisDevice, args = None):
     if not device.networks:
         print("❌ No networks available. Please scan first.")
         return
-     
+
     display_networks(device)
-    
+
     while True:
         net_choice = input("\nEnter network number (or 'back'): ").strip()
         if net_choice.lower() == 'back':
             break
-        
+
         try:
             net_idx = int(net_choice) - 1
         except ValueError:
@@ -615,19 +615,19 @@ def configure_wifi(device: OpenIrisDevice, args = None):
             continue
 
         sorted_networks = sorted(device.networks, key=lambda x: x.rssi, reverse=True)
-        
+
         if 0 <= net_idx < len(sorted_networks):
             selected_network = sorted_networks[net_idx]
-            
+
             print(f"\n🔐 Selected: {selected_network.ssid}")
             print(f"Security: {selected_network.security_type}")
-            
+
             if selected_network.auth_mode == 0:  # Open network
                 password = ""
                 print("🔓 Open network - no password required")
             else:
                 password = input("Enter WiFi password: ")
-            
+
             if device.set_wifi(selected_network.ssid, password):
                 print("✅ WiFi configured successfully!")
                 print("💡 Next steps:")
@@ -650,9 +650,9 @@ def configure_mdns(device: OpenIrisDevice, args = None):
             print("❌ Please avoid spaces and special characters")
         else:
             break
-    
+
     if name_choice.lower() == "back":
-        return 
+        return
 
     if device.set_mdns_name(name_choice):
         print("✅ MDNS configured successfully!")
@@ -721,11 +721,11 @@ def switch_device_mode(device: OpenIrisDevice, args = None):
     print(f"\n📍 Current device mode: {current_mode}")
     print("\n🔄 Select new device mode:")
     print("1. WiFi - Stream over WiFi connection")
-    print("2. UVC - Stream as USB webcam")  
+    print("2. UVC - Stream as USB webcam")
     print("3. Auto - Automatic mode selection")
-    
+
     mode_choice = input("\nSelect mode (1-3): ").strip()
-    
+
     if mode_choice == "1":
         device.switch_mode("wifi")
     elif mode_choice == "2":
@@ -747,7 +747,7 @@ COMMANDS_MAP = {
     "4": configure_mdns,
     "5": configure_mdns,
     "6": check_wifi_status,
-    "7": attempt_wifi_connection, 
+    "7": attempt_wifi_connection,
     "8": start_streaming,
     "9": switch_device_mode,
     "10": monitor_logs,
@@ -851,7 +851,7 @@ def main():
             print("10. 📋 Monitor logs")
             print("exit. 🚪 Exit")
             choice = input("\nSelect option (1-10): ").strip()
-            
+
             if choice == "exit":
                 break
 
@@ -861,7 +861,7 @@ def main():
                 continue
 
             command_to_run(device, args)
-    
+
     except KeyboardInterrupt:
         print("\n🛑 Setup interrupted")
     

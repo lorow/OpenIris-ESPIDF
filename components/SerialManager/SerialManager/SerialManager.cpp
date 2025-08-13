@@ -105,8 +105,6 @@ bool SerialManager::should_send_heartbeat()
 void HandleSerialManagerTask(void *pvParameters)
 {
   auto const serialManager = static_cast<SerialManager *>(pvParameters);
-  TickType_t lastHeartbeat = xTaskGetTickCount();
-  const TickType_t heartbeatInterval = pdMS_TO_TICKS(2000); // 2 second heartbeat
 
   while (true)
   {
