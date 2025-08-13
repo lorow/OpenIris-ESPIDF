@@ -80,7 +80,7 @@ struct MDNSConfig_t : BaseConfigModel
   {
     // by default, this will be openiris
     // but we can override it at compile time
-    std::string default_hostname = CONFIG_MDNS_HOSTNAME;
+    std::string default_hostname = CONFIG_WIFI_MDNS_HOSTNAME;
 
     if (default_hostname.empty())
     {
@@ -214,8 +214,8 @@ struct AP_WiFiConfig_t : BaseConfigModel
 
   void load()
   {
-    this->ssid = this->pref->getString("apSSID", CONFIG_AP_WIFI_SSID);
-    this->password = this->pref->getString("apPassword", CONFIG_AP_WIFI_PASSWORD);
+    this->ssid = this->pref->getString("apSSID", CONFIG_WIFI_AP_SSID);
+    this->password = this->pref->getString("apPassword", CONFIG_WIFI_AP_PASSWORD);
   };
 
   void save() const {

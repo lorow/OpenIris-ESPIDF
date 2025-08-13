@@ -21,12 +21,12 @@
 #include <SerialManager.hpp>
 #include <RestAPI.hpp>
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
 
-#define BLINK_GPIO (gpio_num_t) CONFIG_BLINK_GPIO
-#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_C_PIN
+#define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
+#define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
@@ -48,7 +48,7 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_WIRED_MODE
+#ifdef CONFIG_GENERAL_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
@@ -78,6 +78,8 @@ void disable_serial_manager_task(TaskHandle_t serialManagerHandle) {
 // if we get anything on the serial, we stop the timer and reset it after the commands are done
 // this is done to ensure the user has enough time to configure the board if need be
 void start_video_streaming(void *arg) {
+    TaskHandle_t serialTaskHandle = (TaskHandle_t)arg; // retrieve task handle from arg
+
     // if we're in auto-mode, we can decide which streaming helper to start based on the
     // presence of Wi-Fi credentials
     ESP_LOGI("[MAIN]", "Setup window expired, starting streaming services, quitting serial manager.");
@@ -88,13 +90,21 @@ void start_video_streaming(void *arg) {
                 ESP_LOGI("[MAIN]", "WiFi setup detected, starting WiFi streaming.");
                 streamServer.startStreamServer();
             } else {
+            #ifdef CONFIG_GENERAL_WIRED_MODE
                 ESP_LOGI("[MAIN]", "UVC setup detected, starting UVC streaming.");
                 uvcStream.setup();
+            #else
+                ESP_LOGW("[MAIN]", "UVC streaming not supported in this configuration.");
+            #endif
             }
             break;
         case StreamingMode::UVC:
+        #ifdef CONFIG_GENERAL_WIRED_MODE
             ESP_LOGI("[MAIN]", "Device set to UVC Mode, starting UVC streaming.");
             uvcStream.setup();
+        #else
+            ESP_LOGW("[MAIN]", "UVC streaming not supported in this configuration.");
+        #endif
             break;
         case StreamingMode::WIFI:
             ESP_LOGI("[MAIN]", "Device set to Wi-Fi mode, starting WiFi streaming.");
@@ -102,8 +112,9 @@ void start_video_streaming(void *arg) {
             break;
     }
 
-    const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
-    disable_serial_manager_task(serialTaskHandle);
+    if (serialTaskHandle != nullptr) {
+        disable_serial_manager_task(serialTaskHandle);
+    }
 }
 
 esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter) {
@@ -122,7 +133,12 @@ esp_timer_handle_t createStartVideoStreamingTimer(void *pvParameter) {
 }
 
 extern "C" void app_main(void) {
-    TaskHandle_t *serialManagerHandle = nullptr;
+    // --- FIX: Use a real TaskHandle_t variable instead of a pointer ---
+    // Previously: TaskHandle_t* serialManagerHandle = nullptr;
+    // This caused xTaskCreate() to never store a valid handle,
+    // leading to random failures when deleting the task in the timer callback.
+    TaskHandle_t serialManagerHandle = nullptr;
+
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     // uvc plan
@@ -197,13 +213,15 @@ extern "C" void app_main(void) {
     deviceConfig->load();
     serialManager->setup();
 
+    // Pass address of variable so xTaskCreate() stores the actual task handle
     xTaskCreate(
         HandleSerialManagerTask,
         "HandleSerialManagerTask",
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        serialManagerHandle);
+        &serialManagerHandle
+    );
 
     wifiManager.Begin();
     mdnsManager.start();
@@ -218,8 +236,9 @@ extern "C" void app_main(void) {
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
 
-    timerHandle = createStartVideoStreamingTimer(serialManagerHandle);
+    // Pass the actual TaskHandle_t value into the timer
+    timerHandle = createStartVideoStreamingTimer((void*)serialManagerHandle);
     if (timerHandle != nullptr) {
-        esp_timer_start_once(timerHandle, 30000000); // 30s
+        esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000);
     }
 }
