@@ -6,15 +6,19 @@ static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 extern "C" {
   static char serial_number_str[18];
 
-  const char *get_uvc_device_name() {
+  const char *get_uvc_device_name()
+  {
     return deviceConfig->getMDNSConfig().hostname.c_str();
   }
 
-  const char *get_serial_number(void) {
-    if (serial_number_str[0] == '\0') {
+  const char *get_serial_number(void)
+  {
+    if (serial_number_str[0] == '\0')
+    {
       uint8_t mac_address[6];
       esp_err_t result = esp_efuse_mac_get_default(mac_address);
-      if (result != ESP_OK) {
+      if (result != ESP_OK)
+      {
         ESP_LOGE(UVC_STREAM_TAG, "Failed to get MAC address of the board, returning default serial number");
         return CONFIG_TUSB_SERIAL_NUM;
       }
@@ -149,5 +153,12 @@ esp_err_t UVCStreamManager::setup()
   }
   ESP_LOGI(UVC_STREAM_TAG, "Initialized UVC Device");
 
+  return ESP_OK;
+}
+
+esp_err_t UVCStreamManager::start()
+{
+  ESP_LOGI(UVC_STREAM_TAG, "Starting UVC streaming");
+  // UVC device is already initialized in setup(), just log that we're starting
   return ESP_OK;
 }

@@ -38,8 +38,11 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
 
     if (!fb)
     {
-      ESP_LOGE(STREAM_SERVER_TAG, "Camera capture failed with resposne %s", esp_err_to_name(response));
+      ESP_LOGE(STREAM_SERVER_TAG, "Camera capture failed");
       response = ESP_FAIL;
+      // Don't break immediately, try to recover
+      vTaskDelay(pdMS_TO_TICKS(10));
+      continue;
     }
     else
     {
@@ -70,10 +73,15 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
     }
     if (response != ESP_OK)
       break;
-    long request_end = Helpers::getTimeInMillis();
-    long latency = (request_end - last_request_time);
-    last_request_time = request_end;
-    ESP_LOGI(STREAM_SERVER_TAG, "Size: %uKB, Time: %lims (%lifps)\n", _jpg_buf_len / 1024, latency, 1000 / latency);
+    
+    // Only log every 100 frames to reduce overhead
+    static int frame_count = 0;
+    if (++frame_count % 100 == 0) {
+      long request_end = Helpers::getTimeInMillis();
+      long latency = (request_end - last_request_time);
+      last_request_time = request_end;
+      ESP_LOGI(STREAM_SERVER_TAG, "Size: %uKB, Time: %lims (%lifps)", _jpg_buf_len / 1024, latency, 1000 / latency);
+    }
   }
   last_frame = 0;
   return response;
@@ -93,8 +101,9 @@ esp_err_t StreamServer::startStreamServer()
   config.max_uri_handlers = 10;
   config.server_port = STREAM_SERVER_PORT;
   config.ctrl_port = STREAM_SERVER_PORT;
-  config.recv_wait_timeout = 100;
-  config.send_wait_timeout = 100;
+  config.recv_wait_timeout = 5;    // 5 seconds for receiving
+  config.send_wait_timeout = 5;    // 5 seconds for sending
+  config.lru_purge_enable = true;  // Enable LRU purge for better connection handling
 
   httpd_uri_t stream_page = {
       .uri = "/",

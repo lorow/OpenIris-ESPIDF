@@ -1,7 +1,9 @@
 #include "CommandManager.hpp"
+#include <cstdlib>
 
 std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"ping", CommandType::PING},
+    {"pause", CommandType::PAUSE},
     {"set_wifi", CommandType::SET_WIFI},
     {"update_wifi", CommandType::UPDATE_WIFI},
     {"set_streaming_mode", CommandType::SET_STREAMING_MODE},
@@ -15,6 +17,12 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"get_config", CommandType::GET_CONFIG},
     {"reset_config", CommandType::RESET_CONFIG},
     {"restart_device", CommandType::RESTART_DEVICE},
+    {"scan_networks", CommandType::SCAN_NETWORKS},
+    {"start_streaming", CommandType::START_STREAMING},
+    {"get_wifi_status", CommandType::GET_WIFI_STATUS},
+    {"connect_wifi", CommandType::CONNECT_WIFI},
+    {"switch_mode", CommandType::SWITCH_MODE},
+    {"get_device_mode", CommandType::GET_DEVICE_MODE},
 };
 
 std::function<CommandResult()> CommandManager::createCommand(const CommandType type, std::string_view json) const {
@@ -22,6 +30,8 @@ std::function<CommandResult()> CommandManager::createCommand(const CommandType t
   {
   case CommandType::PING:
     return { PingCommand };
+  case CommandType::PAUSE:
+    return [json] { return PauseCommand(json); };
   case CommandType::SET_STREAMING_MODE:
       return [this, json] {return setDeviceModeCommand(this->registry, json); };
   case CommandType::UPDATE_OTA_CREDENTIALS:
@@ -48,6 +58,18 @@ std::function<CommandResult()> CommandManager::createCommand(const CommandType t
     return [this, json] { return resetConfigCommand(this->registry, json); };
   case CommandType::RESTART_DEVICE:
     return restartDeviceCommand;
+  case CommandType::SCAN_NETWORKS:
+    return [this] { return scanNetworksCommand(this->registry); };
+  case CommandType::START_STREAMING:
+    return startStreamingCommand;
+  case CommandType::GET_WIFI_STATUS:
+    return [this] { return getWiFiStatusCommand(this->registry); };
+  case CommandType::CONNECT_WIFI:
+    return [this] { return connectWiFiCommand(this->registry); };
+  case CommandType::SWITCH_MODE:
+    return [this, json] { return switchModeCommand(this->registry, json); };
+  case CommandType::GET_DEVICE_MODE:
+    return [this] { return getDeviceModeCommand(this->registry); };
   default:
     return nullptr;
   }
@@ -98,11 +120,15 @@ CommandResult CommandManager::executeFromJson(const std::string_view json) const
     cJSON_AddItemToArray(responses, response);
   }
 
-  const auto jsonString = cJSON_Print(responseDocument);
+  char *jsonString = cJSON_Print(responseDocument);
   cJSON_Delete(responseDocument);
   cJSON_Delete(parsedJson);
 
-  return CommandResult::getSuccessResult(jsonString);
+  // Return the JSON response directly without wrapping it
+  // The responseDocument already contains the proper format: {"results": [...]}
+  CommandResult result = CommandResult::getRawJsonResult(jsonString);
+  free(jsonString);
+  return result;
 }
 
 CommandResult CommandManager::executeFromType(const CommandType type, const std::string_view json) const

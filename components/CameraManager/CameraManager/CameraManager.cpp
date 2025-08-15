@@ -81,7 +81,7 @@ void CameraManager::setupCameraPinout()
 
       .jpeg_quality = 7,                   // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
       .fb_count = 2,                       // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-      .fb_location = CAMERA_FB_IN_DRAM,   
+      .fb_location = CAMERA_FB_IN_DRAM,
       .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
   };
 }

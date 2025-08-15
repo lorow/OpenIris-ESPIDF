@@ -1,4 +1,5 @@
 #include "wifi_commands.hpp"
+#include "esp_netif.h"
 
 std::optional<WifiPayload> parseSetWiFiCommandPayload(std::string_view jsonPayload)
 {
@@ -222,4 +223,80 @@ CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, 
       updatedConfig.channel.has_value() ? updatedConfig.channel.value() : previousAPConfig.channel);
 
   return CommandResult::getSuccessResult("Config updated");
+}
+
+CommandResult getWiFiStatusCommand(std::shared_ptr<DependencyRegistry> registry) {
+    auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+    auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+    
+    // Get current WiFi state
+    auto wifiState = wifiManager->GetCurrentWiFiState();
+    auto networks = projectConfig->getWifiConfigs();
+    
+    cJSON* statusJson = cJSON_CreateObject();
+    
+    // Add WiFi state
+    const char* stateStr = "unknown";
+    switch(wifiState) {
+        case WiFiState_e::WiFiState_NotInitialized:
+            stateStr = "not_initialized";
+            break;
+        case WiFiState_e::WiFiState_Initialized:
+            stateStr = "initialized";
+            break;
+        case WiFiState_e::WiFiState_ReadyToConnect:
+            stateStr = "ready";
+            break;
+        case WiFiState_e::WiFiState_Connecting:
+            stateStr = "connecting";
+            break;
+        case WiFiState_e::WiFiState_WaitingForIp:
+            stateStr = "waiting_for_ip";
+            break;
+        case WiFiState_e::WiFiState_Connected:
+            stateStr = "connected";
+            break;
+        case WiFiState_e::WiFiState_Disconnected:
+            stateStr = "disconnected";
+            break;
+        case WiFiState_e::WiFiState_Error:
+            stateStr = "error";
+            break;
+    }
+    cJSON_AddStringToObject(statusJson, "status", stateStr);
+    cJSON_AddNumberToObject(statusJson, "networks_configured", networks.size());
+    
+    // Add IP info if connected
+    if (wifiState == WiFiState_e::WiFiState_Connected) {
+        // Get IP address from ESP32
+        esp_netif_ip_info_t ip_info;
+        esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+        if (netif && esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+            char ip_str[16];
+            sprintf(ip_str, IPSTR, IP2STR(&ip_info.ip));
+            cJSON_AddStringToObject(statusJson, "ip_address", ip_str);
+        }
+    }
+    
+    char* statusString = cJSON_PrintUnformatted(statusJson);
+    std::string result(statusString);
+    free(statusString);
+    cJSON_Delete(statusJson);
+    
+    return CommandResult::getSuccessResult(result);
+}
+
+CommandResult connectWiFiCommand(std::shared_ptr<DependencyRegistry> registry) {
+    auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+    auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+    
+    auto networks = projectConfig->getWifiConfigs();
+    if (networks.empty()) {
+        return CommandResult::getErrorResult("No WiFi networks configured");
+    }
+    
+    // Trigger WiFi connection attempt
+    wifiManager->TryConnectToStoredNetworks();
+    
+    return CommandResult::getSuccessResult("WiFi connection attempt started");
 }

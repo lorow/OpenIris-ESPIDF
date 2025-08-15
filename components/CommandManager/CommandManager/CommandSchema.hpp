@@ -57,4 +57,9 @@ struct RestartCameraPayload : BasePayload
 {
   bool mode;
 };
+
+struct PausePayload : BasePayload
+{
+  bool pause;
+};
 #endif

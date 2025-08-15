@@ -54,6 +54,7 @@ class UVCStreamManager
 
 public:
   esp_err_t setup();
+  esp_err_t start();
 };
 
 #endif // UVCSTREAM_HPP
