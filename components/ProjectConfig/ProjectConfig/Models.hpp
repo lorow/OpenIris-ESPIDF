@@ -32,7 +32,7 @@ struct DeviceMode_t : BaseConfigModel {
   explicit DeviceMode_t(  Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO){}
 
   void load() {
-    int stored_mode = this->pref->getInt("mode", 0);
+    int stored_mode = this->pref->getInt("mode", 1);
     this->mode = static_cast<StreamingMode>(stored_mode);
     ESP_LOGI("DeviceMode", "Loaded device mode: %d", stored_mode);
   }
