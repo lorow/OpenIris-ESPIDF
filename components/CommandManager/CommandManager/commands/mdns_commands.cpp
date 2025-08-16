@@ -31,3 +31,12 @@ CommandResult setMDNSCommand(std::shared_ptr<DependencyRegistry> registry, std::
 
   return CommandResult::getSuccessResult("Config updated");
 }
+
+CommandResult getMDNSNameCommand(std::shared_ptr<DependencyRegistry> registry)
+{
+  const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+  auto mdnsConfig = projectConfig->getMDNSConfig();
+
+  auto result = std::format("{{ \"hostname\": \"{}\" }}", mdnsConfig.hostname);
+  return CommandResult::getSuccessResult(result);
+}
