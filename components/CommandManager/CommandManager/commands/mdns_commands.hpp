@@ -9,3 +9,4 @@
 
 std::optional<MDNSPayload> parseMDNSCommandPayload(std::string_view jsonPayload);
 CommandResult setMDNSCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
+CommandResult getMDNSNameCommand(std::shared_ptr<DependencyRegistry> registry);

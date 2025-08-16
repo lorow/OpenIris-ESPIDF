@@ -6,11 +6,11 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"pause", CommandType::PAUSE},
     {"set_wifi", CommandType::SET_WIFI},
     {"update_wifi", CommandType::UPDATE_WIFI},
-    {"set_streaming_mode", CommandType::SET_STREAMING_MODE},
     {"update_ota_credentials", CommandType::UPDATE_OTA_CREDENTIALS},
     {"delete_network", CommandType::DELETE_NETWORK},
     {"update_ap_wifi", CommandType::UPDATE_AP_WIFI},
     {"set_mdns", CommandType::SET_MDNS},
+    {"get_mdns_name", CommandType::GET_MDNS_NAME},
     {"update_camera", CommandType::UPDATE_CAMERA},
     {"restart_camera", CommandType::RESTART_CAMERA},
     {"save_config", CommandType::SAVE_CONFIG},
@@ -24,8 +24,8 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"switch_mode", CommandType::SWITCH_MODE},
     {"get_device_mode", CommandType::GET_DEVICE_MODE},
     {"set_led_duty_cycle", CommandType::SET_LED_DUTY_CYCLE},
-  {"get_led_duty_cycle", CommandType::GET_LED_DUTY_CYCLE},
-  {"get_serial", CommandType::GET_SERIAL},
+    {"get_led_duty_cycle", CommandType::GET_LED_DUTY_CYCLE},
+    {"get_serial", CommandType::GET_SERIAL},
 };
 
 std::function<CommandResult()> CommandManager::createCommand(const CommandType type, std::string_view json) const
@@ -37,9 +37,8 @@ std::function<CommandResult()> CommandManager::createCommand(const CommandType t
   case CommandType::PAUSE:
     return [json]
     { return PauseCommand(json); };
-  case CommandType::SET_STREAMING_MODE:
-    return [this, json]
-    { return setDeviceModeCommand(this->registry, json); };
+    return [json]
+    { return PauseCommand(json); };
   case CommandType::UPDATE_OTA_CREDENTIALS:
     return [this, json]
     { return updateOTACredentialsCommand(this->registry, json); };
@@ -58,6 +57,9 @@ std::function<CommandResult()> CommandManager::createCommand(const CommandType t
   case CommandType::SET_MDNS:
     return [this, json]
     { return setMDNSCommand(this->registry, json); };
+  case CommandType::GET_MDNS_NAME:
+    return [this]
+    { return getMDNSNameCommand(this->registry); };
   case CommandType::UPDATE_CAMERA:
     return [this, json]
     { return updateCameraCommand(this->registry, json); };
