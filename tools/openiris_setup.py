@@ -410,6 +410,23 @@ class OpenIrisDevice:
             print(f"❌ Failed to parse mode response: {e}")
             return "unknown"
     
+    def get_mdns_name(self) -> str:
+        """Get the current MDNS name"""
+        response = self.send_command("get_mdns_name")
+        if "error" in response:
+            print(f"❌ Failed to get device name: {response['error']}")
+            return "unknown"
+
+        try: 
+            results = response.get("results", [])
+            if results:
+                result_data = json.loads(results[0])
+                name_data = json.loads(result_data["result"])
+                return name_data.get("hostname", "unknown")
+        except Exception as e:
+            print(f"❌ Failed to parse name response: {e}")
+            return "unknown"
+
     def monitor_logs(self):
         """Monitor device logs until interrupted"""
         print("📋 Monitoring device logs (Press Ctrl+C to exit)...")
@@ -640,10 +657,13 @@ def configure_wifi(device: OpenIrisDevice, args = None):
 
 
 def configure_mdns(device: OpenIrisDevice, args = None):
+    current_name = device.get_mdns_name()
+    print(f"\n📍 Current device name: {current_name} \n")
     print("💡 Please enter your preferred device name, your board will be accessible under http://<name>.local/")
     print("💡 Please avoid spaces and special characters")
     print("    To back out, enter `back`")
     print("\n    Note, this will also modify the name of the UVC device")
+
     while True:
         name_choice = input("\nDevice name: ").strip()
         if any(space in name_choice for space in string.whitespace):
