@@ -24,7 +24,8 @@ ProjectConfig::ProjectConfig(Preferences *pref) : pref(pref),
 
 ProjectConfig::~ProjectConfig() = default;
 
-void ProjectConfig::save() const {
+void ProjectConfig::save() const
+{
   ESP_LOGD(CONFIGURATION_TAG, "Saving project config");
   this->config.device.save();
   this->config.device_mode.save();
@@ -92,14 +93,22 @@ bool ProjectConfig::reset()
 //!                                                DeviceConfig
 //*
 //**********************************************************************************************************************
-void ProjectConfig::setDeviceConfig(const std::string &OTALogin,
-                                    const std::string &OTAPassword,
-                                    const int OTAPort)
+void ProjectConfig::setOTAConfig(const std::string &OTALogin,
+                                 const std::string &OTAPassword,
+                                 const int OTAPort)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating device config");
   this->config.device.OTALogin.assign(OTALogin);
   this->config.device.OTAPassword.assign(OTAPassword);
   this->config.device.OTAPort = OTAPort;
+  this->config.device.save();
+}
+
+void ProjectConfig::setLEDDUtyCycleConfig(int led_external_pwm_duty_cycle)
+{
+  this->config.device.led_external_pwm_duty_cycle = led_external_pwm_duty_cycle;
+  ESP_LOGI(CONFIGURATION_TAG, "Setting duty cycle to %d", led_external_pwm_duty_cycle);
+  this->config.device.save();
 }
 
 void ProjectConfig::setMDNSConfig(const std::string &hostname)
@@ -120,6 +129,7 @@ void ProjectConfig::setCameraConfig(const uint8_t vflip,
   this->config.camera.framesize = framesize;
   this->config.camera.quality = quality;
   this->config.camera.brightness = brightness;
+  this->config.camera.save();
 
   ESP_LOGD(CONFIGURATION_TAG, "Updating Camera config");
 }
@@ -133,8 +143,8 @@ void ProjectConfig::setWifiConfig(const std::string &networkName,
   const auto size = this->config.networks.size();
 
   const auto it = std::ranges::find_if(this->config.networks,
-                                 [&](const WiFiConfig_t &network)
-                                 { return network.name == networkName; });
+                                       [&](const WiFiConfig_t &network)
+                                       { return network.name == networkName; });
 
   if (it != this->config.networks.end())
   {
@@ -191,8 +201,8 @@ void ProjectConfig::deleteWifiConfig(const std::string &networkName)
   }
 
   const auto it = std::ranges::find_if(this->config.networks,
-                                 [&](const WiFiConfig_t &network)
-                                 { return network.name == networkName; });
+                                       [&](const WiFiConfig_t &network)
+                                       { return network.name == networkName; });
 
   if (it != this->config.networks.end())
   {
@@ -205,6 +215,7 @@ void ProjectConfig::deleteWifiConfig(const std::string &networkName)
 void ProjectConfig::setWiFiTxPower(uint8_t power)
 {
   this->config.txpower.power = power;
+  this->config.txpower.save();
   ESP_LOGD(CONFIGURATION_TAG, "Updating wifi tx power");
 }
 
@@ -215,12 +226,14 @@ void ProjectConfig::setAPWifiConfig(const std::string &ssid,
   this->config.ap_network.ssid.assign(ssid);
   this->config.ap_network.password.assign(password);
   this->config.ap_network.channel = channel;
+  this->config.ap_network.save();
   ESP_LOGD(CONFIGURATION_TAG, "Updating access point config");
 }
 
-void ProjectConfig::setDeviceMode(const StreamingMode deviceMode) {
+void ProjectConfig::setDeviceMode(const StreamingMode deviceMode)
+{
   this->config.device_mode.mode = deviceMode;
-  this->config.device_mode.save();  // Save immediately
+  this->config.device_mode.save(); // Save immediately
 }
 
 //**********************************************************************************************************************
@@ -258,10 +271,12 @@ TrackerConfig_t &ProjectConfig::getTrackerConfig()
   return this->config;
 }
 
-DeviceMode_t &ProjectConfig::getDeviceModeConfig() {
+DeviceMode_t &ProjectConfig::getDeviceModeConfig()
+{
   return this->config.device_mode;
 }
 
-StreamingMode ProjectConfig::getDeviceMode() {
+StreamingMode ProjectConfig::getDeviceMode()
+{
   return this->config.device_mode.mode;
 }
