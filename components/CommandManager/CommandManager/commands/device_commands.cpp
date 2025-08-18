@@ -25,6 +25,8 @@ CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry,
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     projectConfig->setDeviceMode(static_cast<StreamingMode>(mode));
 
+    cJSON_Delete(parsedJson);
+
     return CommandResult::getSuccessResult("Device mode set");
 }
 
@@ -64,8 +66,39 @@ CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> re
         }
     }
 
-    projectConfig->setDeviceConfig(OTALogin, OTAPassword, OTAPort);
+    cJSON_Delete(parsedJson);
+
+    projectConfig->setOTAConfig(OTALogin, OTAPassword, OTAPort);
     return CommandResult::getSuccessResult("OTA Config set");
+}
+
+CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+{
+    const auto parsedJson = cJSON_Parse(jsonPayload.data());
+    if (parsedJson == nullptr)
+    {
+        return CommandResult::getErrorResult("Invalid payload");
+    }
+
+    const auto dutyCycleObject = cJSON_GetObjectItem(parsedJson, "dutyCycle");
+    if (dutyCycleObject == nullptr)
+    {
+        return CommandResult::getErrorResult("Invalid payload - missing dutyCycle");
+    }
+
+    const auto dutyCycle = dutyCycleObject->valueint;
+
+    if (dutyCycle < 0 || dutyCycle > 100)
+    {
+        return CommandResult::getErrorResult("Invalid payload - unsupported dutyCycle");
+    }
+
+    const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+    projectConfig->setLEDDUtyCycleConfig(dutyCycle);
+
+    cJSON_Delete(parsedJson);
+
+    return CommandResult::getSuccessResult("LED duty cycle set");
 }
 
 CommandResult restartDeviceCommand()
