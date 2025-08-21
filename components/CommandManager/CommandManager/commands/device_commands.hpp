@@ -13,6 +13,9 @@ CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry,
 
 CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
 
+CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload);
+CommandResult getLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry);
+
 CommandResult restartDeviceCommand();
 
 CommandResult startStreamingCommand();

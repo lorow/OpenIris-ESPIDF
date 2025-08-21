@@ -44,6 +44,8 @@ enum class CommandType
   CONNECT_WIFI,
   SWITCH_MODE,
   GET_DEVICE_MODE,
+  SET_LED_DUTY_CYCLE,
+  GET_LED_DUTY_CYCLE,
 };
 
 class CommandManager

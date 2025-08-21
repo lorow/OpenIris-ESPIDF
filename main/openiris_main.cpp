@@ -53,7 +53,7 @@ auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 UVCStreamManager uvcStream;
 #endif
 
-auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
+auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 
 static void initNVSStorage()
@@ -228,6 +228,7 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+    dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, std::shared_ptr<LEDManager>(ledManager, [](LEDManager*){}));
     // uvc plan
     // cleanup the logs - done
     // prepare the camera to be initialized with UVC - done?
@@ -274,10 +275,10 @@ extern "C" void app_main(void)
     // setup CI and building for other boards
     // finish todos, overhaul stuff a bit
 
+    // esp_log_set_vprintf(&websocket_logger);
     Logo::printASCII();
     initNVSStorage();
-
-    // esp_log_set_vprintf(&websocket_logger);
+    deviceConfig->load();
     ledManager->setup();
 
     xTaskCreate(
@@ -297,7 +298,6 @@ extern "C" void app_main(void)
         3,
         nullptr);
 
-    deviceConfig->load();
     serialManager->setup();
 
     static TaskHandle_t serialManagerHandle = nullptr;
@@ -308,8 +308,7 @@ extern "C" void app_main(void)
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        &serialManagerHandle
-    );
+        &serialManagerHandle);
 
     wifiManager->Begin();
     mdnsManager.start();

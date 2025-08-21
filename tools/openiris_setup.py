@@ -410,6 +410,35 @@ class OpenIrisDevice:
             print(f"❌ Failed to parse mode response: {e}")
             return "unknown"
     
+    def set_led_duty_cycle(self, duty_cycle):
+        """Sets the PWN duty cycle of the LED"""
+        print(f"🌟 Setting LED duty cycle to {duty_cycle}%...")
+        response = self.send_command("set_led_duty_cycle", {"dutyCycle": duty_cycle})
+        if "error" in response: 
+            print(f"❌ Failed to set LED duty cycle: {response['error']}")
+            return False
+        
+        print("✅ LED duty cycle set successfully")
+        return True
+
+    def get_led_duty_cycle(self) -> Optional[int]:
+        """Get the current LED PWM duty cycle from the device"""
+        response = self.send_command("get_led_duty_cycle")
+        if "error" in response:
+            print(f"❌ Failed to get LED duty cycle: {response['error']}")
+            return None
+        try:
+            results = response.get("results", [])
+            if results:
+                result_data = json.loads(results[0])
+                payload = result_data["result"]
+                if isinstance(payload, str):
+                    payload = json.loads(payload)
+                return int(payload.get("led_external_pwm_duty_cycle"))
+        except Exception as e:
+            print(f"❌ Failed to parse LED duty cycle: {e}")
+        return None
+
     def monitor_logs(self):
         """Monitor device logs until interrupted"""
         print("📋 Monitoring device logs (Press Ctrl+C to exit)...")
@@ -736,8 +765,32 @@ def switch_device_mode(device: OpenIrisDevice, args = None):
         print("❌ Invalid mode selection")
 
 
+def set_led_duty_cycle(device: OpenIrisDevice, args=None):
+    while True:
+        input_data = input("Enter LED external PWM duty cycle (0-100) or `back` to exit: \n")
+        if input_data.lower() == "back":
+            break
+        
+        try:
+            duty_cycle = int(input_data)
+        except ValueError:
+            print("❌ Invalid input. Please enter a number between 0 and 100.")
+
+        if duty_cycle < 0 or duty_cycle > 100:
+            print("❌ Duty cycle must be between 0 and 100.")
+        else:
+            # Apply immediately; stay in loop for further tweaks
+            device.set_led_duty_cycle(duty_cycle)
+
+
 def monitor_logs(device: OpenIrisDevice, args = None):
     device.monitor_logs()
+
+
+def get_led_duty_cycle(device: OpenIrisDevice, args=None):
+    duty = device.get_led_duty_cycle()
+    if duty is not None:
+        print(f"💡 Current LED duty cycle: {duty}%")
 
 
 COMMANDS_MAP = {
@@ -750,7 +803,9 @@ COMMANDS_MAP = {
     "7": attempt_wifi_connection,
     "8": start_streaming,
     "9": switch_device_mode,
-    "10": monitor_logs,
+    "10": set_led_duty_cycle,
+    "11": get_led_duty_cycle,
+    "12": monitor_logs,
 }
 
 
@@ -848,9 +903,11 @@ def main():
             print("7. 🔗 Connect to WiFi")
             print("8. 🚀 Start streaming mode")
             print("9. 🔄 Switch device mode (WiFi/UVC/Auto)")
-            print("10. 📋 Monitor logs")
+            print("10. 💡 Update PWM Duty Cycle")
+            print("11. 💡Get PWM Duty Cycle")
+            print("12. 📖 Monitor logs")
             print("exit. 🚪 Exit")
-            choice = input("\nSelect option (1-10): ").strip()
+            choice = input("\nSelect option (1-12): ").strip()
 
             if choice == "exit":
                 break

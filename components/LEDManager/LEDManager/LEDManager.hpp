@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 #include <StateManager.hpp>
+#include <ProjectConfig.hpp>
 #include <helpers.hpp>
 
 // it kinda looks like different boards have these states swapped
@@ -41,11 +42,15 @@ typedef std::unordered_map<LEDStates_e, LEDStage>
 class LEDManager
 {
 public:
-  LEDManager(gpio_num_t blink_led_pin, gpio_num_t illumninator_led_pin, QueueHandle_t ledStateQueue);
+  LEDManager(gpio_num_t blink_led_pin, gpio_num_t illumninator_led_pin, QueueHandle_t ledStateQueue, std::shared_ptr<ProjectConfig> deviceConfig);
 
   void setup();
   void handleLED();
   size_t getTimeToDelayFor() const { return timeToDelayFor; }
+
+  // Apply new external LED PWM duty cycle immediately (0-100)
+  void setExternalLEDDutyCycle(uint8_t dutyPercent);
+  uint8_t getExternalLEDDutyCycle() const { return deviceConfig ? deviceConfig->getDeviceConfig().led_external_pwm_duty_cycle : 0; }
 
 private:
   void toggleLED(bool state) const;
@@ -60,6 +65,7 @@ private:
 
   LEDStates_e buffer;
   LEDStates_e currentState;
+  std::shared_ptr<ProjectConfig> deviceConfig;
 
   size_t currentPatternIndex = 0;
   size_t timeToDelayFor = 100;
