@@ -421,6 +421,24 @@ class OpenIrisDevice:
         print("✅ LED duty cycle set successfully")
         return True
 
+    def get_led_duty_cycle(self) -> Optional[int]:
+        """Get the current LED PWM duty cycle from the device"""
+        response = self.send_command("get_led_duty_cycle")
+        if "error" in response:
+            print(f"❌ Failed to get LED duty cycle: {response['error']}")
+            return None
+        try:
+            results = response.get("results", [])
+            if results:
+                result_data = json.loads(results[0])
+                payload = result_data["result"]
+                if isinstance(payload, str):
+                    payload = json.loads(payload)
+                return int(payload.get("led_external_pwm_duty_cycle"))
+        except Exception as e:
+            print(f"❌ Failed to parse LED duty cycle: {e}")
+        return None
+
     def monitor_logs(self):
         """Monitor device logs until interrupted"""
         print("📋 Monitoring device logs (Press Ctrl+C to exit)...")
@@ -761,12 +779,18 @@ def set_led_duty_cycle(device: OpenIrisDevice, args=None):
         if duty_cycle < 0 or duty_cycle > 100:
             print("❌ Duty cycle must be between 0 and 100.")
         else:
+            # Apply immediately; stay in loop for further tweaks
             device.set_led_duty_cycle(duty_cycle)
-            break
 
 
 def monitor_logs(device: OpenIrisDevice, args = None):
     device.monitor_logs()
+
+
+def get_led_duty_cycle(device: OpenIrisDevice, args=None):
+    duty = device.get_led_duty_cycle()
+    if duty is not None:
+        print(f"💡 Current LED duty cycle: {duty}%")
 
 
 COMMANDS_MAP = {
@@ -780,7 +804,8 @@ COMMANDS_MAP = {
     "8": start_streaming,
     "9": switch_device_mode,
     "10": set_led_duty_cycle,
-    "11": monitor_logs,
+    "11": get_led_duty_cycle,
+    "12": monitor_logs,
 }
 
 
@@ -879,9 +904,10 @@ def main():
             print("8. 🚀 Start streaming mode")
             print("9. 🔄 Switch device mode (WiFi/UVC/Auto)")
             print("10. 💡 Update PWM Duty Cycle")
-            print("11. 📋 Monitor logs")
+            print("11. 💡Get PWM Duty Cycle")
+            print("12. 📖 Monitor logs")
             print("exit. 🚪 Exit")
-            choice = input("\nSelect option (1-11): ").strip()
+            choice = input("\nSelect option (1-12): ").strip()
 
             if choice == "exit":
                 break

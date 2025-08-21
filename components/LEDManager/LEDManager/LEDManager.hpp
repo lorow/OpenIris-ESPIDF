@@ -48,6 +48,10 @@ public:
   void handleLED();
   size_t getTimeToDelayFor() const { return timeToDelayFor; }
 
+  // Apply new external LED PWM duty cycle immediately (0-100)
+  void setExternalLEDDutyCycle(uint8_t dutyPercent);
+  uint8_t getExternalLEDDutyCycle() const { return deviceConfig ? deviceConfig->getDeviceConfig().led_external_pwm_duty_cycle : 0; }
+
 private:
   void toggleLED(bool state) const;
   void displayCurrentPattern();

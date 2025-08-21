@@ -1,4 +1,5 @@
 #include "device_commands.hpp"
+#include "LEDManager.hpp"
 
 // Implementation inspired by SummerSigh work, initial PR opened in openiris repo, adapted to this rewrite
 CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
@@ -96,6 +97,13 @@ CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> regi
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     projectConfig->setLEDDUtyCycleConfig(dutyCycle);
 
+    // Try to apply the change live via LEDManager if available
+    auto ledMgr = registry->resolve<LEDManager>(DependencyType::led_manager);
+    if (ledMgr)
+    {
+        ledMgr->setExternalLEDDutyCycle(static_cast<uint8_t>(dutyCycle));
+    }
+
     cJSON_Delete(parsedJson);
 
     return CommandResult::getSuccessResult("LED duty cycle set");
@@ -105,6 +113,15 @@ CommandResult restartDeviceCommand()
 {
     OpenIrisTasks::ScheduleRestart(2000);
     return CommandResult::getSuccessResult("Device restarted");
+}
+
+CommandResult getLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry)
+{
+    const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
+    const auto deviceCfg = projectConfig->getDeviceConfig();
+    int duty = deviceCfg.led_external_pwm_duty_cycle;
+    auto result = std::format("{{ \"led_external_pwm_duty_cycle\": {} }}", duty);
+    return CommandResult::getSuccessResult(result);
 }
 
 CommandResult startStreamingCommand()

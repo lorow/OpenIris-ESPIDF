@@ -24,6 +24,7 @@ std::unordered_map<std::string, CommandType> commandTypeMap = {
     {"switch_mode", CommandType::SWITCH_MODE},
     {"get_device_mode", CommandType::GET_DEVICE_MODE},
     {"set_led_duty_cycle", CommandType::SET_LED_DUTY_CYCLE},
+  {"get_led_duty_cycle", CommandType::GET_LED_DUTY_CYCLE},
 };
 
 std::function<CommandResult()> CommandManager::createCommand(const CommandType type, std::string_view json) const
@@ -93,6 +94,9 @@ std::function<CommandResult()> CommandManager::createCommand(const CommandType t
   case CommandType::SET_LED_DUTY_CYCLE:
     return [this, json]
     { return updateLEDDutyCycleCommand(this->registry, json); };
+  case CommandType::GET_LED_DUTY_CYCLE:
+    return [this]
+    { return getLEDDutyCycleCommand(this->registry); };
   default:
     return nullptr;
   }

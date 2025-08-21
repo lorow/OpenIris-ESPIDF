@@ -177,6 +177,29 @@ void LEDManager::toggleLED(const bool state) const
     gpio_set_level(blink_led_pin, state);
 }
 
+void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
+{
+#ifdef CONFIG_LED_EXTERNAL_CONTROL
+    dutyPercent = std::min<uint8_t>(100, dutyPercent);
+    const uint32_t dutyCycle = (static_cast<uint32_t>(dutyPercent) * 255) / 100;
+    ESP_LOGI(LED_MANAGER_TAG, "Updating external LED duty to %u%% (raw %lu)", dutyPercent, dutyCycle);
+
+    // Persist into config immediately so it survives reboot
+    if (this->deviceConfig)
+    {
+        this->deviceConfig->setLEDDUtyCycleConfig(dutyPercent);
+    }
+
+    // Apply to LEDC hardware live
+    // We configured channel 0 in setup with LEDC_LOW_SPEED_MODE
+    ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, dutyCycle));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+#else
+    (void)dutyPercent; // unused
+    ESP_LOGW(LED_MANAGER_TAG, "CONFIG_LED_EXTERNAL_CONTROL not enabled; ignoring duty update");
+#endif
+}
+
 void HandleLEDDisplayTask(void *pvParameter)
 {
     auto *ledManager = static_cast<LEDManager *>(pvParameter);

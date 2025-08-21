@@ -228,6 +228,7 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+    dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, std::shared_ptr<LEDManager>(ledManager, [](LEDManager*){}));
     // uvc plan
     // cleanup the logs - done
     // prepare the camera to be initialized with UVC - done?
