@@ -21,17 +21,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- *
- * ---------------------------------------------------------------------------
- * USB Video Class (UVC) Descriptor Definitions for TinyUSB device stack.
- *
- * This file describes the device, configuration, and string descriptors for
- * a single UVC camera. Build-time options (Kconfig) select whether UVC data
- * streams use BULK or ISO endpoints, the pixel format (MJPEG / H.264 /
- * Uncompressed), and whether multiple frame sizes are exposed.
- *
- * Goal: keep the same behavior while making the structure easier to read and
- * maintain. Comments explain why each block exists and what each macro does.
  */
 
 #include "tusb.h"
