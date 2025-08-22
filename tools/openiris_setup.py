@@ -680,9 +680,9 @@ def configure_wifi(device: OpenIrisDevice, args = None):
             if device.set_wifi(selected_network.ssid, password):
                 print("✅ WiFi configured successfully!")
                 print("💡 Next steps:")
-                print("   4. Check WiFi status")
-                print("   5. Connect to WiFi (if needed)")
-                print("   6. Start streaming when connected")
+                print("   • Open WiFi menu to connect to WiFi (if needed)")
+                print("   • Open WiFi menu to check WiFi status")
+                print("   • Start streaming from the main menu when connected")
             break
         else:
             print("❌ Invalid network number")
@@ -757,12 +757,127 @@ def check_wifi_status(device: OpenIrisDevice, args = None):
 
 def attempt_wifi_connection(device: OpenIrisDevice, args = None):
     device.connect_wifi()
-    print("🕰️ Wait a few seconds then check status (option 4)")
+    print("🕰️ Wait a few seconds then check status in the WiFi menu")
 
 
 def start_streaming(device: OpenIrisDevice, args = None):
     device.start_streaming()
-    print("🚀 Streaming started! Use option 8 to monitor logs.")
+    print("🚀 Streaming started! Use 'Monitor logs' from the main menu.")
+
+
+# ----- WiFi submenu -----
+def wifi_auto_setup(device: OpenIrisDevice, args=None):
+    print("\n⚙️  Automatic WiFi setup starting...")
+    scan_timeout = getattr(args, "scan_timeout", 30) if args else 30
+
+    # 1) Scan
+    if not device.scan_networks(timeout=scan_timeout):
+        print("❌ Auto-setup aborted: no networks found or scan failed")
+        return
+
+    # 2) Show networks (sorted strongest-first already)
+    display_networks(device)
+
+    # 3) Select a network (default strongest)
+    choice = input("Select network number [default: 1] or 'back': ").strip()
+    if choice.lower() == "back":
+        return
+    try:
+        idx = int(choice) - 1 if choice else 0
+    except ValueError:
+        idx = 0
+
+    sorted_networks = sorted(device.networks, key=lambda x: x.rssi, reverse=True)
+    if not (0 <= idx < len(sorted_networks)):
+        print("⚠️  Invalid selection, using strongest network")
+        idx = 0
+
+    selected = sorted_networks[idx]
+    print(f"\n🔐 Selected: {selected.ssid if selected.ssid else '<hidden>'}")
+    if selected.auth_mode == 0:
+        password = ""
+        print("🔓 Open network - no password required")
+    else:
+        password = input("Enter WiFi password: ")
+
+    # 4) Configure WiFi
+    if not device.set_wifi(selected.ssid, password):
+        print("❌ Auto-setup aborted: failed to configure WiFi")
+        return
+
+    # 5) Connect
+    if not device.connect_wifi():
+        print("❌ Auto-setup aborted: failed to start WiFi connection")
+        return
+
+    # 6) Wait for IP / connected status
+    print("⏳ Connecting to WiFi, waiting for IP...")
+    start = time.time()
+    timeout_s = 30
+    ip = None
+    last_status = None
+    while time.time() - start < timeout_s:
+        status = device.get_wifi_status()
+        last_status = status
+        ip = (status or {}).get("ip_address")
+        if ip and ip not in ("0.0.0.0", "", None):
+            break
+        time.sleep(0.5)
+
+    if ip and ip not in ("0.0.0.0", "", None):
+        print(f"✅ Connected! IP Address: {ip}")
+    else:
+        print("⚠️  Connection not confirmed within timeout")
+        if last_status:
+            print(f"   Status: {last_status.get('status', 'unknown')}  |  IP: {last_status.get('ip_address', '-')}")
+
+
+def wifi_menu(device: OpenIrisDevice, args=None):
+    while True:
+        print("\n📶 WiFi Settings:")
+        print(f"{str(1):>2}  ⚙️  Automatic WiFi setup")
+        print(f"{str(2):>2}  � Manual WiFi actions")
+        print("back  🔙 Back")
+
+        choice = input("\nSelect option (1-2 or 'back'): ").strip()
+        if choice.lower() == "back":
+            break
+
+        if choice == "1":
+            wifi_auto_setup(device, args)
+        elif choice == "2":
+            wifi_manual_menu(device, args)
+        else:
+            print("❌ Invalid option")
+
+
+def wifi_manual_menu(device: OpenIrisDevice, args=None):
+    while True:
+        print("\n📁 WiFi Manual Actions:")
+        print(f"{str(1):>2}  � Scan for WiFi networks")
+        print(f"{str(2):>2}  � Show available networks")
+        print(f"{str(3):>2}  🔐 Configure WiFi")
+        print(f"{str(4):>2}  � Connect to WiFi")
+        print(f"{str(5):>2}  🛰️  Check WiFi status")
+        print("back  🔙 Back")
+
+        choice = input("\nSelect option (1-5 or 'back'): ").strip()
+        if choice.lower() == "back":
+            break
+
+        sub_map = {
+            "1": scan_networks,
+            "2": display_networks,
+            "3": configure_wifi,
+            "4": attempt_wifi_connection,
+            "5": check_wifi_status,
+        }
+
+        handler = sub_map.get(choice)
+        if not handler:
+            print("❌ Invalid option")
+            continue
+        handler(device, args)
 
 
 def switch_device_mode(device: OpenIrisDevice, args = None):
@@ -821,20 +936,95 @@ def get_serial(device: OpenIrisDevice, args=None):
         print(f"🔗 MAC:    {mac}")
 
 
+# ----- Aggregated GET: settings summary -----
+def _probe_serial(device: OpenIrisDevice) -> Dict:
+    info = device.get_serial_info()
+    if info is None:
+        return {"serial": None, "mac": None}
+    serial, mac = info
+    return {"serial": serial, "mac": mac}
+
+
+def _probe_led_pwm(device: OpenIrisDevice) -> Dict:
+    duty = device.get_led_duty_cycle()
+    return {"led_external_pwm_duty_cycle": duty}
+
+
+def _probe_mode(device: OpenIrisDevice) -> Dict:
+    mode = device.get_device_mode()
+    return {"mode": mode}
+
+
+def _probe_wifi_status(device: OpenIrisDevice) -> Dict:
+    # Returns dict as provided by device; pass through
+    status = device.get_wifi_status() or {}
+    return {"wifi_status": status}
+
+
+def get_settings(device: OpenIrisDevice, args=None):
+    print("\n🧩 Collecting device settings...\n")
+
+    probes = [
+        ("Identity", _probe_serial),
+        ("LED", _probe_led_pwm),
+        ("Mode", _probe_mode),
+        ("WiFi", _probe_wifi_status),
+    ]
+
+    summary: Dict[str, Dict] = {}
+
+    for label, probe in probes:
+        try:
+            data = probe(device)
+            summary[label] = data
+        except Exception as e:
+            summary[label] = {"error": str(e)}
+
+    # Pretty print summary
+    # Identity
+    ident = summary.get("Identity", {})
+    serial = ident.get("serial")
+    mac = ident.get("mac")
+    # print(f"🔑 Serial: {serial}")  # Serial display intentionally disabled; MAC is sufficient
+    if mac:
+        print(f"🔗 MAC:    {mac}")
+    if not serial and not mac:
+        print("🔑 Serial/MAC: unavailable")
+
+    # LED
+    led = summary.get("LED", {})
+    duty = led.get("led_external_pwm_duty_cycle")
+    if duty is not None:
+        print(f"💡 LED PWM Duty: {duty}%")
+    else:
+        print("💡 LED PWM Duty: unknown")
+
+    # Mode
+    mode = summary.get("Mode", {}).get("mode")
+    print(f"🎚️  Mode: {mode if mode else 'unknown'}")
+
+    # WiFi
+    wifi = summary.get("WiFi", {}).get("wifi_status", {})
+    if wifi:
+        status = wifi.get("status", "unknown")
+        ip = wifi.get("ip_address") or "-"
+        configured = wifi.get("networks_configured", 0)
+        print(f"📶 WiFi: {status}  |  IP: {ip}  |  Networks configured: {configured}")
+    else:
+        print("📶 WiFi: status unavailable")
+
+    print("")
+
+
 COMMANDS_MAP = {
-    "1": scan_networks,
-    "2": display_networks,
-    "3": configure_wifi,
-    "4": configure_mdns,
-    "5": configure_mdns,
-    "6": check_wifi_status,
-    "7": attempt_wifi_connection,
-    "8": start_streaming,
-    "9": switch_device_mode,
-    "10": set_led_duty_cycle,
-    "11": get_led_duty_cycle,
-    "12": monitor_logs,
-    "13": get_serial,
+    "1": wifi_menu,
+    "2": configure_mdns,
+    "3": configure_mdns,
+    "4": start_streaming,
+    "5": switch_device_mode,
+    "6": set_led_duty_cycle,
+    "7": monitor_logs,
+    "8": get_settings,
 }
 
 
@@ -923,21 +1113,16 @@ def main():
         # Main interaction loop
         while True:
             print("\n🔧 Setup Options:")
-            print("1. 🔍 Scan for WiFi networks")
-            print("2. 📡 Show available networks")
-            print("3. 🔐 Configure WiFi")
-            print("4. 🌐 Configure MDNS")
-            print("5. 💻 Configure UVC Name")
-            print("6. 📶 Check WiFi status")
-            print("7. 🔗 Connect to WiFi")
-            print("8. 🚀 Start streaming mode")
-            print("9. 🔄 Switch device mode (WiFi/UVC/Auto)")
-            print("10. 💡 Update PWM Duty Cycle")
-            print("11. 💡 Get PWM Duty Cycle")
-            print("12. 📖 Monitor logs")
-            print("13. 🔑 Show Serial/MAC")
-            print("exit. 🚪 Exit")
-            choice = input("\nSelect option (1-13): ").strip()
+            print(f"{str(1):>2}  � WiFi settings")
+            print(f"{str(2):>2}  🌐 Configure MDNS")
+            print(f"{str(3):>2}  💻 Configure UVC Name")
+            print(f"{str(4):>2}  🚀 Start streaming mode")
+            print(f"{str(5):>2}  🔄 Switch device mode (WiFi/UVC/Auto)")
+            print(f"{str(6):>2}  💡 Update PWM Duty Cycle")
+            print(f"{str(7):>2}  📖 Monitor logs")
+            print(f"{str(8):>2}  🧩 Get settings summary")
+            print("exit  🚪 Exit")
+            choice = input("\nSelect option (1-8): ").strip()
 
             if choice == "exit":
                 break
