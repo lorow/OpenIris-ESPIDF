@@ -836,8 +836,8 @@ def wifi_menu(device: OpenIrisDevice, args=None):
     while True:
         print("\n📶 WiFi Settings:")
         print(f"{str(1):>2}  ⚙️  Automatic WiFi setup")
-        print(f"{str(2):>2}  � Manual WiFi actions")
-        print("back  🔙 Back")
+        print(f"{str(2):>2}  📁 Manual WiFi actions")
+        print("back  Back")
 
         choice = input("\nSelect option (1-2 or 'back'): ").strip()
         if choice.lower() == "back":
@@ -854,12 +854,12 @@ def wifi_menu(device: OpenIrisDevice, args=None):
 def wifi_manual_menu(device: OpenIrisDevice, args=None):
     while True:
         print("\n📁 WiFi Manual Actions:")
-        print(f"{str(1):>2}  � Scan for WiFi networks")
-        print(f"{str(2):>2}  � Show available networks")
+        print(f"{str(1):>2}  🔍 Scan for WiFi networks")
+        print(f"{str(2):>2}  📡 Show available networks")
         print(f"{str(3):>2}  🔐 Configure WiFi")
-        print(f"{str(4):>2}  � Connect to WiFi")
+        print(f"{str(4):>2}  🔗 Connect to WiFi")
         print(f"{str(5):>2}  🛰️  Check WiFi status")
-        print("back  🔙 Back")
+        print("back  Back")
 
         choice = input("\nSelect option (1-5 or 'back'): ").strip()
         if choice.lower() == "back":
@@ -1113,7 +1113,7 @@ def main():
         # Main interaction loop
         while True:
             print("\n🔧 Setup Options:")
-            print(f"{str(1):>2}  � WiFi settings")
+            print(f"{str(1):>2}  📶 WiFi settings")
             print(f"{str(2):>2}  🌐 Configure MDNS")
             print(f"{str(3):>2}  💻 Configure UVC Name")
             print(f"{str(4):>2}  🚀 Start streaming mode")
