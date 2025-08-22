@@ -439,6 +439,26 @@ class OpenIrisDevice:
             print(f"❌ Failed to parse LED duty cycle: {e}")
         return None
 
+    def get_serial_info(self) -> Optional[Tuple[str, str]]:
+        """Get device serial number and MAC address"""
+        response = self.send_command("get_serial")
+        if "error" in response:
+            print(f"❌ Failed to get serial/MAC: {response['error']}")
+            return None
+        try:
+            results = response.get("results", [])
+            if results:
+                result_data = json.loads(results[0])
+                payload = result_data["result"]
+                if isinstance(payload, str):
+                    payload = json.loads(payload)
+                serial = payload.get("serial")
+                mac = payload.get("mac")
+                return serial, mac
+        except Exception as e:
+            print(f"❌ Failed to parse serial/MAC: {e}")
+        return None
+
     def monitor_logs(self):
         """Monitor device logs until interrupted"""
         print("📋 Monitoring device logs (Press Ctrl+C to exit)...")
@@ -793,6 +813,14 @@ def get_led_duty_cycle(device: OpenIrisDevice, args=None):
         print(f"💡 Current LED duty cycle: {duty}%")
 
 
+def get_serial(device: OpenIrisDevice, args=None):
+    info = device.get_serial_info()
+    if info is not None:
+        serial, mac = info
+#        print(f"🔑 Serial: {serial}")
+        print(f"🔗 MAC:    {mac}")
+
+
 COMMANDS_MAP = {
     "1": scan_networks,
     "2": display_networks,
@@ -806,6 +834,7 @@ COMMANDS_MAP = {
     "10": set_led_duty_cycle,
     "11": get_led_duty_cycle,
     "12": monitor_logs,
+    "13": get_serial,
 }
 
 
@@ -904,10 +933,11 @@ def main():
             print("8. 🚀 Start streaming mode")
             print("9. 🔄 Switch device mode (WiFi/UVC/Auto)")
             print("10. 💡 Update PWM Duty Cycle")
-            print("11. 💡Get PWM Duty Cycle")
+            print("11. 💡 Get PWM Duty Cycle")
             print("12. 📖 Monitor logs")
+            print("13. 🔑 Show Serial/MAC")
             print("exit. 🚪 Exit")
-            choice = input("\nSelect option (1-12): ").strip()
+            choice = input("\nSelect option (1-13): ").strip()
 
             if choice == "exit":
                 break

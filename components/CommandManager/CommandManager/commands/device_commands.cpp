@@ -1,5 +1,7 @@
 #include "device_commands.hpp"
 #include "LEDManager.hpp"
+#include "esp_mac.h"
+#include <cstdio>
 
 // Implementation inspired by SummerSigh work, initial PR opened in openiris repo, adapted to this rewrite
 CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
@@ -195,5 +197,25 @@ CommandResult getDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry)
     }
 
     auto result = std::format("{{ \"mode\": \"{}\", \"value\": {} }}", modeStr, static_cast<int>(currentMode));
+    return CommandResult::getSuccessResult(result);
+}
+
+CommandResult getSerialNumberCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
+{
+    // Read MAC for STA interface
+    uint8_t mac[6] = {0};
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
+    char serial_no_sep[13];
+    // Serial without separators (12 hex chars)
+    std::snprintf(serial_no_sep, sizeof(serial_no_sep), "%02X%02X%02X%02X%02X%02X",
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    char mac_colon[18];
+    // MAC with colons
+    std::snprintf(mac_colon, sizeof(mac_colon), "%02X:%02X:%02X:%02X:%02X:%02X",
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    auto result = std::format("{{ \"serial\": \"{}\", \"mac\": \"{}\" }}", serial_no_sep, mac_colon);
     return CommandResult::getSuccessResult(result);
 }
