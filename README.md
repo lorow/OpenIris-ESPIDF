@@ -1,11 +1,9 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
+| Supported Targets (IDK lol) | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 
 ## OpenIris-ESPIDF
 
-Firmware and tools for OpenIris on ESP32/ESP32‑S3 — Wi‑Fi, UVC streaming, and a handy Python setup CLI.
-
-Short, friendly, and practical.
+Firmware and tools for OpenIris — Wi‑Fi, UVC streaming, and a handy Python setup CLI.
 
 ---
 
@@ -20,7 +18,7 @@ Short, friendly, and practical.
 
 ## Prerequisites
 - ESP‑IDF installed and available in your terminal (`idf.py` works)
-- Python 3.10+ with `pip`
+- Python 3.10+ with `pip` (on Windows this is installed automatically when you set up the ESP‑IDF VS Code extension; see “First-time setup on Windows” below)
 - USB cable to your board
 - Optional: install Python dependencies for the tools
 

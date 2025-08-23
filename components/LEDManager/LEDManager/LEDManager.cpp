@@ -152,24 +152,21 @@ void LEDManager::displayCurrentPattern()
 
 void LEDManager::updateState(const LEDStates_e newState)
 {
-    // we should change the displayed state
-    // only if we finished displaying the current one - which is handled by the task
-    // if the new state is not the same as the current one
-    // and if can actually display the state
-
-    // if we've got an error state - that's it, we'll just keep repeating it indefinitely
-    if (ledStateMap[this->currentState].isError)
+    // Only update when new state differs and is known.
+    if (!ledStateMap.contains(newState))
         return;
 
     if (newState == this->currentState)
         return;
 
-    if (ledStateMap.contains(newState))
-    {
-        this->currentState = newState;
-        this->currentPatternIndex = 0;
-        this->finishedPattern = false;
-    }
+    // Allow recovery from error states: if both current and new are error, ignore.
+    // Otherwise permit transitioning out of error when a non-error state arrives.
+    if (ledStateMap[this->currentState].isError && ledStateMap[newState].isError)
+        return;
+
+    this->currentState = newState;
+    this->currentPatternIndex = 0;
+    this->finishedPattern = false;
 }
 
 void LEDManager::toggleLED(const bool state) const
@@ -203,10 +200,13 @@ void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
 void HandleLEDDisplayTask(void *pvParameter)
 {
     auto *ledManager = static_cast<LEDManager *>(pvParameter);
+    TickType_t lastWakeTime = xTaskGetTickCount();
 
     while (true)
     {
         ledManager->handleLED();
-        vTaskDelay(ledManager->getTimeToDelayFor());
+        const TickType_t delayTicks = pdMS_TO_TICKS(ledManager->getTimeToDelayFor());
+        // Ensure at least 1 tick delay to yield CPU
+        vTaskDelayUntil(&lastWakeTime, delayTicks > 0 ? delayTicks : 1);
     }
 }
