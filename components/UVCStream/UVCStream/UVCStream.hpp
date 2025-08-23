@@ -51,10 +51,12 @@ namespace UVCStreamHelpers
 class UVCStreamManager
 {
   uint8_t *uvc_buffer = nullptr;
+  uint32_t uvc_buffer_size = 0;
 
 public:
   esp_err_t setup();
   esp_err_t start();
+  uint32_t getUvcBufferSize() const { return uvc_buffer_size; }
 };
 
 #endif // UVCSTREAM_HPP

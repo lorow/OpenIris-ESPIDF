@@ -119,6 +119,7 @@ uint8_t const *tud_descriptor_device_cb(void)
 static uint8_t const desc_fs_configuration[] = {
     // TUD_CONFIG_DESCRIPTOR(config_number, interface_count, string_index,
     //                       total_length, attributes, power_mA)
+    // attributes: 0 = bus-powered (default). Add TUSB_DESC_CONFIG_ATT_SELF_POWERED or _REMOTE_WAKEUP if needed.
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0, 500),
 // IAD for Video Control
 #if CFG_TUD_CAM1_VIDEO_STREAMING_BULK
