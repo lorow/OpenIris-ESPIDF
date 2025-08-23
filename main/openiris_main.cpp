@@ -98,6 +98,18 @@ void start_video_streaming(void *arg)
 #ifdef CONFIG_GENERAL_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
         ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
+        // If we were given the Serial task handle, stop the task and uninstall the driver
+        if (arg != nullptr)
+        {
+            const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
+            vTaskDelete(serialTaskHandle);
+            ESP_LOGI("[MAIN]", "Serial task deleted before UVC init");
+            serialManager->shutdown();
+            ESP_LOGI("[MAIN]", "Serial driver uninstalled");
+            // Leave a small gap for the host to see COM disappear
+            vTaskDelay(pdMS_TO_TICKS(200));
+            setUsbHandoverDone(true);
+        }
         esp_err_t ret = uvcStream.setup();
         if (ret != ESP_OK)
         {
@@ -105,6 +117,8 @@ void start_video_streaming(void *arg)
             return;
         }
         uvcStream.start();
+        ESP_LOGI("[MAIN]", "UVC streaming started");
+        return; // UVC path complete, do not fall through to WiFi
 #else
         ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
         ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");

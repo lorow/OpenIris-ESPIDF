@@ -1,5 +1,9 @@
 #include "UVCStream.hpp"
 #include <cstdio> // for snprintf
+#include "driver/usb_serial_jtag.h" // for clean handover from COM to TinyUSB
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+// no deps on main globals here; handover is performed in main before calling setup when needed
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
@@ -33,7 +37,6 @@ extern "C" {
 
 static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int width, int height, int rate, void *cb_ctx)
 {
-  auto *mgr = static_cast<UVCStreamManager *>(cb_ctx);
   ESP_LOGI(UVC_STREAM_TAG, "Camera Start");
   ESP_LOGI(UVC_STREAM_TAG, "Format: %d, width: %d, height: %d, rate: %d", format, width, height, rate);
   framesize_t frame_size = FRAMESIZE_QVGA;
@@ -79,6 +82,7 @@ static void UVCStreamHelpers::camera_stop_cb(void *cb_ctx)
 static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
 {
   auto *mgr = static_cast<UVCStreamManager *>(cb_ctx);
+  (void)mgr;
   s_fb.cam_fb_p = esp_camera_fb_get();
 
   if (!s_fb.cam_fb_p)

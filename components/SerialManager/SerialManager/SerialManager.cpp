@@ -24,13 +24,36 @@ void SerialManager::try_receive()
   int current_position = 0;
   int len = usb_serial_jtag_read_bytes(this->temp_data, 256, 1000 / 20);
 
+  // If driver is uninstalled or an error occurs, abort read gracefully
+  if (len < 0)
+  {
+    return;
+  }
+
   // since we've got something on the serial port
   // we gotta keep reading until we've got the whole message
-  while (len)
+  while (len > 0)
   {
-    memcpy(this->data + current_position, this->temp_data, len);
+    // Prevent buffer overflow
+    if (current_position + len >= BUF_SIZE)
+    {
+      int copy_len = BUF_SIZE - 1 - current_position;
+      if (copy_len > 0)
+      {
+        memcpy(this->data + current_position, this->temp_data, copy_len);
+        current_position += copy_len;
+      }
+      // Drop the rest of the input to avoid overflow
+      break;
+    }
+    memcpy(this->data + current_position, this->temp_data, (size_t)len);
     current_position += len;
     len = usb_serial_jtag_read_bytes(this->temp_data, 256, 1000 / 20);
+    if (len < 0)
+    {
+      // Driver likely uninstalled during handover; stop processing this cycle
+      break;
+    }
   }
 
   if (current_position)
@@ -42,9 +65,10 @@ void SerialManager::try_receive()
     // Notify main that a command was received during startup
     notify_startup_command_received();
 
-    const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
-    const auto resultMessage = result.getResult();
-    usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
+  const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
+  const auto resultMessage = result.getResult();
+  int written = usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
+  (void)written; // ignore errors if driver already uninstalled
   }
 }
 
@@ -79,6 +103,7 @@ void SerialManager::send_heartbeat()
   sprintf(heartbeat, "{\"heartbeat\":\"openiris_setup_mode\",\"serial\":\"%s\"}\n", serial_number);
 
   usb_serial_jtag_write_bytes(heartbeat, strlen(heartbeat), 1000 / 20);
+  // Ignore return value; if the driver was uninstalled, this is a no-op
 }
 
 bool SerialManager::should_send_heartbeat()
@@ -122,5 +147,20 @@ void HandleSerialManagerTask(void *pvParameters)
       }
       lastHeartbeat = currentTime;
     }
+  }
+}
+
+void SerialManager::shutdown()
+{
+  // Stop heartbeats; timer will be deleted by main if needed.
+  // Uninstall the USB Serial JTAG driver to free the internal USB for TinyUSB.
+  esp_err_t err = usb_serial_jtag_driver_uninstall();
+  if (err == ESP_OK)
+  {
+    ESP_LOGI("[SERIAL]", "usb_serial_jtag driver uninstalled");
+  }
+  else if (err != ESP_ERR_INVALID_STATE)
+  {
+    ESP_LOGW("[SERIAL]", "usb_serial_jtag_driver_uninstall returned %s", esp_err_to_name(err));
   }
 }
