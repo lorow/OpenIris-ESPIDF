@@ -1,6 +1,5 @@
 #include "UVCStream.hpp"
 #include <cstdio> // for snprintf
-#include "driver/usb_serial_jtag.h" // for clean handover from COM to TinyUSB
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 // no deps on main globals here; handover is performed in main before calling setup when needed
@@ -34,6 +33,9 @@ extern "C" {
     return serial_number_str;
   }
 }
+
+// single definition of shared framebuffer storage
+UVCStreamHelpers::fb_t UVCStreamHelpers::s_fb = {};
 
 static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int width, int height, int rate, void *cb_ctx)
 {

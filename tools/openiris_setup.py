@@ -901,6 +901,11 @@ def switch_device_mode(device: OpenIrisDevice, args = None):
 
 
 def set_led_duty_cycle(device: OpenIrisDevice, args=None):
+    # Show current duty cycle on entry
+    current = device.get_led_duty_cycle()
+    if current is not None:
+        print(f"💡 Current LED duty cycle: {current}%")
+
     while True:
         input_data = input("Enter LED external PWM duty cycle (0-100) or `back` to exit: \n")
         if input_data.lower() == "back":
@@ -915,7 +920,13 @@ def set_led_duty_cycle(device: OpenIrisDevice, args=None):
             print("❌ Duty cycle must be between 0 and 100.")
         else:
             # Apply immediately; stay in loop for further tweaks
-            device.set_led_duty_cycle(duty_cycle)
+            if device.set_led_duty_cycle(duty_cycle):
+                # Read back and display current value using existing getter
+                updated = device.get_led_duty_cycle()
+                if updated is not None:
+                    print(f"💡 Current LED duty cycle: {updated}%")
+                else:
+                    print("ℹ️  Duty cycle updated, but current value could not be read back.")
 
 
 def monitor_logs(device: OpenIrisDevice, args = None):
