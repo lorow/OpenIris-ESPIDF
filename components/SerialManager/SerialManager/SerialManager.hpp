@@ -27,6 +27,7 @@ public:
   void send_heartbeat();
   bool should_send_heartbeat();
   void notify_startup_command_received();
+  void shutdown();
 
 private:
   std::shared_ptr<CommandManager> commandManager;

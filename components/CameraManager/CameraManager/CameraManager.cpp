@@ -99,7 +99,7 @@ void CameraManager::setupBasicResolution()
     return;
   }
 
-  ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
+  ESP_LOGI(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
 }
 
 void CameraManager::setupCameraSensor()

@@ -4,15 +4,15 @@
 // Forward declarations
 extern void start_video_streaming(void *arg);
 
-bool startupCommandReceived = false;
+static bool s_startupCommandReceived = false;
 bool getStartupCommandReceived()
 {
-    return startupCommandReceived;
+    return s_startupCommandReceived;
 }
 
 void setStartupCommandReceived(bool startupCommandReceived)
 {
-    startupCommandReceived = startupCommandReceived;
+    s_startupCommandReceived = startupCommandReceived;
 }
 
 static TaskHandle_t *g_serial_manager_handle = nullptr;
@@ -27,15 +27,15 @@ void setSerialManagerHandle(TaskHandle_t *serialManagerHandle)
 }
 
 // Global pause state
-bool startupPaused = false;
+static bool s_startupPaused = false;
 bool getStartupPaused()
 {
-    return startupPaused;
+    return s_startupPaused;
 }
 
 void setStartupPaused(bool startupPaused)
 {
-    startupPaused = startupPaused;
+    s_startupPaused = startupPaused;
 }
 
 // Function to manually activate streaming
@@ -48,3 +48,8 @@ void activateStreaming(bool disableSetup)
 
     start_video_streaming(serialTaskHandle);
 }
+
+// USB handover state
+static bool s_usbHandoverDone = false;
+bool getUsbHandoverDone() { return s_usbHandoverDone; }
+void setUsbHandoverDone(bool done) { s_usbHandoverDone = done; }
