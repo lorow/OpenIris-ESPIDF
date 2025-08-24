@@ -996,9 +996,10 @@ def get_settings(device: OpenIrisDevice, args=None):
     ident = summary.get("Identity", {})
     serial = ident.get("serial")
     mac = ident.get("mac")
-    # print(f"🔑 Serial: {serial}")  # Serial display intentionally disabled; MAC is sufficient
-    if mac:
-        print(f"🔗 MAC:    {mac}")
+    if serial:
+        print(f"🔑 Serial: {serial}")
+    # if mac:
+    #     print(f"🔗 MAC:    {mac}")
     if not serial and not mac:
         print("🔑 Serial/MAC: unavailable")
 

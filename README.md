@@ -3,34 +3,15 @@
 
 ## OpenIris-ESPIDF
 
-Firmware and tools for OpenIris — Wi‑Fi, UVC streaming, and a handy Python setup CLI.
+Firmware and tools for OpenIris — Wi‑Fi, UVC streaming, and a Python setup CLI.
 
 ---
 
 ## What’s inside
 - ESP‑IDF firmware (C/C++) with modules for Camera, Wi‑Fi, UVC, REST/Serial commands, and more
-- Python tools to make setup easy over USB serial:
-  - `tools/switchBoardType.py` — choose a board profile (loads the right sdkconfig)
+- Python tools for setup over USB serial:
+  - `tools/switchBoardType.py` — choose a board profile (builds the right sdkconfig)
   - `tools/openiris_setup.py` — interactive CLI for Wi‑Fi, MDNS/Name, Mode, LED PWM, Logs, and a Settings Summary
-  - `tools/wifi_scanner.py` — optional Wi‑Fi scanner
-
----
-
-## Prerequisites
-- ESP‑IDF installed and available in your terminal (`idf.py` works)
-- Python 3.10+ with `pip` (on Windows this is installed automatically when you set up the ESP‑IDF VS Code extension; see “First-time setup on Windows” below)
-- USB cable to your board
-- Optional: install Python dependencies for the tools
-
-Windows (cmd):
-```cmd
-python -m pip install -r tools\requirements.txt
-```
-macOS/Linux (bash):
-```bash
-python3 -m pip install -r tools/requirements.txt
-```
-Note for Windows: If emojis don’t render nicely, it’s only cosmetic — everything still works.
 
 ---
 
@@ -62,14 +43,6 @@ code .
 - If you see the extension’s home page instead, click “Configure extension”, pick “EXPRESS”, choose “GitHub” as the server and version “v5.3.3”.
 - Then open the ESP‑IDF Explorer tab and click “Open ESP‑IDF Terminal”. We’ll use that for builds.
 
-6) Default board profile and switching
-- The project ships with multiple board profiles; one default may target internal “Project Babble” boards.
-- If you have a Seeed XIAO ESP32S3 (or another board), switch the profile with the helper script:
-```cmd
-python .\tools\switchBoardType.py --board xiao-esp32s3 --diff
-```
-- You can re‑run this anytime to switch boards; `--diff` shows the changes.
-
 After this, you’re ready for the Quick start below.
 
 ---
@@ -89,23 +62,15 @@ python3 ./tools/switchBoardType.py --board xiao-esp32s3 --diff
 - `--diff` shows what changed in the config
 
 ### 2) Build & flash
-- Set the target (e.g., ESP32‑S3):
-```cmd
-idf.py set-target esp32s3
-```
-- Build, flash, and open the serial monitor:
-```cmd
-idf.py -p COM15 flash monitor
-```
-Replace `COM15` with your port (Windows: `COM…`, Linux: `/dev/ttyUSB…`, macOS: `/dev/cu.usbmodem…`).
-Exit the monitor with `Ctrl+]`.
+- Set the target (e.g., ESP32‑S3).
+- Build, flash, and open the serial monitor.
 
 ### 3) Use the Python setup CLI (recommended)
 Configure the device conveniently over USB serial.
 
 Windows (cmd):
 ```cmd
-python .\tools\openiris_setup.py --port COM15
+python .\tools\openiris_setup.py --port COMxx
 ```
 macOS/Linux (bash):
 ```bash
@@ -118,8 +83,6 @@ What the CLI can do:
 - Adjust LED PWM
 - Show a Settings Summary (MAC, Wi‑Fi status, mode, PWM, …)
 - View logs
-
-Tip: On start, the CLI keeps the device in a setup state so replies are stable.
 
 ---
 
@@ -134,7 +97,6 @@ Tip: On start, the CLI keeps the device in a setup state so replies are stable.
 - Fast Wi‑Fi setup: in the CLI, go to “Wi‑Fi settings” → “Automatic setup”, then check “status”.
 - Change name/MDNS: set the device name in the CLI, then replug USB — UVC will show the new name.
 - Adjust brightness/LED: set LED PWM in the CLI.
-- Quick health check: run “Get settings summary” after flashing to verify the device state.
 
 ---
 
@@ -148,18 +110,9 @@ If you want to dig deeper: commands are mapped via the `CommandManager` under `c
 ---
 
 ## Troubleshooting
-- No device/port found?
-  - Pass `--port` explicitly (e.g., `--port COM15`).
-  - Right after reset, the device emits heartbeats for a short time; the CLI finds it fastest during that window.
 - UVC doesn’t appear on the host?
-  - Switch mode to UVC and replug USB. On Windows the first driver init can take a moment.
-- Wi‑Fi won’t connect?
-  - Check password/channel. Use the automatic setup in the CLI and then inspect the status.
-- ESP‑IDF not detected?
-  - Ensure the ESP‑IDF environment is active in the terminal (IDF Command Prompt or the extension’s ESP‑IDF Terminal; alternatively source `export.ps1`/`export.sh`).
-- Missing Python modules?
-  - Run `pip install -r tools/requirements.txt`.
+  - Switch mode to UVC via CLI tool, replug USB and wait 20s.
 
 ---
 
-Have fun with OpenIris! Feedback, issues, and PRs are welcome.
+Feedback, issues, and PRs are welcome.
