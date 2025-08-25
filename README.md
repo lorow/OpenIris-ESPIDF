@@ -1,5 +1,5 @@
-| Supported Targets (IDK lol) | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
+| Supported Targets | ESP32-S3 |
+| ----------------- | -------- |
 
 ## OpenIris-ESPIDF
 
@@ -40,7 +40,7 @@ code .
 
 5) Configure ESP‑IDF in the extension
 - On first launch, the extension may prompt to install ESP‑IDF and tools — follow the steps. It can take a while.
-- If you see the extension’s home page instead, click “Configure extension”, pick “EXPRESS”, choose “GitHub” as the server and version “v5.3.3”.
+- If you see the extension’s home page instead, click “Configure extension”, pick “EXPRESS”, choose “GitHub” as the server and version “v5.4.2”.
 - Then open the ESP‑IDF Explorer tab and click “Open ESP‑IDF Terminal”. We’ll use that for builds.
 
 After this, you’re ready for the Quick start below.
@@ -66,16 +66,21 @@ python3 ./tools/switchBoardType.py --board xiao-esp32s3 --diff
 - Build, flash, and open the serial monitor.
 
 ### 3) Use the Python setup CLI (recommended)
-Configure the device conveniently over USB serial.
+Configure the device over USB serial.
 
-Windows (cmd):
+Before you run it:
+- If you still have the serial monitor open, close it (the port must be free).
+- In VS Code, open the sidebar “ESP‑IDF: Explorer” and click “Open ESP‑IDF Terminal”. We’ll run the CLI there so Python and packages are in the right environment.
+
+Then run:
 ```cmd
 python .\tools\openiris_setup.py --port COMxx
 ```
-macOS/Linux (bash):
-```bash
-python3 ./tools/openiris_setup.py --port /dev/ttyUSB0
-```
+Examples:
+- Windows: `python .\tools\openiris_setup.py --port COM69`, …
+- macOS: idk
+- Linux: idk
+
 What the CLI can do:
 - Wi‑Fi menu: automatic (scan → pick → password → connect → wait for IP) or manual (scan, show, configure, connect, status)
 - Set MDNS/Device name (also used for the UVC device name)

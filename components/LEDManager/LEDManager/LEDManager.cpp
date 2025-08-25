@@ -152,16 +152,20 @@ void LEDManager::displayCurrentPattern()
 
 void LEDManager::updateState(const LEDStates_e newState)
 {
+    // If we've got an error state - that's it, keep repeating it indefinitely
+    if (ledStateMap[this->currentState].isError)
+        return;
+
+    // Alternative (recoverable error states):
+    // Allow recovery from error states by only blocking transitions when both, current and new states are error. Uncomment to enable recovery.
+    // if (ledStateMap[this->currentState].isError && ledStateMap[newState].isError)
+    //     return;
+
     // Only update when new state differs and is known.
     if (!ledStateMap.contains(newState))
         return;
 
     if (newState == this->currentState)
-        return;
-
-    // Allow recovery from error states: if both current and new are error, ignore.
-    // Otherwise permit transitioning out of error when a non-error state arrives.
-    if (ledStateMap[this->currentState].isError && ledStateMap[newState].isError)
         return;
 
     this->currentState = newState;
@@ -180,12 +184,6 @@ void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
     dutyPercent = std::min<uint8_t>(100, dutyPercent);
     const uint32_t dutyCycle = (static_cast<uint32_t>(dutyPercent) * 255) / 100;
     ESP_LOGI(LED_MANAGER_TAG, "Updating external LED duty to %u%% (raw %lu)", dutyPercent, dutyCycle);
-
-    // Persist into config immediately so it survives reboot
-    if (this->deviceConfig)
-    {
-        this->deviceConfig->setLEDDUtyCycleConfig(dutyPercent);
-    }
 
     // Apply to LEDC hardware live
     // We configured channel 0 in setup with LEDC_LOW_SPEED_MODE
