@@ -55,6 +55,8 @@ class UVCStreamManager
   uint32_t uvc_buffer_size = 0;
 
 public:
+  // Compile-time buffer size; keep conservative headroom for MJPEG QVGA
+  static constexpr uint32_t UVC_MAX_FRAMESIZE_SIZE = 75 * 1024;
   esp_err_t setup();
   esp_err_t start();
   uint32_t getUvcBufferSize() const { return uvc_buffer_size; }

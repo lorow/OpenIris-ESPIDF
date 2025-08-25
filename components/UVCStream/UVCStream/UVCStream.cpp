@@ -84,7 +84,6 @@ static void UVCStreamHelpers::camera_stop_cb(void *cb_ctx)
 static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
 {
   auto *mgr = static_cast<UVCStreamManager *>(cb_ctx);
-  (void)mgr;
   s_fb.cam_fb_p = esp_camera_fb_get();
 
   if (!s_fb.cam_fb_p)
@@ -126,16 +125,8 @@ esp_err_t UVCStreamManager::setup()
 #endif
 
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");
-
-  // Derive transfer buffer size from configuration/descriptor settings.
-  // Use a conservative default if not defined elsewhere.
-  // For now, allocate based on commonly used max frame size or future Kconfig value.
-  // You can wire this to a Kconfig like CONFIG_UVC_MAX_FRAME_SIZE.
-  if (uvc_buffer_size == 0)
-  {
-    // default to 75 KiB if not set elsewhere
-    uvc_buffer_size = 75 * 1024;
-  }
+  // Allocate a fixed-size transfer buffer (compile-time constant)
+  uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE;
   uvc_buffer = static_cast<uint8_t *>(malloc(uvc_buffer_size));
   if (uvc_buffer == nullptr)
   {
@@ -145,7 +136,7 @@ esp_err_t UVCStreamManager::setup()
 
   uvc_device_config_t config = {
       .uvc_buffer = uvc_buffer,
-      .uvc_buffer_size = uvc_buffer_size,
+  .uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE,
       .start_cb = UVCStreamHelpers::camera_start_cb,
       .fb_get_cb = UVCStreamHelpers::camera_fb_get_cb,
       .fb_return_cb = UVCStreamHelpers::camera_fb_return_cb,

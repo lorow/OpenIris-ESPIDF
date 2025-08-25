@@ -181,7 +181,6 @@ void LEDManager::toggleLED(const bool state) const
 void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
 {
 #ifdef CONFIG_LED_EXTERNAL_CONTROL
-    dutyPercent = std::min<uint8_t>(100, dutyPercent);
     const uint32_t dutyCycle = (static_cast<uint32_t>(dutyPercent) * 255) / 100;
     ESP_LOGI(LED_MANAGER_TAG, "Updating external LED duty to %u%% (raw %lu)", dutyPercent, dutyCycle);
 
