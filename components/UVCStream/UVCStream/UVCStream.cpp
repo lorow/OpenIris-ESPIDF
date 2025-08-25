@@ -91,6 +91,31 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     return nullptr;
   }
 
+//--------------------------------------------------------------------------------------------------------------
+  // Pace frames to exactly 60 fps (drop extras). Uses fixed-point accumulator
+  // to achieve an exact average of 60.000 fps without drifting.
+  static int64_t next_deadline_us = 0;
+  static int rem_acc = 0; // remainder accumulator for 1e6 % fps distribution
+  constexpr int target_fps = 60;
+  constexpr int64_t us_per_sec = 1000000LL;
+  constexpr int base_interval_us = us_per_sec / target_fps; // 16666
+  constexpr int rem_us = us_per_sec % target_fps;            // 40
+
+  const int64_t now_us = esp_timer_get_time();
+  if (next_deadline_us == 0)
+  {
+    // First frame: allow immediately and schedule next slot from now
+    next_deadline_us = now_us;
+  }
+  if (now_us < next_deadline_us)
+  {
+    // Too early for next frame: drop this camera buffer
+    esp_camera_fb_return(s_fb.cam_fb_p);
+    s_fb.cam_fb_p = nullptr;
+    return nullptr;
+  }
+//--------------------------------------------------------------------------------------------------------------
+
   s_fb.uvc_fb.buf = s_fb.cam_fb_p->buf;
   s_fb.uvc_fb.len = s_fb.cam_fb_p->len;
   s_fb.uvc_fb.width = s_fb.cam_fb_p->width;
@@ -105,6 +130,20 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     esp_camera_fb_return(s_fb.cam_fb_p);
     return nullptr;
   }
+  
+//--------------------------------------------------------------------------------------------------------------
+  // Schedule the next allowed frame time: base interval plus distributed remainder
+  rem_acc += rem_us;
+  int extra_us = 0;
+  if (rem_acc >= target_fps)
+  {
+    rem_acc -= target_fps;
+    extra_us = 1;
+  }
+  // Accumulate from the previous deadline to avoid drift; if we are badly late, catch up from now
+  const int64_t base_next = next_deadline_us + base_interval_us + extra_us;
+  next_deadline_us = (base_next < now_us) ? now_us : base_next;
+//--------------------------------------------------------------------------------------------------------------
 
   return &s_fb.uvc_fb;
 }
@@ -119,7 +158,7 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 esp_err_t UVCStreamManager::setup()
 {
 
-#ifndef CONFIG_GENERAL_WIRED_MODE
+#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
   ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
   return ESP_FAIL;
 #endif

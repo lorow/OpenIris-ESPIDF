@@ -22,7 +22,7 @@
 #include <RestAPI.hpp>
 #include <main_globals.hpp>
 
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
 
@@ -49,7 +49,7 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
@@ -95,7 +95,7 @@ void start_video_streaming(void *arg)
 
     if (deviceMode == StreamingMode::UVC)
     {
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
         ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
         // If we were given the Serial task handle, stop the task and uninstall the driver
@@ -120,7 +120,7 @@ void start_video_streaming(void *arg)
         ESP_LOGI("[MAIN]", "UVC streaming started");
         return; // UVC path complete, do not fall through to WiFi
 #else
-        ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
+    ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
         ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
         deviceMode = StreamingMode::WIFI;
 #endif
@@ -207,12 +207,12 @@ void startup_timer_callback(void *arg)
         }
         else if (deviceMode == StreamingMode::UVC)
         {
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
             ESP_LOGI("[MAIN]", "Starting UVC streaming automatically");
             activate_streaming(serialTaskHandle);
 #else
-            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_WIRED_MODE not enabled in build!");
-            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_WIRED_MODE and rebuild.");
+            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_DEFAULT_WIRED_MODE not enabled in build!");
+            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_DEFAULT_WIRED_MODE and rebuild.");
 #endif
         }
         else
