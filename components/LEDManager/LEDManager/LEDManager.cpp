@@ -48,10 +48,7 @@ ledStateMap_t LEDManager::ledStateMap = {
         {
             false,
             false,
-            {
-                {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200},
-                {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}
-            },
+            {{LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}},
         },
     },
     {
@@ -65,32 +62,38 @@ ledStateMap_t LEDManager::ledStateMap = {
 };
 
 LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin,
-                       QueueHandle_t ledStateQueue) : blink_led_pin(pin),
-                                                      illumninator_led_pin(illumninator_led_pin),
-                                                      ledStateQueue(ledStateQueue),
-                                                      currentState(LEDStates_e::LedStateNone) {
+                       QueueHandle_t ledStateQueue, std::shared_ptr<ProjectConfig> deviceConfig) : blink_led_pin(pin),
+                                                                                                   illumninator_led_pin(illumninator_led_pin),
+                                                                                                   ledStateQueue(ledStateQueue),
+                                                                                                   currentState(LEDStates_e::LedStateNone),
+                                                                                                   deviceConfig(deviceConfig)
+{
 }
 
-void LEDManager::setup() {
-    ESP_LOGD(LED_MANAGER_TAG, "Setting up status led.");
+void LEDManager::setup()
+{
+    ESP_LOGI(LED_MANAGER_TAG, "Setting up status led.");
     gpio_reset_pin(blink_led_pin);
     /* Set the GPIO as a push/pull output */
     gpio_set_direction(blink_led_pin, GPIO_MODE_OUTPUT);
     this->toggleLED(LED_OFF);
 
 #ifdef CONFIG_LED_EXTERNAL_CONTROL
-    ESP_LOGD(LED_MANAGER_TAG, "Setting up illuminator led.");
+    ESP_LOGI(LED_MANAGER_TAG, "Setting up illuminator led.");
     const int freq = CONFIG_LED_EXTERNAL_PWM_FREQ;
     const auto resolution = LEDC_TIMER_8_BIT;
-    const int dutyCycle = (CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE * 255) / 100;
+    const auto deviceConfig = this->deviceConfig->getDeviceConfig();
+
+    const uint32_t dutyCycle = (deviceConfig.led_external_pwm_duty_cycle * 255) / 100;
+
+    ESP_LOGI(LED_MANAGER_TAG, "Setting dutyCycle to: %lu ", dutyCycle);
 
     ledc_timer_config_t ledc_timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .duty_resolution = resolution,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = freq,
-        .clk_cfg = LEDC_AUTO_CLK
-    };
+        .clk_cfg = LEDC_AUTO_CLK};
 
     ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
@@ -101,8 +104,7 @@ void LEDManager::setup() {
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = dutyCycle,
-        .hpoint = 0
-    };
+        .hpoint = 0};
 
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 #endif
@@ -110,65 +112,98 @@ void LEDManager::setup() {
     ESP_LOGD(LED_MANAGER_TAG, "Done.");
 }
 
-void LEDManager::handleLED() {
-    if (!this->finishedPattern) {
+void LEDManager::handleLED()
+{
+    if (!this->finishedPattern)
+    {
         displayCurrentPattern();
         return;
     }
 
-    if (xQueueReceive(this->ledStateQueue, &buffer, 10)) {
+    if (xQueueReceive(this->ledStateQueue, &buffer, 10))
+    {
         this->updateState(buffer);
-    } else {
+    }
+    else
+    {
         // we've finished displaying the pattern, so let's check if it's repeatable and if so - reset it
-        if (ledStateMap[this->currentState].isRepeatable || ledStateMap[this->currentState].isError) {
+        if (ledStateMap[this->currentState].isRepeatable || ledStateMap[this->currentState].isError)
+        {
             this->currentPatternIndex = 0;
             this->finishedPattern = false;
         }
     }
 }
 
-void LEDManager::displayCurrentPattern() {
+void LEDManager::displayCurrentPattern()
+{
     auto [state, delayTime] = ledStateMap[this->currentState].patterns[this->currentPatternIndex];
     this->toggleLED(state);
     this->timeToDelayFor = delayTime;
 
     if (this->currentPatternIndex < ledStateMap[this->currentState].patterns.size() - 1)
         this->currentPatternIndex++;
-    else {
+    else
+    {
         this->finishedPattern = true;
         this->toggleLED(LED_OFF);
     }
 }
 
-void LEDManager::updateState(const LEDStates_e newState) {
-    // we should change the displayed state
-    // only if we finished displaying the current one - which is handled by the task
-    // if the new state is not the same as the current one
-    // and if can actually display the state
-
-    // if we've got an error state - that's it, we'll just keep repeating it indefinitely
+void LEDManager::updateState(const LEDStates_e newState)
+{
+    // If we've got an error state - that's it, keep repeating it indefinitely
     if (ledStateMap[this->currentState].isError)
+        return;
+
+    // Alternative (recoverable error states):
+    // Allow recovery from error states by only blocking transitions when both, current and new states are error. Uncomment to enable recovery.
+    // if (ledStateMap[this->currentState].isError && ledStateMap[newState].isError)
+    //     return;
+
+    // Only update when new state differs and is known.
+    if (!ledStateMap.contains(newState))
         return;
 
     if (newState == this->currentState)
         return;
 
-    if (ledStateMap.contains(newState)) {
-        this->currentState = newState;
-        this->currentPatternIndex = 0;
-        this->finishedPattern = false;
-    }
+    this->currentState = newState;
+    this->currentPatternIndex = 0;
+    this->finishedPattern = false;
 }
 
-void LEDManager::toggleLED(const bool state) const {
+void LEDManager::toggleLED(const bool state) const
+{
     gpio_set_level(blink_led_pin, state);
 }
 
-void HandleLEDDisplayTask(void *pvParameter) {
-    auto *ledManager = static_cast<LEDManager *>(pvParameter);
+void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
+{
+#ifdef CONFIG_LED_EXTERNAL_CONTROL
+    const uint32_t dutyCycle = (static_cast<uint32_t>(dutyPercent) * 255) / 100;
+    ESP_LOGI(LED_MANAGER_TAG, "Updating external LED duty to %u%% (raw %lu)", dutyPercent, dutyCycle);
 
-    while (true) {
+    // Apply to LEDC hardware live
+    // We configured channel 0 in setup with LEDC_LOW_SPEED_MODE
+    ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, dutyCycle));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+#else
+    (void)dutyPercent; // unused
+    ESP_LOGW(LED_MANAGER_TAG, "CONFIG_LED_EXTERNAL_CONTROL not enabled; ignoring duty update");
+#endif
+}
+
+void HandleLEDDisplayTask(void *pvParameter)
+{
+    auto *ledManager = static_cast<LEDManager *>(pvParameter);
+    TickType_t lastWakeTime = xTaskGetTickCount();
+
+    while (true)
+    {
         ledManager->handleLED();
-        vTaskDelay(ledManager->getTimeToDelayFor());
+        const TickType_t delayTicks = pdMS_TO_TICKS(ledManager->getTimeToDelayFor());
+        // Ensure at least 1 tick delay to yield CPU
+        vTaskDelayUntil(&lastWakeTime, delayTicks > 0 ? delayTicks : 1);
     }
 }

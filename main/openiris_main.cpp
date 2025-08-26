@@ -22,7 +22,7 @@
 #include <RestAPI.hpp>
 #include <main_globals.hpp>
 
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
 #include <UVCStream.hpp>
 #endif
 
@@ -49,11 +49,11 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
 UVCStreamManager uvcStream;
 #endif
 
-auto *ledManager = new LEDManager(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue);
+auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 
 static void initNVSStorage()
@@ -95,9 +95,21 @@ void start_video_streaming(void *arg)
 
     if (deviceMode == StreamingMode::UVC)
     {
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
         ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
         ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
+        // If we were given the Serial task handle, stop the task and uninstall the driver
+        if (arg != nullptr)
+        {
+            const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
+            vTaskDelete(serialTaskHandle);
+            ESP_LOGI("[MAIN]", "Serial task deleted before UVC init");
+            serialManager->shutdown();
+            ESP_LOGI("[MAIN]", "Serial driver uninstalled");
+            // Leave a small gap for the host to see COM disappear
+            vTaskDelay(pdMS_TO_TICKS(200));
+            setUsbHandoverDone(true);
+        }
         esp_err_t ret = uvcStream.setup();
         if (ret != ESP_OK)
         {
@@ -105,8 +117,10 @@ void start_video_streaming(void *arg)
             return;
         }
         uvcStream.start();
+        ESP_LOGI("[MAIN]", "UVC streaming started");
+        return; // UVC path complete, do not fall through to WiFi
 #else
-        ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
+    ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
         ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
         deviceMode = StreamingMode::WIFI;
 #endif
@@ -193,12 +207,12 @@ void startup_timer_callback(void *arg)
         }
         else if (deviceMode == StreamingMode::UVC)
         {
-#ifdef CONFIG_GENERAL_WIRED_MODE
+#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
             ESP_LOGI("[MAIN]", "Starting UVC streaming automatically");
             activate_streaming(serialTaskHandle);
 #else
-            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_WIRED_MODE not enabled in build!");
-            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_WIRED_MODE and rebuild.");
+            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_DEFAULT_WIRED_MODE not enabled in build!");
+            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_DEFAULT_WIRED_MODE and rebuild.");
 #endif
         }
         else
@@ -228,6 +242,7 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+    dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
     // uvc plan
     // cleanup the logs - done
     // prepare the camera to be initialized with UVC - done?
@@ -274,10 +289,10 @@ extern "C" void app_main(void)
     // setup CI and building for other boards
     // finish todos, overhaul stuff a bit
 
+    // esp_log_set_vprintf(&websocket_logger);
     Logo::printASCII();
     initNVSStorage();
-
-    // esp_log_set_vprintf(&websocket_logger);
+    deviceConfig->load();
     ledManager->setup();
 
     xTaskCreate(
@@ -293,11 +308,10 @@ extern "C" void app_main(void)
         HandleLEDDisplayTask,
         "HandleLEDDisplayTask",
         1024 * 2,
-        ledManager,
+        ledManager.get(),
         3,
         nullptr);
 
-    deviceConfig->load();
     serialManager->setup();
 
     static TaskHandle_t serialManagerHandle = nullptr;
@@ -308,8 +322,7 @@ extern "C" void app_main(void)
         1024 * 6,
         serialManager,
         1, // we only rely on the serial manager during provisioning, we can run it slower
-        &serialManagerHandle
-    );
+        &serialManagerHandle);
 
     wifiManager->Begin();
     mdnsManager.start();

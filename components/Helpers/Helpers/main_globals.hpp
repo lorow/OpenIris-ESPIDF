@@ -21,4 +21,8 @@ void setStartupCommandReceived(bool startupCommandReceived);
 bool getStartupPaused();
 void setStartupPaused(bool startupPaused);
 
+// Tracks whether USB handover from usb_serial_jtag to TinyUSB was performed
+bool getUsbHandoverDone();
+void setUsbHandoverDone(bool done);
+
 #endif

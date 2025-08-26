@@ -20,7 +20,8 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
   size_t _jpg_buf_len = 0;
   uint8_t *_jpg_buf = nullptr;
 
-  char *part_buf[256];
+  // Buffer for multipart header; was mistakenly declared as array of pointers
+  char part_buf[256];
   static int64_t last_frame = 0;
   if (!last_frame)
     last_frame = esp_timer_get_time();
@@ -55,7 +56,7 @@ esp_err_t StreamHelpers::stream(httpd_req_t *req)
       response = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
     if (response == ESP_OK)
     {
-      size_t hlen = snprintf((char *)part_buf, 128, STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
+      size_t hlen = snprintf((char *)part_buf, sizeof(part_buf), STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
       response = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
     }
     if (response == ESP_OK)

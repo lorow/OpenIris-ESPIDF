@@ -22,11 +22,6 @@ public:
   void load();
   void save() const;
 
-  void wifiConfigSave();
-  void cameraConfigSave();
-  void deviceConfigSave();
-  void mdnsConfigSave();
-  void wifiTxPowerConfigSave();
   bool reset();
 
   DeviceConfig_t &getDeviceConfig();
@@ -38,9 +33,10 @@ public:
   WiFiTxPower_t &getWiFiTxPowerConfig();
   TrackerConfig_t &getTrackerConfig();
 
-  void setDeviceConfig(const std::string &OTALogin,
-                       const std::string &OTAPassword,
-                       int OTAPort);
+  void setOTAConfig(const std::string &OTALogin,
+                    const std::string &OTAPassword,
+                    int OTAPort);
+  void setLEDDUtyCycleConfig(int led_external_pwm_duty_cycle);
   void setMDNSConfig(const std::string &hostname);
   void setCameraConfig(uint8_t vflip,
                        uint8_t framesize,

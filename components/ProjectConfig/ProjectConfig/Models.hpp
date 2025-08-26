@@ -21,28 +21,41 @@ struct BaseConfigModel
   Preferences *pref;
 };
 
-enum class StreamingMode {
+enum class StreamingMode
+{
   AUTO,
   UVC,
   WIFI,
 };
 
-struct DeviceMode_t : BaseConfigModel {
+struct DeviceMode_t : BaseConfigModel
+{
   StreamingMode mode;
-  explicit DeviceMode_t(  Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO){}
+  explicit DeviceMode_t(Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO) {}
 
-  void load() {
-    int stored_mode = this->pref->getInt("mode", 0);
+  void load()
+  {
+    // Default mode can be controlled via sdkconfig:
+  // - If CONFIG_GENERAL_DEFAULT_WIRED_MODE is enabled, default to UVC
+    // - Otherwise default to AUTO
+    int default_mode =
+#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
+  static_cast<int>(StreamingMode::UVC);
+#else
+  static_cast<int>(StreamingMode::AUTO);
+#endif
+
+    int stored_mode = this->pref->getInt("mode", default_mode);
     this->mode = static_cast<StreamingMode>(stored_mode);
     ESP_LOGI("DeviceMode", "Loaded device mode: %d", stored_mode);
   }
 
-  void save() const {
+  void save() const
+  {
     this->pref->putInt("mode", static_cast<int>(this->mode));
     ESP_LOGI("DeviceMode", "Saved device mode: %d", static_cast<int>(this->mode));
   }
 };
-
 
 struct DeviceConfig_t : BaseConfigModel
 {
@@ -50,6 +63,7 @@ struct DeviceConfig_t : BaseConfigModel
 
   std::string OTALogin;
   std::string OTAPassword;
+  int led_external_pwm_duty_cycle;
   int OTAPort;
 
   void load()
@@ -57,20 +71,23 @@ struct DeviceConfig_t : BaseConfigModel
     this->OTALogin = this->pref->getString("OTALogin", "openiris");
     this->OTAPassword = this->pref->getString("OTAPassword", "openiris");
     this->OTAPort = this->pref->getInt("OTAPort", 3232);
+    this->led_external_pwm_duty_cycle = this->pref->getInt("led_ext_pwm", CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE);
   };
 
-  void save() const {
+  void save() const
+  {
     this->pref->putString("OTALogin", this->OTALogin.c_str());
     this->pref->putString("OTAPassword", this->OTAPassword.c_str());
     this->pref->putInt("OTAPort", this->OTAPort);
+    this->pref->putInt("led_ext_pwm", this->led_external_pwm_duty_cycle);
   };
 
   std::string toRepresentation() const
   {
     return Helpers::format_string(
         "\"device_config\": {\"OTALogin\": \"%s\", \"OTAPassword\": \"%s\", "
-        "\"OTAPort\": %u}",
-        this->OTALogin.c_str(), this->OTAPassword.c_str(), this->OTAPort);
+        "\"OTAPort\": %u, \"led_external_pwm_duty_cycle\": %u}",
+        this->OTALogin.c_str(), this->OTAPassword.c_str(), this->OTAPort, this->led_external_pwm_duty_cycle);
   };
 };
 
@@ -94,7 +111,8 @@ struct MDNSConfig_t : BaseConfigModel
     this->hostname = this->pref->getString("hostname", default_hostname);
   };
 
-  void save() const {
+  void save() const
+  {
     this->pref->putString("hostname", this->hostname.c_str());
   };
 
@@ -125,7 +143,8 @@ struct CameraConfig_t : BaseConfigModel
     this->brightness = this->pref->getInt("brightness", 2);
   };
 
-  void save() const {
+  void save() const
+  {
     this->pref->putInt("vflip", this->vflip);
     this->pref->putInt("href", this->href);
     this->pref->putInt("framesize", this->framesize);
@@ -186,12 +205,13 @@ struct WiFiConfig_t : BaseConfigModel
     this->password = this->pref->getString(("password" + iter_str).c_str(), "");
     this->channel = this->pref->getUInt(("channel" + iter_str).c_str());
     this->power = this->pref->getUInt(("power" + iter_str).c_str());
-    
-    ESP_LOGI("WiFiConfig", "Loaded network %d: name=%s, ssid=%s, channel=%d", 
+
+    ESP_LOGI("WiFiConfig", "Loaded network %d: name=%s, ssid=%s, channel=%d",
              index, this->name.c_str(), this->ssid.c_str(), this->channel);
   };
 
-  void save() const {
+  void save() const
+  {
     char buffer[2];
     auto const iter_str = std::string(Helpers::itoa(this->index, buffer, 10));
 
@@ -200,8 +220,8 @@ struct WiFiConfig_t : BaseConfigModel
     this->pref->putString(("password" + iter_str).c_str(), this->password.c_str());
     this->pref->putUInt(("channel" + iter_str).c_str(), this->channel);
     this->pref->putUInt(("power" + iter_str).c_str(), this->power);
-    
-    ESP_LOGI("WiFiConfig", "Saved network %d: name=%s, ssid=%s, channel=%d", 
+
+    ESP_LOGI("WiFiConfig", "Saved network %d: name=%s, ssid=%s, channel=%d",
              this->index, this->name.c_str(), this->ssid.c_str(), this->channel);
   };
 
@@ -228,7 +248,8 @@ struct AP_WiFiConfig_t : BaseConfigModel
     this->password = this->pref->getString("apPassword", CONFIG_WIFI_AP_PASSWORD);
   };
 
-  void save() const {
+  void save() const
+  {
     this->pref->putString("apSSID", this->ssid.c_str());
     this->pref->putString("apPass", this->password.c_str());
     this->pref->putUInt("apChannel", this->channel);
@@ -254,7 +275,8 @@ struct WiFiTxPower_t : BaseConfigModel
     this->power = this->pref->getUInt("txpower", 52);
   };
 
-  void save() const {
+  void save() const
+  {
     this->pref->putUInt("txpower", this->power);
   };
 

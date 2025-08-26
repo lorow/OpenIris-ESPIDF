@@ -1,10 +1,13 @@
 #include "UVCStream.hpp"
-constexpr int UVC_MAX_FRAMESIZE_SIZE(75 * 1024);
+#include <cstdio> // for snprintf
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+// no deps on main globals here; handover is performed in main before calling setup when needed
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
 extern "C" {
-  static char serial_number_str[18];
+  static char serial_number_str[13];
 
   const char *get_uvc_device_name()
   {
@@ -23,17 +26,19 @@ extern "C" {
         return CONFIG_TUSB_SERIAL_NUM;
       }
 
-      sniprintf(serial_number_str, sizeof(serial_number_str), "%02X:%02X:%02X:%02X:%02X:%02X",
-          mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
-      );
+    // 12 hex chars without separators
+    snprintf(serial_number_str, sizeof(serial_number_str), "%02X%02X%02X%02X%02X%02X",
+         mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]);
     }
     return serial_number_str;
   }
 }
 
+// single definition of shared framebuffer storage
+UVCStreamHelpers::fb_t UVCStreamHelpers::s_fb = {};
+
 static esp_err_t UVCStreamHelpers::camera_start_cb(uvc_format_t format, int width, int height, int rate, void *cb_ctx)
 {
-  (void)cb_ctx;
   ESP_LOGI(UVC_STREAM_TAG, "Camera Start");
   ESP_LOGI(UVC_STREAM_TAG, "Format: %d, width: %d, height: %d, rate: %d", format, width, height, rate);
   framesize_t frame_size = FRAMESIZE_QVGA;
@@ -78,13 +83,38 @@ static void UVCStreamHelpers::camera_stop_cb(void *cb_ctx)
 
 static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
 {
-  (void)cb_ctx;
+  auto *mgr = static_cast<UVCStreamManager *>(cb_ctx);
   s_fb.cam_fb_p = esp_camera_fb_get();
 
   if (!s_fb.cam_fb_p)
   {
     return nullptr;
   }
+
+//--------------------------------------------------------------------------------------------------------------
+  // Pace frames to exactly 60 fps (drop extras). Uses fixed-point accumulator
+  // to achieve an exact average of 60.000 fps without drifting.
+  static int64_t next_deadline_us = 0;
+  static int rem_acc = 0; // remainder accumulator for 1e6 % fps distribution
+  constexpr int target_fps = 60;
+  constexpr int64_t us_per_sec = 1000000LL;
+  constexpr int base_interval_us = us_per_sec / target_fps; // 16666
+  constexpr int rem_us = us_per_sec % target_fps;            // 40
+
+  const int64_t now_us = esp_timer_get_time();
+  if (next_deadline_us == 0)
+  {
+    // First frame: allow immediately and schedule next slot from now
+    next_deadline_us = now_us;
+  }
+  if (now_us < next_deadline_us)
+  {
+    // Too early for next frame: drop this camera buffer
+    esp_camera_fb_return(s_fb.cam_fb_p);
+    s_fb.cam_fb_p = nullptr;
+    return nullptr;
+  }
+//--------------------------------------------------------------------------------------------------------------
 
   s_fb.uvc_fb.buf = s_fb.cam_fb_p->buf;
   s_fb.uvc_fb.len = s_fb.cam_fb_p->len;
@@ -93,12 +123,27 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
   s_fb.uvc_fb.format = UVC_FORMAT_JPEG; // we gotta make sure we're ALWAYS using JPEG
   s_fb.uvc_fb.timestamp = s_fb.cam_fb_p->timestamp;
 
-  if (s_fb.uvc_fb.len > UVC_MAX_FRAMESIZE_SIZE)
+  // Ensure frame fits into configured UVC transfer buffer
+  if (mgr && s_fb.uvc_fb.len > mgr->getUvcBufferSize())
   {
-    ESP_LOGE(UVC_STREAM_TAG, "Frame size %d is larger than max frame size %d", s_fb.uvc_fb.len, UVC_MAX_FRAMESIZE_SIZE);
+    ESP_LOGE(UVC_STREAM_TAG, "Frame size %d exceeds UVC buffer size %u", (int)s_fb.uvc_fb.len, (unsigned)mgr->getUvcBufferSize());
     esp_camera_fb_return(s_fb.cam_fb_p);
     return nullptr;
   }
+  
+//--------------------------------------------------------------------------------------------------------------
+  // Schedule the next allowed frame time: base interval plus distributed remainder
+  rem_acc += rem_us;
+  int extra_us = 0;
+  if (rem_acc >= target_fps)
+  {
+    rem_acc -= target_fps;
+    extra_us = 1;
+  }
+  // Accumulate from the previous deadline to avoid drift; if we are badly late, catch up from now
+  const int64_t base_next = next_deadline_us + base_interval_us + extra_us;
+  next_deadline_us = (base_next < now_us) ? now_us : base_next;
+//--------------------------------------------------------------------------------------------------------------
 
   return &s_fb.uvc_fb;
 }
@@ -113,14 +158,15 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 esp_err_t UVCStreamManager::setup()
 {
 
-#ifndef CONFIG_GENERAL_WIRED_MODE
+#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
   ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
   return ESP_FAIL;
 #endif
 
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");
-
-  uvc_buffer = static_cast<uint8_t *>(malloc(UVC_MAX_FRAMESIZE_SIZE));
+  // Allocate a fixed-size transfer buffer (compile-time constant)
+  uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE;
+  uvc_buffer = static_cast<uint8_t *>(malloc(uvc_buffer_size));
   if (uvc_buffer == nullptr)
   {
     ESP_LOGE(UVC_STREAM_TAG, "Allocating buffer for UVC Device failed");
@@ -129,11 +175,12 @@ esp_err_t UVCStreamManager::setup()
 
   uvc_device_config_t config = {
       .uvc_buffer = uvc_buffer,
-      .uvc_buffer_size = UVC_MAX_FRAMESIZE_SIZE,
+  .uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE,
       .start_cb = UVCStreamHelpers::camera_start_cb,
       .fb_get_cb = UVCStreamHelpers::camera_fb_get_cb,
       .fb_return_cb = UVCStreamHelpers::camera_fb_return_cb,
       .stop_cb = UVCStreamHelpers::camera_stop_cb,
+      .cb_ctx = this,
   };
 
   esp_err_t ret = uvc_device_config(0, &config);

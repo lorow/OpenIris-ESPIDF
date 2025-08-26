@@ -40,7 +40,8 @@ namespace UVCStreamHelpers
     uvc_fb_t uvc_fb;
   } fb_t;
 
-  static fb_t s_fb;
+  // single storage is defined in UVCStream.cpp
+  extern fb_t s_fb;
 
   static esp_err_t camera_start_cb(uvc_format_t format, int width, int height, int rate, void *cb_ctx);
   static void camera_stop_cb(void *cb_ctx);
@@ -51,10 +52,14 @@ namespace UVCStreamHelpers
 class UVCStreamManager
 {
   uint8_t *uvc_buffer = nullptr;
+  uint32_t uvc_buffer_size = 0;
 
 public:
+  // Compile-time buffer size; keep conservative headroom for MJPEG QVGA
+  static constexpr uint32_t UVC_MAX_FRAMESIZE_SIZE = 75 * 1024;
   esp_err_t setup();
   esp_err_t start();
+  uint32_t getUvcBufferSize() const { return uvc_buffer_size; }
 };
 
 #endif // UVCSTREAM_HPP

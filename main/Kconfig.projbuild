@@ -6,9 +6,13 @@ endmenu
 
 menu "OpenIris: General Configuration"
 
-    config GENERAL_WIRED_MODE
+    config GENERAL_DEFAULT_WIRED_MODE
         bool "Wired mode"
         default false
+        help
+            Enables UVC (wired) support in the firmware. When enabled, the
+            default device streaming mode will be UVC unless overridden by a
+            saved preference. When disabled, the default mode is AUTO.
 
     config GENERAL_UVC_DELAY
         int "UVC delay (s)"
