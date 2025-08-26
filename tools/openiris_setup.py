@@ -410,14 +410,31 @@ class OpenIrisDevice:
             print(f"❌ Failed to parse mode response: {e}")
             return "unknown"
     
+    def get_mdns_name(self) -> str:
+        """Get the current MDNS name"""
+        response = self.send_command("get_mdns_name")
+        if "error" in response:
+            print(f"❌ Failed to get device name: {response['error']}")
+            return "unknown"
+
+        try:
+            results = response.get("results", [])
+            if results:
+                result_data = json.loads(results[0])
+                name_data = json.loads(result_data["result"])
+                return name_data.get("hostname", "unknown")
+        except Exception as e:
+            print(f"❌ Failed to parse name response: {e}")
+            return "unknown"
+
     def set_led_duty_cycle(self, duty_cycle):
         """Sets the PWN duty cycle of the LED"""
         print(f"🌟 Setting LED duty cycle to {duty_cycle}%...")
         response = self.send_command("set_led_duty_cycle", {"dutyCycle": duty_cycle})
-        if "error" in response: 
+        if "error" in response:
             print(f"❌ Failed to set LED duty cycle: {response['error']}")
             return False
-        
+
         print("✅ LED duty cycle set successfully")
         return True
 
@@ -689,10 +706,13 @@ def configure_wifi(device: OpenIrisDevice, args = None):
 
 
 def configure_mdns(device: OpenIrisDevice, args = None):
+    current_name = device.get_mdns_name()
+    print(f"\n📍 Current device name: {current_name} \n")
     print("💡 Please enter your preferred device name, your board will be accessible under http://<name>.local/")
     print("💡 Please avoid spaces and special characters")
     print("    To back out, enter `back`")
     print("\n    Note, this will also modify the name of the UVC device")
+
     while True:
         name_choice = input("\nDevice name: ").strip()
         if any(space in name_choice for space in string.whitespace):
@@ -910,7 +930,7 @@ def set_led_duty_cycle(device: OpenIrisDevice, args=None):
         input_data = input("Enter LED external PWM duty cycle (0-100) or `back` to exit: \n")
         if input_data.lower() == "back":
             break
-        
+
         try:
             duty_cycle = int(input_data)
         except ValueError:
