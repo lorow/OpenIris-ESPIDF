@@ -36,13 +36,13 @@ struct DeviceMode_t : BaseConfigModel
   void load()
   {
     // Default mode can be controlled via sdkconfig:
-  // - If CONFIG_GENERAL_DEFAULT_WIRED_MODE is enabled, default to UVC
+    // - If CONFIG_START_IN_UVC_MODE is enabled, default to UVC
     // - Otherwise default to AUTO
     int default_mode =
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
-  static_cast<int>(StreamingMode::UVC);
+#if CONFIG_START_IN_UVC_MODE
+        static_cast<int>(StreamingMode::UVC);
 #else
-  static_cast<int>(StreamingMode::AUTO);
+        static_cast<int>(StreamingMode::AUTO);
 #endif
 
     int stored_mode = this->pref->getInt("mode", default_mode);
@@ -71,7 +71,11 @@ struct DeviceConfig_t : BaseConfigModel
     this->OTALogin = this->pref->getString("OTALogin", "openiris");
     this->OTAPassword = this->pref->getString("OTAPassword", "openiris");
     this->OTAPort = this->pref->getInt("OTAPort", 3232);
+#if CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE
     this->led_external_pwm_duty_cycle = this->pref->getInt("led_ext_pwm", CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE);
+#else
+    this->led_external_pwm_duty_cycle = this->pref->getInt("led_ext_pwm", 100);
+#endif
   };
 
   void save() const

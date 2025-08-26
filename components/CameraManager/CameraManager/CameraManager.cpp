@@ -79,10 +79,10 @@ void CameraManager::setupCameraPinout()
       .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
       .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-      .jpeg_quality = 7,                   // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
-      .fb_count = 2,                       // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+      .jpeg_quality = 7, // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
+      .fb_count = 2,     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
       .fb_location = CAMERA_FB_IN_DRAM,
-      .grab_mode = CAMERA_GRAB_LATEST, //CAMERA_GRAB_WHEN_EMPTY
+      .grab_mode = CAMERA_GRAB_LATEST, // CAMERA_GRAB_WHEN_EMPTY
   };
 }
 
@@ -202,7 +202,8 @@ bool CameraManager::setupCamera()
   // Thanks to lick_it, we discovered that OV5640 likes to overheat when
   // running at higher than usual xclk frequencies.
   // Hence, why we're limiting the faster ones for OV2640
-  if (const auto camera_id = temp_sensor->id.PID; camera_id == OV5640_PID) {
+  if (const auto camera_id = temp_sensor->id.PID; camera_id == OV5640_PID)
+  {
     config.xclk_freq_hz = OV5640_XCLK_FREQ_HZ;
     esp_camera_deinit();
     esp_camera_init(&config);
