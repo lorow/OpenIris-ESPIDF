@@ -71,7 +71,11 @@ struct DeviceConfig_t : BaseConfigModel
     this->OTALogin = this->pref->getString("OTALogin", "openiris");
     this->OTAPassword = this->pref->getString("OTAPassword", "openiris");
     this->OTAPort = this->pref->getInt("OTAPort", 3232);
+#if CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE
     this->led_external_pwm_duty_cycle = this->pref->getInt("led_ext_pwm", CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE);
+#else
+    this->led_external_pwm_duty_cycle = this->pref->getInt("led_ext_pwm", 100);
+#endif
   };
 
   void save() const
