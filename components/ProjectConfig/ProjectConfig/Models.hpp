@@ -36,13 +36,13 @@ struct DeviceMode_t : BaseConfigModel
   void load()
   {
     // Default mode can be controlled via sdkconfig:
-  // - If CONFIG_GENERAL_DEFAULT_WIRED_MODE is enabled, default to UVC
+    // - If CONFIG_START_IN_UVC_MODE is enabled, default to UVC
     // - Otherwise default to AUTO
     int default_mode =
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
-  static_cast<int>(StreamingMode::UVC);
+#if CONFIG_START_IN_UVC_MODE
+        static_cast<int>(StreamingMode::UVC);
 #else
-  static_cast<int>(StreamingMode::AUTO);
+        static_cast<int>(StreamingMode::AUTO);
 #endif
 
     int stored_mode = this->pref->getInt("mode", default_mode);

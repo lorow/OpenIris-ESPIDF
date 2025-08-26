@@ -6,6 +6,15 @@ endmenu
 
 menu "OpenIris: General Configuration"
 
+    config START_IN_UVC_MODE
+        bool "Start in UVC Mode"
+        default false
+        help
+            Enables UVC (wired) support in the firmware by default.
+            To be used when a board is designed to be used primarily with wired headsets.
+            When enabled, the default device streaming mode will be UVC unless overridden by a
+            saved preference. When disabled, the default mode is AUTO.
+
     config GENERAL_DEFAULT_WIRED_MODE
         bool "Wired mode"
         default false

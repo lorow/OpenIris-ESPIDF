@@ -6,7 +6,8 @@
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
-extern "C" {
+extern "C"
+{
   static char serial_number_str[13];
 
   const char *get_uvc_device_name()
@@ -26,9 +27,9 @@ extern "C" {
         return CONFIG_TUSB_SERIAL_NUM;
       }
 
-    // 12 hex chars without separators
-    snprintf(serial_number_str, sizeof(serial_number_str), "%02X%02X%02X%02X%02X%02X",
-         mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]);
+      // 12 hex chars without separators
+      snprintf(serial_number_str, sizeof(serial_number_str), "%02X%02X%02X%02X%02X%02X",
+               mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]);
     }
     return serial_number_str;
   }
@@ -91,7 +92,7 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     return nullptr;
   }
 
-//--------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------
   // Pace frames to exactly 60 fps (drop extras). Uses fixed-point accumulator
   // to achieve an exact average of 60.000 fps without drifting.
   static int64_t next_deadline_us = 0;
@@ -99,7 +100,7 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
   constexpr int target_fps = 60;
   constexpr int64_t us_per_sec = 1000000LL;
   constexpr int base_interval_us = us_per_sec / target_fps; // 16666
-  constexpr int rem_us = us_per_sec % target_fps;            // 40
+  constexpr int rem_us = us_per_sec % target_fps;           // 40
 
   const int64_t now_us = esp_timer_get_time();
   if (next_deadline_us == 0)
@@ -114,7 +115,7 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     s_fb.cam_fb_p = nullptr;
     return nullptr;
   }
-//--------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------
 
   s_fb.uvc_fb.buf = s_fb.cam_fb_p->buf;
   s_fb.uvc_fb.len = s_fb.cam_fb_p->len;
@@ -130,8 +131,8 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     esp_camera_fb_return(s_fb.cam_fb_p);
     return nullptr;
   }
-  
-//--------------------------------------------------------------------------------------------------------------
+
+  //--------------------------------------------------------------------------------------------------------------
   // Schedule the next allowed frame time: base interval plus distributed remainder
   rem_acc += rem_us;
   int extra_us = 0;
@@ -143,7 +144,7 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
   // Accumulate from the previous deadline to avoid drift; if we are badly late, catch up from now
   const int64_t base_next = next_deadline_us + base_interval_us + extra_us;
   next_deadline_us = (base_next < now_us) ? now_us : base_next;
-//--------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------
 
   return &s_fb.uvc_fb;
 }
@@ -175,7 +176,7 @@ esp_err_t UVCStreamManager::setup()
 
   uvc_device_config_t config = {
       .uvc_buffer = uvc_buffer,
-  .uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE,
+      .uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE,
       .start_cb = UVCStreamHelpers::camera_start_cb,
       .fb_get_cb = UVCStreamHelpers::camera_fb_get_cb,
       .fb_return_cb = UVCStreamHelpers::camera_fb_return_cb,
