@@ -17,7 +17,8 @@ extern std::shared_ptr<CameraManager> cameraHandler;
 extern std::shared_ptr<ProjectConfig> deviceConfig;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
   const char *get_uvc_device_name();

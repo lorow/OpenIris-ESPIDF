@@ -28,17 +28,18 @@
 
 #include "uvc_frame_config.h"
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-//--------------------------------------------------------------------+
-// Board Specific Configuration
-//--------------------------------------------------------------------+
+  //--------------------------------------------------------------------+
+  // Board Specific Configuration
+  //--------------------------------------------------------------------+
 
 #ifdef CONFIG_TINYUSB_RHPORT_HS
-#   define CFG_TUSB_RHPORT1_MODE    OPT_MODE_DEVICE | OPT_MODE_HIGH_SPEED
+#define CFG_TUSB_RHPORT1_MODE OPT_MODE_DEVICE | OPT_MODE_HIGH_SPEED
 #else
-#   define CFG_TUSB_RHPORT0_MODE    OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED
+#define CFG_TUSB_RHPORT0_MODE OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED
 #endif
 
 //--------------------------------------------------------------------
@@ -55,20 +56,20 @@ extern "C" {
 #endif
 
 #ifndef CFG_TUSB_OS
-#define CFG_TUSB_OS           OPT_OS_FREERTOS
+#define CFG_TUSB_OS OPT_OS_FREERTOS
 #endif
 
 // Espressif IDF requires "freertos/" prefix in include path
 #if TU_CHECK_MCU(OPT_MCU_ESP32S2, OPT_MCU_ESP32S3, OPT_MCU_ESP32P4)
-#define CFG_TUSB_OS_INC_PATH    freertos/
+#define CFG_TUSB_OS_INC_PATH freertos/
 #endif
 
 #ifndef CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG        0
+#define CFG_TUSB_DEBUG 0
 #endif
 
 // Enable Device stack
-#define CFG_TUD_ENABLED       1
+#define CFG_TUD_ENABLED 1
 
 /* USB DMA on some MCUs can only access a specific SRAM region with restriction on alignment.
  * Tinyusb use follows macros to declare transferring memory so that they can be put
@@ -82,71 +83,54 @@ extern "C" {
 #endif
 
 #ifndef CFG_TUSB_MEM_ALIGN
-#define CFG_TUSB_MEM_ALIGN        __attribute__ ((aligned(4)))
+#define CFG_TUSB_MEM_ALIGN __attribute__((aligned(4)))
 #endif
 
-//--------------------------------------------------------------------
-// DEVICE CONFIGURATION
-//--------------------------------------------------------------------
+  //--------------------------------------------------------------------
+  // DEVICE CONFIGURATION
+  //--------------------------------------------------------------------
 
 #ifndef CFG_TUD_ENDPOINT0_SIZE
-#define CFG_TUD_ENDPOINT0_SIZE    64
+#define CFG_TUD_ENDPOINT0_SIZE 64
 #endif
 
-//------------- CLASS -------------//
+  //------------- CLASS -------------//
 
-// The number of video control interfaces
-// The number of video streaming interfaces
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-#define CFG_TUD_VIDEO  2
-#define CFG_TUD_VIDEO_STREAMING  2
-#else
-#define CFG_TUD_VIDEO  1
-#define CFG_TUD_VIDEO_STREAMING  1
-#endif
+#define CFG_TUD_CDC 1
+
+// CDC FIFO size of TX and RX
+#define CFG_TUD_CDC_RX_BUFSIZE 256
+#define CFG_TUD_CDC_TX_BUFSIZE 256
+
+// CDC Endpoint transfer buffer size, more is faster
+#define CFG_TUD_CDC_EP_BUFSIZE 64
+
+  // The number of video control interfaces
+  // The number of video streaming interfaces
+
+#define CFG_TUD_VIDEO 1
+#define CFG_TUD_VIDEO_STREAMING 1
 
 // video streaming endpoint size
 #ifdef UVC_CAM1_BULK_MODE
 #if CONFIG_TINYUSB_RHPORT_HS
-#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE  512
+#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE 512
 #else
-#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE  64
+#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE 64
 #endif
 #define CFG_TUD_CAM1_VIDEO_STREAMING_BULK 1
 #else
 #define CFG_TUD_CAM1_VIDEO_STREAMING_BULK 0
 #if CONFIG_TINYUSB_RHPORT_HS
-#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE  1023
+#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE 1023
 #else
-#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE  512
+#define CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE 512
 #endif
 #endif
 
 #define CFG_EXAMPLE_VIDEO_DISABLE_MJPEG (!FORMAT_MJPEG)
 
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-#ifdef UVC_CAM2_BULK_MODE
-#if CONFIG_TINYUSB_RHPORT_HS
-#define CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE  512
-#else
-#define CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE  64
-#endif
-#define CFG_TUD_CAM2_VIDEO_STREAMING_BULK 1
-#else
-#define CFG_TUD_CAM2_VIDEO_STREAMING_BULK 0
-#if CONFIG_TINYUSB_RHPORT_HS
-#define CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE  1023
-#else
-#define CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE  512
-#endif
-#endif
-#endif
-
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-#define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE (CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE > CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE?CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE:CFG_TUD_CAM2_VIDEO_STREAMING_EP_BUFSIZE)
-#else
 #define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE CFG_TUD_CAM1_VIDEO_STREAMING_EP_BUFSIZE
-#endif
 
 #ifdef __cplusplus
 }

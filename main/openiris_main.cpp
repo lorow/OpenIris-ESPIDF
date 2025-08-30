@@ -32,6 +32,7 @@
 esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
+QueueHandle_t cdcMessageQueue = xQueueCreate(3, sizeof(cdc_command_packet_t));
 
 auto *stateManager = new StateManager(eventQueue, ledStateQueue);
 auto dependencyRegistry = std::make_shared<DependencyRegistry>();
@@ -84,6 +85,11 @@ void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
 // 3. Device attempts WiFi connection while maintaining setup interfaces
 // 4. Device reports connection status via serial
 // 5. User explicitly starts streaming after verifying connectivity
+
+// todo this is getting yeeted lmao
+// new flow once more - auto - start the setup mode, we're gonna wait for a decision of what to do, maybe try and detect if we're connected to usb
+// uvc mode - start the uvc stream right away, kill webserver and wifi
+// wifi mode - start the wifi stream right away
 void start_video_streaming(void *arg)
 {
     // Get the stored device mode
@@ -120,7 +126,7 @@ void start_video_streaming(void *arg)
         ESP_LOGI("[MAIN]", "UVC streaming started");
         return; // UVC path complete, do not fall through to WiFi
 #else
-    ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
+        ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
         ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
         deviceMode = StreamingMode::WIFI;
 #endif
@@ -324,6 +330,14 @@ extern "C" void app_main(void)
         1, // we only rely on the serial manager during provisioning, we can run it slower
         &serialManagerHandle);
 
+    xTaskCreate(
+        HandleCDCSerialManagerTask,
+        "HandleCDCSerialManagerTask",
+        1024 * 6,
+        commandManager.get(),
+        1,
+        nullptr);
+
     wifiManager->Begin();
     mdnsManager.start();
     restAPI->begin();
@@ -355,5 +369,6 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000));
     ESP_LOGI("[MAIN]", "Started 20-second startup timer");
     ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
+    // todo make this a tasks context that stores all the handles
     setSerialManagerHandle(&serialManagerHandle);
 }

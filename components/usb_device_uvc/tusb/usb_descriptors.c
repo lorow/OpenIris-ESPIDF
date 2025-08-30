@@ -65,14 +65,18 @@ uint8_t const *tud_descriptor_device_cb(void)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 // String descriptor indices used in interface descriptors
-#define STRID_LANGID        0
-#define STRID_MANUFACTURER  1
-#define STRID_PRODUCT       2
-#define STRID_SERIAL        3
-#define STRID_UVC_CAM1      4
+#define STRID_LANGID 0
+#define STRID_MANUFACTURER 1
+#define STRID_PRODUCT 2
+#define STRID_SERIAL 3
+#define STRID_UVC_CAM1 4
 
+// Endpoint numbers for CDC
+#define EPNUM_CDC_NOTIF   0x81
+#define EPNUM_CDC_OUT     0x02
+#define EPNUM_CDC_IN      0x82
 // Endpoint numbers for UVC video IN endpoints (device -> host)
-#define EPNUM_CAM1_VIDEO_IN 0x81
+#define EPNUM_CAM1_VIDEO_IN 0x83
 
 #if CFG_TUD_CAM1_VIDEO_STREAMING_BULK
 
@@ -113,7 +117,7 @@ uint8_t const *tud_descriptor_device_cb(void)
 #endif // CFG_TUD_CAM1_VIDEO_STREAMING_BULK
 
 // Total length of this configuration
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_CAM1_VIDEO_CAPTURE_DESC_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_CAM1_VIDEO_CAPTURE_DESC_LEN)
 
 // Full-speed configuration descriptor
 static uint8_t const desc_fs_configuration[] = {
@@ -121,6 +125,7 @@ static uint8_t const desc_fs_configuration[] = {
     //                       total_length, attributes, power_mA)
     // attributes: 0 = bus-powered (default). Add TUSB_DESC_CONFIG_ATT_SELF_POWERED or _REMOTE_WAKEUP if needed.
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0, 500),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 6, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
 // IAD for Video Control
 #if CFG_TUD_CAM1_VIDEO_STREAMING_BULK
 #if CONFIG_UVC_CAM1_MULTI_FRAMESIZE
@@ -235,16 +240,16 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
         // Note: the 0xEE index string is a Microsoft OS 1.0 Descriptors.
         // https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/microsoft-defined-usb-descriptors
 
-    if (!(index < sizeof(string_desc_arr) / sizeof(string_desc_arr[0])))
+        if (!(index < sizeof(string_desc_arr) / sizeof(string_desc_arr[0])))
         {
             return NULL;
         }
 
         const char *str = string_desc_arr[index];
-    // Allow dynamic overrides for specific indices
-    if (index == STRID_SERIAL)
+        // Allow dynamic overrides for specific indices
+        if (index == STRID_SERIAL)
             str = get_serial_number();
-    if (index == STRID_UVC_CAM1)
+        if (index == STRID_UVC_CAM1)
             str = get_uvc_device_name();
         if (str == NULL)
             str = string_desc_arr[index];
