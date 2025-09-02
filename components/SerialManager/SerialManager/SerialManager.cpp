@@ -132,15 +132,15 @@ void SerialManager::shutdown()
 {
   // Stop heartbeats; timer will be deleted by main if needed.
   // Uninstall the USB Serial JTAG driver to free the internal USB for TinyUSB.
-  // esp_err_t err = usb_serial_jtag_driver_uninstall();
-  // if (err == ESP_OK)
-  // {
-  //   ESP_LOGI("[SERIAL]", "usb_serial_jtag driver uninstalled");
-  // }
-  // else if (err != ESP_ERR_INVALID_STATE)
-  // {
-  //   ESP_LOGW("[SERIAL]", "usb_serial_jtag_driver_uninstall returned %s", esp_err_to_name(err));
-  // }
+  esp_err_t err = usb_serial_jtag_driver_uninstall();
+  if (err == ESP_OK)
+  {
+    ESP_LOGI("[SERIAL]", "usb_serial_jtag driver uninstalled");
+  }
+  else if (err != ESP_ERR_INVALID_STATE)
+  {
+    ESP_LOGW("[SERIAL]", "usb_serial_jtag_driver_uninstall returned %s", esp_err_to_name(err));
+  }
 }
 
 // we can cancel this task once we're in cdc

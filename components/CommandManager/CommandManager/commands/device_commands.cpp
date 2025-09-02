@@ -128,8 +128,20 @@ CommandResult getLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registr
 
 CommandResult startStreamingCommand()
 {
-    activateStreaming(false); // Don't disable setup interfaces by default
-    return CommandResult::getSuccessResult("Streaming started");
+    // since we're trying to kill the serial handler
+    // from *inside* the serial handler, we'd deadlock.
+    // we can just pass nullptr to the vtaskdelete(),
+    // but then we won't get any response, so we schedule a timer instead
+    esp_timer_create_args_t args{
+        .callback = activateStreaming,
+        .arg = nullptr,
+        .name = "activateStreaming"};
+
+    esp_timer_handle_t activateStreamingTimer;
+    esp_timer_create(&args, &activateStreamingTimer);
+    esp_timer_start_once(activateStreamingTimer, pdMS_TO_TICKS(150));
+
+    return CommandResult::getSuccessResult("Streaming starting");
 }
 
 CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
