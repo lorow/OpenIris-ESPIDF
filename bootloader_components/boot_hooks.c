@@ -1,6 +1,6 @@
 // source: https://github.com/espressif/esp-iot-solution/blob/4730d91db70df7e6e0a3191d725ab1c5f98ff9ce/examples/usb/device/usb_webcam/bootloader_components/boot_hooks/boot_hooks.c
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
 #include "esp_log.h"
 #include "soc/rtc_cntl_struct.h"
 #include "soc/usb_serial_jtag_reg.h"

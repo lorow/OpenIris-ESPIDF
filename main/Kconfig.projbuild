@@ -15,7 +15,7 @@ menu "OpenIris: General Configuration"
             When enabled, the default device streaming mode will be UVC unless overridden by a
             saved preference. When disabled, the default mode is AUTO.
 
-    config GENERAL_DEFAULT_WIRED_MODE
+    config GENERAL_INCLUDE_UVC_MODE
         bool "Wired mode"
         default false
         help
@@ -113,5 +113,55 @@ menu "OpenIris: LED Configuration"
         help
             Duty cycle of the PWM signal for external IR LEDs, in percent.
             0 means always off, 100 means always on.
+
+endmenu
+
+menu "OpenIris: Monitoring"
+
+    config MONITORING_LED_CURRENT
+        bool "Enable LED current monitoring"
+        default y
+        help
+            Enable sampling LED current via ADC and report it over commands.
+
+    config MONITORING_LED_ADC_GPIO
+        int "ADC GPIO for LED current sense"
+        depends on MONITORING_LED_CURRENT
+        range 0 48
+        default 3
+        help
+            GPIO connected to the current sense input (ADC1 on ESP32-S3: 1..10 supported).
+
+    config MONITORING_LED_GAIN
+        int "Analog front-end gain/divider"
+        depends on MONITORING_LED_CURRENT
+        range 1 1024
+        default 11
+        help
+            Divider or amplifier gain between shunt and ADC. The measured mV are divided by this value.
+
+    config MONITORING_LED_SHUNT_MILLIOHM
+        int "Shunt resistance (milli-ohms)"
+        depends on MONITORING_LED_CURRENT
+        range 1 1000000
+        default 22000
+        help
+            Shunt resistor value in milli-ohms. Current[mA] = 1000 * Vshunt[mV] / R[mΩ].
+
+    config MONITORING_LED_SAMPLES
+        int "Filter window size (samples)"
+        depends on MONITORING_LED_CURRENT
+        range 1 200
+        default 10
+        help
+            Moving-average window length for voltage filtering.
+
+    config MONITORING_LED_INTERVAL_MS
+        int "Sampling interval (ms)"
+        depends on MONITORING_LED_CURRENT
+        range 10 60000
+        default 500
+        help
+            Period between samples when background monitoring is active.
 
 endmenu

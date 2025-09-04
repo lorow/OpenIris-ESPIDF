@@ -378,7 +378,7 @@ class OpenIrisDevice:
         return True
     
     def switch_mode(self, mode: str) -> bool:
-        """Switch device mode between WiFi, UVC, and Auto"""
+        """Switch device mode between WiFi, UVC, and Setup"""
         print(f"🔄 Switching device mode to '{mode}'...")
         
         params = {"mode": mode}
@@ -906,7 +906,7 @@ def switch_device_mode(device: OpenIrisDevice, args = None):
     print("\n🔄 Select new device mode:")
     print("1. WiFi - Stream over WiFi connection")
     print("2. UVC - Stream as USB webcam")
-    print("3. Auto - Automatic mode selection")
+    print("3. Setup - Configuration mode")
 
     mode_choice = input("\nSelect mode (1-3): ").strip()
 
@@ -915,7 +915,7 @@ def switch_device_mode(device: OpenIrisDevice, args = None):
     elif mode_choice == "2":
         device.switch_mode("uvc")
     elif mode_choice == "3":
-        device.switch_mode("auto")
+        device.switch_mode("setup")
     else:
         print("❌ Invalid mode selection")
 
@@ -980,6 +980,23 @@ def _probe_led_pwm(device: OpenIrisDevice) -> Dict:
     duty = device.get_led_duty_cycle()
     return {"led_external_pwm_duty_cycle": duty}
 
+def _probe_led_current(device: OpenIrisDevice) -> Dict:
+    # Query device for current in mA via new command
+    resp = device.send_command("get_led_current")
+    if "error" in resp:
+        return {"led_current_ma": None, "error": resp["error"]}
+    try:
+        results = resp.get("results", [])
+        if results:
+            result_data = json.loads(results[0])
+            payload = result_data["result"]
+            if isinstance(payload, str):
+                payload = json.loads(payload)
+            return {"led_current_ma": float(payload.get("led_current_ma"))}
+    except Exception as e:
+        return {"led_current_ma": None, "error": str(e)}
+    return {"led_current_ma": None}
+
 
 def _probe_mode(device: OpenIrisDevice) -> Dict:
     mode = device.get_device_mode()
@@ -998,6 +1015,7 @@ def get_settings(device: OpenIrisDevice, args=None):
     probes = [
         ("Identity", _probe_serial),
         ("LED", _probe_led_pwm),
+    ("Current", _probe_led_current),
         ("Mode", _probe_mode),
         ("WiFi", _probe_wifi_status),
     ]
@@ -1034,6 +1052,17 @@ def get_settings(device: OpenIrisDevice, args=None):
     # Mode
     mode = summary.get("Mode", {}).get("mode")
     print(f"🎚️  Mode: {mode if mode else 'unknown'}")
+
+    # Current
+    current = summary.get("Current", {}).get("led_current_ma")
+    if current is not None:
+        print(f"🔌 LED Current: {current:.3f} mA")
+    else:
+        err = summary.get("Current", {}).get("error")
+        if err:
+            print(f"🔌 LED Current: unavailable ({err})")
+        else:
+            print("🔌 LED Current: unavailable")
 
     # WiFi
     wifi = summary.get("WiFi", {}).get("wifi_status", {})

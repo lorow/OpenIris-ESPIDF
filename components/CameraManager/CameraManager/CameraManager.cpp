@@ -48,7 +48,7 @@ void CameraManager::setupCameraPinout()
 
   ESP_LOGI(CAMERA_MANAGER_TAG, "CAM_BOARD");
 #endif
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#if CONFIG_GENERAL_INCLUDE_UVC_MODE
   xclk_freq_hz = CONFIG_CAMERA_USB_XCLK_FREQ;
 #endif
 
@@ -196,7 +196,7 @@ bool CameraManager::setupCamera()
     return false;
   }
 
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#if CONFIG_GENERAL_INCLUDE_UVC_MODE
   const auto temp_sensor = esp_camera_sensor_get();
 
   // Thanks to lick_it, we discovered that OV5640 likes to overheat when

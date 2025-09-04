@@ -21,8 +21,9 @@
 #include <SerialManager.hpp>
 #include <RestAPI.hpp>
 #include <main_globals.hpp>
+#include <MonitoringManager.hpp>
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
 #include <UVCStream.hpp>
 #endif
 
@@ -52,12 +53,13 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
 UVCStreamManager uvcStream;
 #endif
 
 auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
+MonitoringManager monitoringManager;
 
 void startWiFiMode(bool shouldCloseSerialManager);
 void startWiredMode(bool shouldCloseSerialManager);
@@ -81,14 +83,14 @@ int websocket_logger(const char *format, va_list args)
 
 void launch_streaming()
 {
-    // Note, when switching and later right away activating UVC mode when we were previously in WiFi or Auto mode, the WiFi
+    // Note, when switching and later right away activating UVC mode when we were previously in WiFi or Setup mode, the WiFi
     // utilities will still be running since we've launched them with startAutoMode() -> startWiFiMode()
     // we could add detection of this case, but it's probably not worth it since the next start of the device literally won't launch them
     // and we're telling folks to just reboot the device anyway
     // same case goes for when switching from UVC to WiFi
 
     StreamingMode deviceMode = deviceConfig->getDeviceMode();
-    // if we've changed the mode from auto to something else, we can clean up serial manager
+    // if we've changed the mode from setup to something else, we can clean up serial manager
     // either the API endpoints or CDC will take care of further configuration
     if (deviceMode == StreamingMode::WIFI)
     {
@@ -98,10 +100,10 @@ void launch_streaming()
     {
         startWiredMode(true);
     }
-    else if (deviceMode == StreamingMode::AUTO)
+    else if (deviceMode == StreamingMode::SETUP)
     {
-        // we're still in auto, the user didn't select anything yet, let's give a bit of time for them to make a choice
-        ESP_LOGI("[MAIN]", "No mode was selected, staying in AUTO mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
+    // we're still in setup, the user didn't select anything yet, let's give a bit of time for them to make a choice
+    ESP_LOGI("[MAIN]", "No mode was selected, staying in SETUP mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
     }
     else
     {
@@ -150,7 +152,7 @@ void force_activate_streaming()
 
 void startWiredMode(bool shouldCloseSerialManager)
 {
-#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
     ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
     ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
     deviceMode = StreamingMode::WIFI;
@@ -220,7 +222,7 @@ void startWiFiMode(bool shouldCloseSerialManager)
 
 void startSetupMode()
 {
-    // If we're in an auto mode - Device starts with a 20-second delay before deciding on what to do
+    // If we're in SETUP mode - Device starts with a 20-second delay before deciding on what to do
     // during this time we await any commands
     ESP_LOGI("[MAIN]", "=====================================");
     ESP_LOGI("[MAIN]", "STARTUP: 20-SECOND DELAY MODE ACTIVE");
@@ -247,6 +249,7 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
     dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
+    dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, std::shared_ptr<MonitoringManager>(&monitoringManager, [](MonitoringManager*){}));
 
     // add endpoint to check firmware version
     // add firmware version somewhere
@@ -259,6 +262,8 @@ extern "C" void app_main(void)
     initNVSStorage();
     deviceConfig->load();
     ledManager->setup();
+    monitoringManager.setup();
+    monitoringManager.start();
 
     xTaskCreate(
         HandleStateManagerTask,

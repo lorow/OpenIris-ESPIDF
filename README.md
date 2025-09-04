@@ -84,7 +84,7 @@ Examples:
 What the CLI can do:
 - Wi‑Fi menu: automatic (scan → pick → password → connect → wait for IP) or manual (scan, show, configure, connect, status)
 - Set MDNS/Device name (also used for the UVC device name)
-- Switch mode (Wi‑Fi / UVC / Auto)
+- Switch mode (Wi‑Fi / UVC / Setup)
 - Adjust LED PWM
 - Show a Settings Summary (MAC, Wi‑Fi status, mode, PWM, …)
 - View logs

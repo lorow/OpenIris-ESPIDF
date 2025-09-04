@@ -159,7 +159,7 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 esp_err_t UVCStreamManager::setup()
 {
 
-#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
   ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
   return ESP_FAIL;
 #endif

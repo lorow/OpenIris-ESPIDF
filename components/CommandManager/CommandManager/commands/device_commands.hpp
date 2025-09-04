@@ -23,3 +23,6 @@ CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, st
 CommandResult getDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry);
 
 CommandResult getSerialNumberCommand(std::shared_ptr<DependencyRegistry> registry);
+
+// Monitoring
+CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry);
