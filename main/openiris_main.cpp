@@ -29,9 +29,12 @@
 #define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
+TaskHandle_t serialManagerHandle;
+
 esp_timer_handle_t timerHandle;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
+QueueHandle_t cdcMessageQueue = xQueueCreate(3, sizeof(cdc_command_packet_t));
 
 auto *stateManager = new StateManager(eventQueue, ledStateQueue);
 auto dependencyRegistry = std::make_shared<DependencyRegistry>();
@@ -56,6 +59,9 @@ UVCStreamManager uvcStream;
 auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 
+void startWiFiMode(bool shouldCloseSerialManager);
+void startWiredMode(bool shouldCloseSerialManager);
+
 static void initNVSStorage()
 {
     esp_err_t ret = nvs_flash_init();
@@ -73,92 +79,34 @@ int websocket_logger(const char *format, va_list args)
     return vprintf(format, args);
 }
 
-void disable_serial_manager_task(TaskHandle_t serialManagerHandle)
+void launch_streaming()
 {
-    vTaskDelete(serialManagerHandle);
-}
+    // Note, when switching and later right away activating UVC mode when we were previously in WiFi or Auto mode, the WiFi
+    // utilities will still be running since we've launched them with startAutoMode() -> startWiFiMode()
+    // we could add detection of this case, but it's probably not worth it since the next start of the device literally won't launch them
+    // and we're telling folks to just reboot the device anyway
+    // same case goes for when switching from UVC to WiFi
 
-// New setup flow:
-// 1. Device starts in setup mode (AP + Serial active)
-// 2. User configures WiFi via serial commands
-// 3. Device attempts WiFi connection while maintaining setup interfaces
-// 4. Device reports connection status via serial
-// 5. User explicitly starts streaming after verifying connectivity
-void start_video_streaming(void *arg)
-{
-    // Get the stored device mode
     StreamingMode deviceMode = deviceConfig->getDeviceMode();
-
-    // Check if WiFi is actually connected, not just configured
-    bool hasWifiCredentials = !deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0;
-    bool wifiConnected = (wifiManager->GetCurrentWiFiState() == WiFiState_e::WiFiState_Connected);
-
-    if (deviceMode == StreamingMode::UVC)
+    // if we've changed the mode from auto to something else, we can clean up serial manager
+    // either the API endpoints or CDC will take care of further configuration
+    if (deviceMode == StreamingMode::WIFI)
     {
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
-        ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
-        ESP_LOGI("[MAIN]", "Initializing UVC hardware...");
-        // If we were given the Serial task handle, stop the task and uninstall the driver
-        if (arg != nullptr)
-        {
-            const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
-            vTaskDelete(serialTaskHandle);
-            ESP_LOGI("[MAIN]", "Serial task deleted before UVC init");
-            serialManager->shutdown();
-            ESP_LOGI("[MAIN]", "Serial driver uninstalled");
-            // Leave a small gap for the host to see COM disappear
-            vTaskDelay(pdMS_TO_TICKS(200));
-            setUsbHandoverDone(true);
-        }
-        esp_err_t ret = uvcStream.setup();
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE("[MAIN]", "Failed to initialize UVC: %s", esp_err_to_name(ret));
-            return;
-        }
-        uvcStream.start();
-        ESP_LOGI("[MAIN]", "UVC streaming started");
-        return; // UVC path complete, do not fall through to WiFi
-#else
-    ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
-        ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
-        deviceMode = StreamingMode::WIFI;
-#endif
+        startWiFiMode(true);
     }
-
-    if ((deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO) && hasWifiCredentials && wifiConnected)
+    else if (deviceMode == StreamingMode::UVC)
     {
-        ESP_LOGI("[MAIN]", "Starting WiFi streaming mode.");
-        streamServer.startStreamServer();
+        startWiredMode(true);
+    }
+    else if (deviceMode == StreamingMode::AUTO)
+    {
+        // we're still in auto, the user didn't select anything yet, let's give a bit of time for them to make a choice
+        ESP_LOGI("[MAIN]", "No mode was selected, staying in AUTO mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
     }
     else
     {
-        if (hasWifiCredentials && !wifiConnected)
-        {
-            ESP_LOGE("[MAIN]", "WiFi credentials configured but not connected. Try connecting first.");
-        }
-        else
-        {
-            ESP_LOGE("[MAIN]", "No streaming mode available. Please configure WiFi.");
-        }
-        return;
+        ESP_LOGI("[MAIN]", "Unknown device mode: %d", (int)deviceMode);
     }
-
-    ESP_LOGI("[MAIN]", "Streaming started successfully.");
-
-    // Optionally disable serial manager after explicit streaming start
-    if (arg != nullptr)
-    {
-        ESP_LOGI("[MAIN]", "Disabling setup interfaces after streaming start.");
-        const auto serialTaskHandle = static_cast<TaskHandle_t>(arg);
-        disable_serial_manager_task(serialTaskHandle);
-    }
-}
-
-// Manual streaming activation - no timer needed
-void activate_streaming(TaskHandle_t serialTaskHandle = nullptr)
-{
-    start_video_streaming(serialTaskHandle);
 }
 
 // Callback for automatic startup after delay
@@ -170,55 +118,7 @@ void startup_timer_callback(void *arg)
 
     if (!getStartupCommandReceived() && !getStartupPaused())
     {
-        ESP_LOGI("[MAIN]", "No command received during startup delay, proceeding with automatic mode startup");
-
-        // Get the stored device mode
-        StreamingMode deviceMode = deviceConfig->getDeviceMode();
-        ESP_LOGI("[MAIN]", "Stored device mode: %d", (int)deviceMode);
-
-        // Get the serial manager handle to disable it after streaming starts
-        TaskHandle_t *serialHandle = getSerialManagerHandle();
-        TaskHandle_t serialTaskHandle = (serialHandle && *serialHandle) ? *serialHandle : nullptr;
-
-        if (deviceMode == StreamingMode::WIFI || deviceMode == StreamingMode::AUTO)
-        {
-            // For WiFi mode, check if we have credentials and are connected
-            bool hasWifiCredentials = !deviceConfig->getWifiConfigs().empty() || strcmp(CONFIG_WIFI_SSID, "") != 0;
-            bool wifiConnected = (wifiManager->GetCurrentWiFiState() == WiFiState_e::WiFiState_Connected);
-
-            ESP_LOGI("[MAIN]", "WiFi check - hasCredentials: %s, connected: %s",
-                     hasWifiCredentials ? "true" : "false",
-                     wifiConnected ? "true" : "false");
-
-            if (hasWifiCredentials && wifiConnected)
-            {
-                ESP_LOGI("[MAIN]", "Starting WiFi streaming automatically");
-                activate_streaming(serialTaskHandle);
-            }
-            else if (hasWifiCredentials && !wifiConnected)
-            {
-                ESP_LOGI("[MAIN]", "WiFi credentials exist but not connected, waiting...");
-                // Could retry connection here
-            }
-            else
-            {
-                ESP_LOGI("[MAIN]", "No WiFi credentials, staying in setup mode");
-            }
-        }
-        else if (deviceMode == StreamingMode::UVC)
-        {
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
-            ESP_LOGI("[MAIN]", "Starting UVC streaming automatically");
-            activate_streaming(serialTaskHandle);
-#else
-            ESP_LOGE("[MAIN]", "UVC mode selected but CONFIG_GENERAL_DEFAULT_WIRED_MODE not enabled in build!");
-            ESP_LOGI("[MAIN]", "Device will stay in setup mode. Enable CONFIG_GENERAL_DEFAULT_WIRED_MODE and rebuild.");
-#endif
-        }
-        else
-        {
-            ESP_LOGI("[MAIN]", "Unknown device mode: %d", (int)deviceMode);
-        }
+        launch_streaming();
     }
     else
     {
@@ -237,97 +137,77 @@ void startup_timer_callback(void *arg)
     timerHandle = nullptr;
 }
 
-extern "C" void app_main(void)
+// Manual streaming activation
+// We'll clean up the timer and handle streaming setup if called by a command
+void force_activate_streaming()
 {
-    dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
-    dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
-    dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
-    dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
-    // uvc plan
-    // cleanup the logs - done
-    // prepare the camera to be initialized with UVC - done?
-    // debug uvc performance - done
+    // Delete the timer before it fires
+    // since we've got called manually
+    esp_timer_delete(timerHandle);
+    timerHandle = nullptr;
+    launch_streaming();
+}
 
-    // porting plan:
-    // port the wifi manager first. - worky!!!
-    // port the logo - done
-    // port preferences lib -  DONE; prolly temporary
-    // then port the config - done, needs todos done
-    // State Management - done
-    // then port the led manager as this will be fairly easy - done
-    // then port the mdns stuff - done
-    // then port the camera manager - done
-    // then port the streaming stuff (web and uvc) - done
-    // then add ADHOC and support for more networks in wifi manager - done
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+void startWiredMode(bool shouldCloseSerialManager)
+{
+#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+    ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
+    ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
+    deviceMode = StreamingMode::WIFI;
+    startWiFiMode();
+#else
+    ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");
+    if (shouldCloseSerialManager)
+    {
+        ESP_LOGI("[MAIN]", "Closing serial manager task.");
+        vTaskDelete(serialManagerHandle);
+    }
 
-    // simplify commands - a simple dependency injection + std::function should do it - DONE
-    // something like
-    // template<typename T>
-    // void registerService(std::shared_pointer<T> service)
-    // services[std::type_index(typeid(T))] = service;
-    // where services is an std::unordered_map<std::type_index, std::shared_pointer<void>>;
-    // I can then use like std::shared_ptr<T> resolve() { return services[typeid(T)]; } to get it in the command
-    // which can be like a second parameter of the command, like std::function<void(DiContainer &diContainer, char* jsonPayload)>
+    ESP_LOGI("[MAIN]", "Shutting down serial manager, CDC will take over in a bit.");
+    serialManager->shutdown();
 
-    // simplify config - DONE
-    // here I can decouple the loading, initializing and saving logic from the config class and move
-    // that into the separate modules, and have the config class only act as a container
+    ESP_LOGI("[MAIN]", "Serial driver uninstalled");
+    // Leaving a small gap for the host to see COM disappear
+    vTaskDelay(pdMS_TO_TICKS(200));
+    setUsbHandoverDone(true);
 
-    // rethink led manager - we need to move the state change sending into a queue and rethink the state lighting logic - DONE
-    // also, the entire led manager needs to be moved to a task - DONE
-    // with that, I couuld use vtaskdelayuntil to advance and display states - DONE
-    // and with that, I should rethink how state management works - DONE
+    ESP_LOGI("[MAIN]", "Setting up UVC Streamer");
 
-    // rethink state management - DONE
+    esp_err_t ret = uvcStream.setup();
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE("[MAIN]", "Failed to initialize UVC: %s", esp_err_to_name(ret));
+        return;
+    }
 
-    // port serial manager - DONE
-    // instead of the UVCCDC thing - give the board 30s for serial commands and then determine if we should reboot into UVC - DONE
-
-    // add endpoint to check firmware version
-    // add firmware version somewhere
-    // setup CI and building for other boards
-    // finish todos, overhaul stuff a bit
-
-    // esp_log_set_vprintf(&websocket_logger);
-    Logo::printASCII();
-    initNVSStorage();
-    deviceConfig->load();
-    ledManager->setup();
-
+    ESP_LOGI("[MAIN]", "Starting CDC Serial Manager Task");
     xTaskCreate(
-        HandleStateManagerTask,
-        "HandleLEDDisplayTask",
-        1024 * 2,
-        stateManager,
-        3,
-        nullptr // it's fine for us not get a handle back, we don't need it
-    );
-
-    xTaskCreate(
-        HandleLEDDisplayTask,
-        "HandleLEDDisplayTask",
-        1024 * 2,
-        ledManager.get(),
-        3,
+        HandleCDCSerialManagerTask,
+        "HandleCDCSerialManagerTask",
+        1024 * 6,
+        commandManager.get(),
+        1,
         nullptr);
 
-    serialManager->setup();
+    ESP_LOGI("[MAIN]", "Starting UVC streaming");
 
-    static TaskHandle_t serialManagerHandle = nullptr;
-    // Pass address of variable so xTaskCreate() stores the actual task handle
-    xTaskCreate(
-        HandleSerialManagerTask,
-        "HandleSerialManagerTask",
-        1024 * 6,
-        serialManager,
-        1, // we only rely on the serial manager during provisioning, we can run it slower
-        &serialManagerHandle);
+    uvcStream.start();
+    ESP_LOGI("[MAIN]", "UVC streaming started");
+#endif
+}
+
+void startWiFiMode(bool shouldCloseSerialManager)
+{
+    ESP_LOGI("[MAIN]", "Starting WiFi streaming mode.");
+    if (shouldCloseSerialManager)
+    {
+        ESP_LOGI("[MAIN]", "Closing serial manager task.");
+        vTaskDelete(serialManagerHandle);
+    }
 
     wifiManager->Begin();
     mdnsManager.start();
     restAPI->begin();
-    cameraHandler->setupCamera();
 
     xTaskCreate(
         HandleRestAPIPollTask,
@@ -336,8 +216,12 @@ extern "C" void app_main(void)
         restAPI,
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
+}
 
-    // New flow: Device starts with a 20-second delay before automatic mode startup
+void startSetupMode()
+{
+    // If we're in an auto mode - Device starts with a 20-second delay before deciding on what to do
+    // during this time we await any commands
     ESP_LOGI("[MAIN]", "=====================================");
     ESP_LOGI("[MAIN]", "STARTUP: 20-SECOND DELAY MODE ACTIVE");
     ESP_LOGI("[MAIN]", "=====================================");
@@ -355,5 +239,77 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000));
     ESP_LOGI("[MAIN]", "Started 20-second startup timer");
     ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
-    setSerialManagerHandle(&serialManagerHandle);
+}
+
+extern "C" void app_main(void)
+{
+    dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
+    dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
+    dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+    dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
+
+    // add endpoint to check firmware version
+    // add firmware version somewhere
+    // setup CI and building for other boards
+    // finish todos, overhaul stuff a bit
+
+    // todo - do we need logs over CDC? Or just commands and their results?
+    // esp_log_set_vprintf(&websocket_logger);
+    Logo::printASCII();
+    initNVSStorage();
+    deviceConfig->load();
+    ledManager->setup();
+
+    xTaskCreate(
+        HandleStateManagerTask,
+        "HandleStateManagerTask",
+        1024 * 2,
+        stateManager,
+        3,
+        nullptr // it's fine for us not get a handle back, we don't need it
+    );
+
+    xTaskCreate(
+        HandleLEDDisplayTask,
+        "HandleLEDDisplayTask",
+        1024 * 2,
+        ledManager.get(),
+        3,
+        nullptr);
+
+    cameraHandler->setupCamera();
+
+    // let's keep the serial manager running for the duration of the setup
+    // we'll clean it up later if need be
+    serialManager->setup();
+    xTaskCreate(
+        HandleSerialManagerTask,
+        "HandleSerialManagerTask",
+        1024 * 6,
+        serialManager,
+        1,
+        &serialManagerHandle);
+
+    StreamingMode mode = deviceConfig->getDeviceMode();
+    if (mode == StreamingMode::UVC)
+    {
+        // in UVC mode we only need to start the bare essentials for UVC
+        // we don't need any wireless communication, we can shut it down
+
+        // todo this would be the perfect place to introduce random delays
+        // to workaround windows usb bug
+        startWiredMode(true);
+    }
+    else if (mode == StreamingMode::WIFI)
+    {
+        // in Wifi mode we only need the wireless communication stuff, nothing else got started
+        startWiFiMode(true);
+    }
+    else
+    {
+        // since we're in setup mode, we have to have wireless functionality on,
+        // so we can do wifi scanning, test connection etc
+        startWiFiMode(false);
+        startSetupMode();
+    }
 }

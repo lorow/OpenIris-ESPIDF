@@ -18,6 +18,17 @@
 #include "esp_vfs_dev.h"
 #include "esp_mac.h"
 
+extern "C" void tud_cdc_rx_cb(uint8_t itf);
+extern "C" void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts);
+
+extern QueueHandle_t cdcMessageQueue;
+
+struct cdc_command_packet_t
+{
+  uint8_t len;
+  uint8_t data[64];
+};
+
 class SerialManager
 {
 public:
@@ -38,4 +49,5 @@ private:
 };
 
 void HandleSerialManagerTask(void *pvParameters);
+void HandleCDCSerialManagerTask(void *pvParameters);
 #endif
