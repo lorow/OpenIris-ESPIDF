@@ -23,12 +23,20 @@ menu "OpenIris: General Configuration"
             default device streaming mode will be UVC unless overridden by a
             saved preference. When disabled, the default mode is AUTO.
 
-    config GENERAL_UVC_DELAY
+    config GENERAL_STARTUP_DELAY
         int "UVC delay (s)"
         default 30
         range 10 10000
         help
             Delay in seconds before the ESP reports itself as a UVC device.
+
+    config GENERAL_ENABLE_WIRELESS
+        bool "Enable wireless (WiFi/Bluetooth)"
+        default y
+        help
+            When disabled, the firmware will not start WiFi or related services (mDNS/REST),
+            and any Bluetooth memory (if present on the SoC) should be left released. This can
+            reduce power consumption when operating solely in UVC mode or without networking.
 
 endmenu
 
@@ -76,12 +84,12 @@ endmenu
 
 menu "OpenIris: LED Configuration"
 
-    config LED_BLINK_GPIO
-        int "Blink GPIO number"
+    config LED_DEBUG_GPIO
+        int "Debug LED GPIO number"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
         default 8
         help
-            GPIO number (IOxx) used to blink an onboard LED.
+            GPIO number (IOxx) used to drive an onboard debug/status LED.
             Some GPIOs are reserved for other functions (e.g. flash) and cannot be used.
 
     config LED_EXTERNAL_GPIO

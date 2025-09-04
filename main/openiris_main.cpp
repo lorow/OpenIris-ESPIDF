@@ -7,6 +7,7 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 #include "nvs_flash.h"
+#include "esp_wifi.h"
 
 #include <openiris_logo.hpp>
 #include <wifiManager.hpp>
@@ -27,7 +28,7 @@
 #include <UVCStream.hpp>
 #endif
 
-#define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
+#define BLINK_GPIO (gpio_num_t) CONFIG_LED_DEBUG_GPIO
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 TaskHandle_t serialManagerHandle;
@@ -206,7 +207,7 @@ void startWiFiMode(bool shouldCloseSerialManager)
         ESP_LOGI("[MAIN]", "Closing serial manager task.");
         vTaskDelete(serialManagerHandle);
     }
-
+#ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     wifiManager->Begin();
     mdnsManager.start();
     restAPI->begin();
@@ -218,16 +219,20 @@ void startWiFiMode(bool shouldCloseSerialManager)
         restAPI,
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
+#else
+    ESP_LOGW("[MAIN]", "Wireless is disabled by configuration; skipping WiFi/mDNS/REST startup.");
+#endif
 }
 
 void startSetupMode()
 {
     // If we're in SETUP mode - Device starts with a 20-second delay before deciding on what to do
     // during this time we await any commands
+    const int startup_delay_s = CONFIG_GENERAL_STARTUP_DELAY;
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "STARTUP: 20-SECOND DELAY MODE ACTIVE");
+    ESP_LOGI("[MAIN]", "STARTUP: %d-SECOND DELAY MODE ACTIVE", startup_delay_s);
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "Device will wait 20 seconds for commands...");
+    ESP_LOGI("[MAIN]", "Device will wait %d seconds for commands...", startup_delay_s);
 
     // Create a one-shot timer for 20 seconds
     const esp_timer_create_args_t startup_timer_args = {
@@ -238,16 +243,19 @@ void startSetupMode()
         .skip_unhandled_events = false};
 
     ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &timerHandle));
-    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000));
-    ESP_LOGI("[MAIN]", "Started 20-second startup timer");
-    ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
+    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, (uint64_t)startup_delay_s * 1000000));
+    ESP_LOGI("[MAIN]", "Started %d-second startup timer", startup_delay_s);
+    ESP_LOGI("[MAIN]", "Send any command within %d seconds to enter heartbeat mode", startup_delay_s);
 }
 
 extern "C" void app_main(void)
 {
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
+    // Register WiFiManager only when wireless is enabled to avoid exposing WiFi commands in no-wireless builds
+#ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+#endif
     dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
     dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, std::shared_ptr<MonitoringManager>(&monitoringManager, [](MonitoringManager*){}));
 
@@ -314,7 +322,8 @@ extern "C" void app_main(void)
     {
         // since we're in setup mode, we have to have wireless functionality on,
         // so we can do wifi scanning, test connection etc
-        startWiFiMode(false);
+    // if wireless is disabled by configuration, we will not start WiFi services here
+    startWiFiMode(false);
         startSetupMode();
     }
 }
