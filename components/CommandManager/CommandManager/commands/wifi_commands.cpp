@@ -1,5 +1,6 @@
 #include "wifi_commands.hpp"
 #include "esp_netif.h"
+#include "sdkconfig.h"
 
 std::optional<WifiPayload> parseSetWiFiCommandPayload(std::string_view jsonPayload)
 {
@@ -143,6 +144,9 @@ std::optional<UpdateAPWiFiPayload> parseUpdateAPWiFiCommandPayload(const std::st
 
 CommandResult setWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
   const auto payload = parseSetWiFiCommandPayload(jsonPayload);
 
   if (!payload.has_value())
@@ -164,6 +168,9 @@ CommandResult setWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::
 
 CommandResult deleteWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
   const auto payload = parseDeleteWifiCommandPayload(jsonPayload);
   if (!payload.has_value())
     return CommandResult::getErrorResult("Invalid payload");
@@ -176,6 +183,9 @@ CommandResult deleteWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
 CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
   const auto payload = parseUpdateWifiCommandPayload(jsonPayload);
   if (!payload.has_value())
   {
@@ -207,6 +217,9 @@ CommandResult updateWiFiCommand(std::shared_ptr<DependencyRegistry> registry, st
 
 CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
 {
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
   const auto payload = parseUpdateAPWiFiCommandPayload(jsonPayload);
 
   if (!payload.has_value())
@@ -226,7 +239,13 @@ CommandResult updateAPWiFiCommand(std::shared_ptr<DependencyRegistry> registry, 
 }
 
 CommandResult getWiFiStatusCommand(std::shared_ptr<DependencyRegistry> registry) {
-    auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
+  auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+  if (!wifiManager) {
+    return CommandResult::getErrorResult("Not supported by current firmware");
+  }
     auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     
     // Get current WiFi state
@@ -287,7 +306,13 @@ CommandResult getWiFiStatusCommand(std::shared_ptr<DependencyRegistry> registry)
 }
 
 CommandResult connectWiFiCommand(std::shared_ptr<DependencyRegistry> registry) {
-    auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+  return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
+  auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
+  if (!wifiManager) {
+    return CommandResult::getErrorResult("Not supported by current firmware");
+  }
     auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     
     auto networks = projectConfig->getWifiConfigs();

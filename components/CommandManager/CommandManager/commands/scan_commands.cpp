@@ -1,11 +1,15 @@
 #include "scan_commands.hpp"
+#include "sdkconfig.h"
 
 CommandResult scanNetworksCommand(std::shared_ptr<DependencyRegistry> registry)
 {
+#if !CONFIG_GENERAL_ENABLE_WIRELESS
+    return CommandResult::getErrorResult("Not supported by current firmware");
+#endif
     auto wifiManager = registry->resolve<WiFiManager>(DependencyType::wifi_manager);
     if (!wifiManager)
     {
-        return CommandResult::getErrorResult("WiFiManager not available");
+        return CommandResult::getErrorResult("Not supported by current firmware");
     }
 
     auto networks = wifiManager->ScanNetworks();

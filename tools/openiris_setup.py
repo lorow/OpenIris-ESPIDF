@@ -1204,7 +1204,7 @@ def main():
             print(f"{str(2):>2}  🌐 Configure MDNS")
             print(f"{str(3):>2}  💻 Configure UVC Name")
             print(f"{str(4):>2}  🚀 Start streaming mode")
-            print(f"{str(5):>2}  🔄 Switch device mode (WiFi/UVC/Auto)")
+            print(f"{str(5):>2}  🔄 Switch device mode (WiFi/UVC/Setup)")
             print(f"{str(6):>2}  💡 Update PWM Duty Cycle")
             print(f"{str(7):>2}  📖 Monitor logs")
             print(f"{str(8):>2}  🧩 Get settings summary")
