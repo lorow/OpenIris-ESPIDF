@@ -248,3 +248,14 @@ CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
     return CommandResult::getErrorResult("Monitoring disabled");
 #endif
 }
+
+CommandResult getInfoCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
+{
+    const char* who = CONFIG_GENERAL_WHO_AM_I;
+    const char* ver = CONFIG_GENERAL_Version;
+    // Ensure non-null strings
+    if (!who) who = "";
+    if (!ver) ver = "";
+    auto result = std::format("{{ \"who_am_i\": \"{}\", \"version\": \"{}\" }}", who, ver);
+    return CommandResult::getSuccessResult(result);
+}

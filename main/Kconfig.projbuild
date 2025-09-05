@@ -38,6 +38,18 @@ menu "OpenIris: General Configuration"
             and any Bluetooth memory (if present on the SoC) should be left released. This can
             reduce power consumption when operating solely in UVC mode or without networking.
 
+    config GENERAL_WHO_AM_I
+        string "Who am I (device identifier)"
+        default "OpenIris"
+        help
+            A human-readable product or device identifier exposed via the get_info command.
+
+    config GENERAL_Version
+        string "Firmware version"
+        default "0.0.0"
+        help
+            A firmware version string exposed via the get_info command.
+
 endmenu
 
 menu "OpenIris: Camera Configuration"

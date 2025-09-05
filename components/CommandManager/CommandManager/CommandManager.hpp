@@ -48,6 +48,7 @@ enum class CommandType
   GET_LED_DUTY_CYCLE,
   GET_SERIAL,
   GET_LED_CURRENT,
+  GET_WHO_AM_I,
 };
 
 class CommandManager

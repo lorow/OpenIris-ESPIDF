@@ -573,6 +573,7 @@ CONFIG_ENV_GPIO_OUT_RANGE_MAX=48
 # CONFIG_GENERAL_INCLUDE_UVC_MODE is not set
 # CONFIG_START_IN_UVC_MODE is not set
 # CONFIG_GENERAL_STARTUP_DELAY is not set
+CONFIG_GENERAL_Version="0.0.1"
 # end of OpenIris: General Configuration
 
 #

@@ -975,6 +975,22 @@ def _probe_serial(device: OpenIrisDevice) -> Dict:
     serial, mac = info
     return {"serial": serial, "mac": mac}
 
+def _probe_info(device: OpenIrisDevice) -> Dict:
+    resp = device.send_command("get_who_am_i")
+    if "error" in resp:
+        return {"who_am_i": None, "version": None, "error": resp["error"]}
+    try:
+        results = resp.get("results", [])
+        if results:
+            result_data = json.loads(results[0])
+            payload = result_data["result"]
+            if isinstance(payload, str):
+                payload = json.loads(payload)
+            return {"who_am_i": payload.get("who_am_i"), "version": payload.get("version")}
+    except Exception as e:
+        return {"who_am_i": None, "version": None, "error": str(e)}
+    return {"who_am_i": None, "version": None}
+
 
 def _probe_led_pwm(device: OpenIrisDevice) -> Dict:
     duty = device.get_led_duty_cycle()
@@ -1013,7 +1029,8 @@ def get_settings(device: OpenIrisDevice, args=None):
     print("\n🧩 Collecting device settings...\n")
 
     probes = [
-        ("Identity", _probe_serial),
+    ("Identity", _probe_serial),
+    ("Info", _probe_info),
         ("LED", _probe_led_pwm),
     ("Current", _probe_led_current),
         ("Mode", _probe_mode),
@@ -1040,6 +1057,15 @@ def get_settings(device: OpenIrisDevice, args=None):
     #     print(f"🔗 MAC:    {mac}")
     if not serial and not mac:
         print("🔑 Serial/MAC: unavailable")
+
+    # LED
+    info = summary.get("Info", {})
+    who = info.get("who_am_i")
+    ver = info.get("version")
+    if who:
+        print(f"🏷️  Device: {who}")
+    if ver:
+        print(f"🧭 Version: {ver}")
 
     # LED
     led = summary.get("LED", {})
