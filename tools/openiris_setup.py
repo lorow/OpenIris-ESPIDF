@@ -707,11 +707,9 @@ def configure_wifi(device: OpenIrisDevice, args = None):
 
 def configure_mdns(device: OpenIrisDevice, args = None):
     current_name = device.get_mdns_name()
-    print(f"\n📍 Current device name: {current_name} \n")
-    print("💡 Please enter your preferred device name, your board will be accessible under http://<name>.local/")
-    print("💡 Please avoid spaces and special characters")
-    print("    To back out, enter `back`")
-    print("\n    Note, this will also modify the name of the UVC device")
+    print(f"\n📍 Current advertised name: {current_name} \n")
+    print("💡 This single name is used for both: mDNS (http://<name>.local/) and USB UVC device descriptor.")
+    print("💡 Avoid spaces / special chars. Enter 'back' to cancel.")
 
     while True:
         name_choice = input("\nDevice name: ").strip()
@@ -991,6 +989,11 @@ def _probe_info(device: OpenIrisDevice) -> Dict:
         return {"who_am_i": None, "version": None, "error": str(e)}
     return {"who_am_i": None, "version": None}
 
+def _probe_advertised_name(device: OpenIrisDevice) -> Dict:
+    # Currently the advertised name == mdns hostname
+    name = device.get_mdns_name()
+    return {"advertised_name": name}
+
 
 def _probe_led_pwm(device: OpenIrisDevice) -> Dict:
     duty = device.get_led_duty_cycle()
@@ -1029,10 +1032,11 @@ def get_settings(device: OpenIrisDevice, args=None):
     print("\n🧩 Collecting device settings...\n")
 
     probes = [
-    ("Identity", _probe_serial),
-    ("Info", _probe_info),
+        ("Identity", _probe_serial),
+        ("AdvertisedName", _probe_advertised_name),
+        ("Info", _probe_info),
         ("LED", _probe_led_pwm),
-    ("Current", _probe_led_current),
+        ("Current", _probe_led_current),
         ("Mode", _probe_mode),
         ("WiFi", _probe_wifi_status),
     ]
@@ -1058,7 +1062,13 @@ def get_settings(device: OpenIrisDevice, args=None):
     if not serial and not mac:
         print("🔑 Serial/MAC: unavailable")
 
-    # LED
+    # Advertised Name
+    adv = summary.get("AdvertisedName", {})
+    adv_name = adv.get("advertised_name")
+    if adv_name:
+        print(f"📛 Name: {adv_name}")
+
+    # Info
     info = summary.get("Info", {})
     who = info.get("who_am_i")
     ver = info.get("version")
@@ -1106,12 +1116,11 @@ def get_settings(device: OpenIrisDevice, args=None):
 COMMANDS_MAP = {
     "1": wifi_menu,
     "2": configure_mdns,
-    "3": configure_mdns,
-    "4": start_streaming,
-    "5": switch_device_mode,
-    "6": set_led_duty_cycle,
-    "7": monitor_logs,
-    "8": get_settings,
+    "3": start_streaming,
+    "4": switch_device_mode,
+    "5": set_led_duty_cycle,
+    "6": monitor_logs,
+    "7": get_settings,
 }
 
 
@@ -1201,15 +1210,14 @@ def main():
         while True:
             print("\n🔧 Setup Options:")
             print(f"{str(1):>2}  📶 WiFi settings")
-            print(f"{str(2):>2}  🌐 Configure MDNS")
-            print(f"{str(3):>2}  💻 Configure UVC Name")
-            print(f"{str(4):>2}  🚀 Start streaming mode")
-            print(f"{str(5):>2}  🔄 Switch device mode (WiFi/UVC/Setup)")
-            print(f"{str(6):>2}  💡 Update PWM Duty Cycle")
-            print(f"{str(7):>2}  📖 Monitor logs")
-            print(f"{str(8):>2}  🧩 Get settings summary")
+            print(f"{str(2):>2}  📛 Configure advertised name (mDNS + UVC)")
+            print(f"{str(3):>2}  🚀 Start streaming mode")
+            print(f"{str(4):>2}  🔄 Switch device mode (WiFi/UVC/Setup)")
+            print(f"{str(5):>2}  💡 Update PWM Duty Cycle")
+            print(f"{str(6):>2}  📖 Monitor logs")
+            print(f"{str(7):>2}  🧩 Get settings summary")
             print("exit  🚪 Exit")
-            choice = input("\nSelect option (1-8): ").strip()
+            choice = input("\nSelect option (1-7): ").strip()
 
             if choice == "exit":
                 break

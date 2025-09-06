@@ -50,12 +50,14 @@ menu "OpenIris: General Configuration"
         help
             A firmware version string exposed via the get_info command.
 
-    config GENERAL_UVC_NAME
-        string "UVC device name"
+    config GENERAL_ADVERTISED_NAME
+        string "Advertised device name (UVC + mDNS)"
         default "openiristracker"
         help
-            Default name reported for the UVC interface/device over USB.
-            This is independent from the mDNS hostname used on Wi‑Fi.
+            Human-readable device name advertised uniformly across interfaces.
+            Used as the default mDNS hostname and (indirectly) the UVC USB
+            device name via get_uvc_device_name(). Users can still override
+            the runtime hostname through preferences.
 
 endmenu
 
@@ -78,10 +80,7 @@ menu "OpenIris: Camera Configuration"
 endmenu
 
 menu "OpenIris: WiFi Configuration"
-
-    config WIFI_MDNS_HOSTNAME
-        string "mDNS hostname"
-        default "openiristracker"
+    # mDNS hostname now derives from GENERAL_ADVERTISED_NAME (no separate Kconfig)
 
     config WIFI_SSID
         string "WiFi network name (SSID)"

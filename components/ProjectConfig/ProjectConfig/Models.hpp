@@ -103,9 +103,13 @@ struct MDNSConfig_t : BaseConfigModel
 
   void load()
   {
-    // by default, this will be openiris
-    // but we can override it at compile time
-    std::string default_hostname = CONFIG_WIFI_MDNS_HOSTNAME;
+  // Default hostname comes from GENERAL_ADVERTISED_NAME (unified advertised name)
+  std::string default_hostname =
+#ifdef CONFIG_GENERAL_ADVERTISED_NAME
+  CONFIG_GENERAL_ADVERTISED_NAME;
+#else
+  "openiristracker";
+#endif
 
     if (default_hostname.empty())
     {

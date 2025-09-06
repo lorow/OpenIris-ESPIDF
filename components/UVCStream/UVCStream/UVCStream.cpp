@@ -1,6 +1,5 @@
 #include "UVCStream.hpp"
 #include <cstdio> // for snprintf
-#include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 // no deps on main globals here; handover is performed in main before calling setup when needed
@@ -13,21 +12,7 @@ extern "C"
 
   const char *get_uvc_device_name()
   {
-    // Prefer explicit UVC name from Kconfig, fallback to mDNS hostname when empty
-    static std::string cached_name;
-    if (cached_name.empty())
-    {
-      const char *cfg_name = CONFIG_GENERAL_UVC_NAME;
-      if (cfg_name && cfg_name[0] != '\0')
-      {
-        cached_name = cfg_name;
-      }
-      else
-      {
-        cached_name = deviceConfig->getMDNSConfig().hostname;
-      }
-    }
-    return cached_name.c_str();
+    return deviceConfig->getMDNSConfig().hostname.c_str();
   }
 
   const char *get_serial_number(void)
