@@ -34,6 +34,7 @@ class SerialManager
 public:
   explicit SerialManager(std::shared_ptr<CommandManager> commandManager, esp_timer_handle_t *timerHandle, std::shared_ptr<ProjectConfig> deviceConfig);
   void setup();
+  bool isConnected();
   void try_receive();
   void send_heartbeat();
   bool should_send_heartbeat();

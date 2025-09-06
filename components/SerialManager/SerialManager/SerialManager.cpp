@@ -20,8 +20,15 @@ void SerialManager::setup()
   usb_serial_jtag_driver_install(&usb_serial_jtag_config);
 }
 
+bool SerialManager::isConnected()
+{
+  // in preparation for handling uart as well
+  return usb_serial_jtag_is_connected();
+}
+
 void SerialManager::try_receive()
 {
+  /// @todo: make it so we still read in chunks, but until we get a newline or we timeout - 1s?
   int current_position = 0;
   int len = usb_serial_jtag_read_bytes(this->temp_data, 256, 1000 / 20);
 
@@ -79,11 +86,11 @@ void SerialManager::notify_startup_command_received()
   setStartupCommandReceived(true);
 
   // Cancel the startup timer if it's still running
-  if (timerHandle != nullptr)
+  if (timerHandle != nullptr && *timerHandle != nullptr)
   {
     esp_timer_stop(*timerHandle);
     esp_timer_delete(*timerHandle);
-    timerHandle = nullptr;
+    *timerHandle = nullptr;
     ESP_LOGI("[MAIN]", "Startup timer cancelled, staying in heartbeat mode");
   }
 }
@@ -112,7 +119,7 @@ bool SerialManager::should_send_heartbeat()
   // Always send heartbeat during startup delay or if no WiFi configured
 
   // If startup timer is still running, always send heartbeat
-  if (timerHandle != nullptr)
+  if (timerHandle != nullptr && *timerHandle != nullptr)
   {
     return true;
   }
