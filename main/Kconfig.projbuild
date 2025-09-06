@@ -7,28 +7,35 @@ endmenu
 menu "OpenIris: General Configuration"
 
     config START_IN_UVC_MODE
-        bool "Start in UVC Mode"
+        bool "Default initial streaming mode = UVC"
         default false
         help
-            Enables UVC (wired) support in the firmware by default.
-            To be used when a board is designed to be used primarily with wired headsets.
-            When enabled, the default device streaming mode will be UVC unless overridden by a
-            saved preference. When disabled, the default mode is AUTO.
+            Sets the power‑on default streaming mode (before any user preference is stored).
+            If enabled AND UVC support is compiled in (GENERAL_INCLUDE_UVC_MODE), the device
+            will default to UVC mode on first boot. If disabled it defaults to SETUP mode,
+            waiting for a user choice or commands. This option does NOT compile UVC support in;
+            it only changes the initial preference used when no saved mode exists.
 
     config GENERAL_INCLUDE_UVC_MODE
-        bool "Wired mode"
+        bool "Include UVC (USB Video Class) support"
         default false
         help
-            Enables UVC (wired) support in the firmware. When enabled, the
-            default device streaming mode will be UVC unless overridden by a
-            saved preference. When disabled, the default mode is AUTO.
+            Compiles in UVC (USB Video Class) streaming support (camera + CDC bridge).
+            Disable this on boards that are Wi‑Fi only or where USB bandwidth / memory
+            should be conserved. If disabled any attempt to switch to UVC mode will log
+            an error and fall back to Wi‑Fi (if wireless is enabled). Combine with
+            START_IN_UVC_MODE only when the hardware supports UVC.
 
     config GENERAL_STARTUP_DELAY
-        int "UVC delay (s)"
+        int "Setup grace period (s)"
         default 30
         range 10 10000
         help
-            Delay in seconds before the ESP reports itself as a UVC device.
+            Number of seconds the device remains in SETUP / heartbeat mode on boot (when the
+            current streaming mode resolves to SETUP) before automatically launching the
+            selected streaming backend (UVC or Wi‑Fi). During this window host commands can
+            change mode or other settings. After the timer expires, streaming starts
+            automatically unless a command was received or startup was paused.
 
     config GENERAL_ENABLE_WIRELESS
         bool "Enable wireless (WiFi/Bluetooth)"
@@ -38,13 +45,13 @@ menu "OpenIris: General Configuration"
             and any Bluetooth memory (if present on the SoC) should be left released. This can
             reduce power consumption when operating solely in UVC mode or without networking.
 
-    config GENERAL_WHO_AM_I
-        string "Who am I (device identifier)"
+    config GENERAL_BOARD
+        string "Board / device identifier"
         default "OpenIris"
         help
-            A human-readable product or device identifier exposed via the get_info command.
+            A human-readable board or device identifier exposed via the get_info command.
 
-    config GENERAL_Version
+    config GENERAL_VERSION
         string "Firmware version"
         default "0.0.0"
         help

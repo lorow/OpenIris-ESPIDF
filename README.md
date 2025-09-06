@@ -50,16 +50,23 @@ After this, you’re ready for the Quick start below.
 ## Quick start
 
 ### 1) Pick your board (loads the default configuration)
+Boards are auto‑discovered from the `boards/` directory. First list them, then pick one:
+
 Windows (cmd):
 ```cmd
-python .\tools\switchBoardType.py --board xiao-esp32s3 --diff
+python .\tools\switchBoardType.py --list
+python .\tools\switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
 ```
 macOS/Linux (bash):
 ```bash
-python3 ./tools/switchBoardType.py --board xiao-esp32s3 --diff
+python3 ./tools/switchBoardType.py --list
+python3 ./tools/switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
 ```
-- Set `--board` to your target board
-- `--diff` shows what changed in the config
+Notes:
+- Use `--list` to see all detected board keys.
+- Board key = relative path under `boards/` with `/` replaced by `_` (and duplicate tail segments collapsed, e.g. `project_babble/project_babble` -> `project_babble`).
+- `--diff` shows what will change vs the current `sdkconfig`.
+- You can also pass partial or path‑like inputs (e.g. `facefocusvr/eye_L`), the tool normalizes them.
 
 ### 2) Build & flash
 - Set the target (e.g., ESP32‑S3).
@@ -117,6 +124,17 @@ If you want to dig deeper: commands are mapped via the `CommandManager` under `c
 ## Troubleshooting
 - UVC doesn’t appear on the host?
   - Switch mode to UVC via CLI tool, replug USB and wait 20s.
+
+### Adding a new board configuration
+1. Create a new config file under `boards/` (you can nest folders): for example `boards/my_family/my_variant`.
+2. Populate it with only the `CONFIG_...` lines that differ from the shared defaults. Shared baseline lives in `boards/sdkconfig.base_defaults` and is always merged first.
+3. The board key the script accepts will be the relative path with `/` turned into `_` (example: `boards/my_family/my_variant` -> `my_family_my_variant`).
+4. Run `python tools/switchBoardType.py --list` to verify it’s detected, then switch using `-b my_family_my_variant`.
+5. If you accidentally create two files that collapse to the same key the last one found wins—rename to keep keys unique.
+
+Tips:
+- Use `--diff` after adding a board to sanity‑check only the intended keys change.
+- For Wi‑Fi overrides on first flash: add none—pass `--ssid` / `--password` when switching if needed.
 
 ---
 

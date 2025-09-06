@@ -251,8 +251,8 @@ CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
 
 CommandResult getInfoCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
 {
-    const char* who = CONFIG_GENERAL_WHO_AM_I;
-    const char* ver = CONFIG_GENERAL_Version;
+    const char* who = CONFIG_GENERAL_BOARD;
+    const char* ver = CONFIG_GENERAL_VERSION;
     // Ensure non-null strings
     if (!who) who = "";
     if (!ver) ver = "";
