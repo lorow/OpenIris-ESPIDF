@@ -143,26 +143,7 @@ Example newline‑terminated JSON commands over CDC:
 ```
 Responses are JSON blobs flushed immediately.
 
-### Command Summary (JSON)
-| Command | Purpose | Example |
-|---------|---------|---------|
-| ping | Reachability test | {"cmd":"ping"} |
-| get_info | Board + version info | {"cmd":"get_info"} |
-| switch_mode | Set streaming mode (uvc|wifi|auto/setup) | {"cmd":"switch_mode","mode":"uvc"} |
-| start_streaming | Force start (skip delay) | {"cmd":"start_streaming"} |
-| update_ota | Set OTA creds / port | {"cmd":"update_ota","login":"u","password":"p","port":3232} |
-| update_led_pwm | Set external LED duty (%) | {"cmd":"update_led_pwm","dutyCycle":60} |
-| set_device_mode | Legacy numeric mode set | {"cmd":"set_device_mode","mode":1} |
-| get_led_current | Return LED current mA | {"cmd":"get_led_current"} |
-| restart | Schedule a reboot | {"cmd":"restart"} |
-| scan_wifi | Scan networks | {"cmd":"scan_wifi"} |
-| set_wifi_sta | Configure STA creds | {"cmd":"set_wifi_sta","ssid":"AP","password":"pw"} |
-| connect_wifi | Start Wi‑Fi connect | {"cmd":"connect_wifi"} |
-| get_wifi_status | Wi‑Fi state snapshot | {"cmd":"get_wifi_status"} |
-
-Notes:
-- Commands are newline (`\n`) delimited on CDC; REST & original USB‑serial use the same JSON payloads.
-- Error responses return `{ "error": "message" }`.
+---
 
 ### Monitoring (LED Current)
 Enabled with `MONITORING_LED_CURRENT=y` plus shunt/gain settings. The task samples every `CONFIG_MONITORING_LED_INTERVAL_MS` ms and maintains a filtered moving average over `CONFIG_MONITORING_LED_SAMPLES` samples. Use `get_led_current` command to query.
