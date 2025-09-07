@@ -28,7 +28,12 @@
 #include <UVCStream.hpp>
 #endif
 
+#ifdef CONFIG_LED_DEBUG_ENABLE
 #define BLINK_GPIO (gpio_num_t) CONFIG_LED_DEBUG_GPIO
+#else
+// Use an invalid / unused GPIO when debug LED disabled to avoid accidental toggles
+#define BLINK_GPIO (gpio_num_t) -1
+#endif
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 TaskHandle_t serialManagerHandle;

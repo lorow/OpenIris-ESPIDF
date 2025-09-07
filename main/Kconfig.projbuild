@@ -109,6 +109,14 @@ endmenu
 
 menu "OpenIris: LED Configuration"
 
+    config LED_DEBUG_ENABLE
+        bool "Enable debug/status LED"
+        default y
+        help
+            When disabled the firmware will not drive the dedicated debug/status GPIO.
+            Useful on boards without a discrete status LED. Error/state patterns can
+            optionally be mirrored onto the external IR LED if LED_EXTERNAL_AS_DEBUG is set.
+
     config LED_DEBUG_GPIO
         int "Debug LED GPIO number"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
@@ -129,6 +137,17 @@ menu "OpenIris: LED Configuration"
         default false
         help
             Enable this if your board can control external IR LEDs.
+
+    config LED_EXTERNAL_AS_DEBUG
+        bool "Mirror error pattern on external LED"
+        depends on LED_EXTERNAL_CONTROL
+        default n
+        help
+            When enabled and an error LED pattern is active, the external IR LED PWM output
+            will blink (0% / 50% duty) to replicate the debug/status LED pattern. If
+            LED_DEBUG_ENABLE is disabled this provides visual error feedback using only
+            the external LED. Normal configured PWM brightness is restored when leaving
+            the error pattern.
 
     config LED_EXTERNAL_PWM_FREQ
         int "External LED PWM frequency (Hz)"
