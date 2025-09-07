@@ -1,5 +1,5 @@
-| Supported Targets | ESP32-S3 |
-| ----------------- | -------- |
+| Supported Targets | ESP32-S3 · Project Babble · FaceFocusVR |
+| ----------------- | --------------------------------------- |
 
 ## OpenIris-ESPIDF
 
