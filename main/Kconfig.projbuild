@@ -28,7 +28,7 @@ menu "OpenIris: General Configuration"
 
     config GENERAL_STARTUP_DELAY
         int "Setup grace period (s)"
-        default 30
+        default 20
         range 10 10000
         help
             Number of seconds the device remains in SETUP / heartbeat mode on boot (when the
@@ -53,7 +53,7 @@ menu "OpenIris: General Configuration"
 
     config GENERAL_VERSION
         string "Firmware version"
-        default "0.0.0"
+        default "0.0.1"
         help
             A firmware version string exposed via the get_info command.
 
