@@ -2,63 +2,23 @@
 
 const char *LED_MANAGER_TAG = "[LED_MANAGER]";
 
+// Pattern design rules:
+//  - Error states: isError=true, repeat indefinitely, easily distinguishable (avoid overlap).
+//  - Non-error repeating: show continuous activity (e.g. streaming ON steady, connecting blink).
+//  - Non-repeating notification (e.g. Connected) gives user a brief confirmation burst then turns off.
+// Durations in ms.
 ledStateMap_t LEDManager::ledStateMap = {
-    {
-        LEDStates_e::LedStateNone,
-        {
-            false,
-            false,
-            {{LED_OFF, 1000}},
-        },
-    },
-    {
-        LEDStates_e::LedStateStreaming,
-        {
-            false,
-            true,
-            {{LED_ON, 1000}},
-        },
-    },
-    {
-        LEDStates_e::LedStateStoppedStreaming,
-        {
-            false,
-            true,
-            {{LED_OFF, 1000}},
-        },
-    },
-    {
-        LEDStates_e::CameraError,
-        {
-            true,
-            true,
-            {{{LED_ON, 300}, {LED_OFF, 300}, {LED_ON, 300}, {LED_OFF, 300}}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateConnecting,
-        {
-            false,
-            true,
-            {{LED_ON, 400}, {LED_OFF, 400}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateConnected,
-        {
-            false,
-            false,
-            {{LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateError,
-        {
-            true,
-            true,
-            {{LED_ON, 200}, {LED_OFF, 100}, {LED_ON, 500}, {LED_OFF, 100}, {LED_ON, 200}},
-        },
-    },
+    { LEDStates_e::LedStateNone, { /*isError*/false, /*repeat*/false, {{LED_OFF, 1000}} } },
+    { LEDStates_e::LedStateStreaming, { false, /*repeat steady*/true, {{LED_ON, 1000}} } },
+    { LEDStates_e::LedStateStoppedStreaming, { false, true, {{LED_OFF, 1000}} } },
+    // CameraError: double blink pattern repeating
+    { LEDStates_e::CameraError, { true, true, {{ {LED_ON,300}, {LED_OFF,300}, {LED_ON,300}, {LED_OFF,700} }} } },
+    // WiFiStateConnecting: balanced slow blink 400/400
+    { LEDStates_e::WiFiStateConnecting, { false, true, {{ {LED_ON,400}, {LED_OFF,400} }} } },
+    // WiFiStateConnected: short 3 quick flashes then done (was long noisy burst before)
+    { LEDStates_e::WiFiStateConnected, { false, false, {{ {LED_ON,150}, {LED_OFF,150}, {LED_ON,150}, {LED_OFF,150}, {LED_ON,150}, {LED_OFF,600} }} } },
+    // WiFiStateError: asymmetric attention pattern (fast, pause, long, pause, fast)
+    { LEDStates_e::WiFiStateError, { true, true, {{ {LED_ON,200}, {LED_OFF,100}, {LED_ON,500}, {LED_OFF,300} }} } },
 };
 
 LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin,
