@@ -12,6 +12,11 @@ Firmware and tools for OpenIris — Wi‑Fi, UVC streaming, and a Python setup C
 - Python tools for setup over USB serial:
   - `tools/switchBoardType.py` — choose a board profile (builds the right sdkconfig)
   - `tools/openiris_setup.py` — interactive CLI for Wi‑Fi, MDNS/Name, Mode, LED PWM, Logs, and a Settings Summary
+ - Composite USB (UVC + CDC) when UVC mode is enabled (`GENERAL_INCLUDE_UVC_MODE`) for simultaneous video streaming and command channel
+ - LED current monitoring (if enabled via `MONITORING_LED_CURRENT`) with filtered mA readings
+ - Configurable debug LED + external IR LED control with optional error mirroring (`LED_DEBUG_ENABLE`, `LED_EXTERNAL_AS_DEBUG`)
+ - Auto‑discovered per‑board configuration overlays under `boards/`
+ - Command framework (JSON over serial / CDC / REST) for mode switching, Wi‑Fi config, OTA credentials, LED brightness, info & monitoring
 
 ---
 
@@ -71,6 +76,8 @@ Notes:
 ### 2) Build & flash
 - Set the target (e.g., ESP32‑S3).
 - Build, flash, and open the serial monitor.
+ - (Optional) For UVC mode ensure `GENERAL_INCLUDE_UVC_MODE=y`. If you want device to boot directly into UVC: also set `START_IN_UVC_MODE=y`.
+ - Disable Wi‑Fi services for pure wired builds: `GENERAL_ENABLE_WIRELESS=n`.
 
 ### 3) Use the Python setup CLI (recommended)
 Configure the device over USB serial.
@@ -109,6 +116,8 @@ What the CLI can do:
 - Fast Wi‑Fi setup: in the CLI, go to “Wi‑Fi settings” → “Automatic setup”, then check “status”.
 - Change name/MDNS: set the device name in the CLI, then replug USB — UVC will show the new name.
 - Adjust brightness/LED: set LED PWM in the CLI.
+ - Switch to UVC mode over commands: send JSON `{ "cmd": "switch_mode", "mode": "uvc" }` then reboot.
+ - Read filtered LED current (if enabled): `{ "cmd": "get_led_current" }`.
 
 ---
 
@@ -118,6 +127,70 @@ What the CLI can do:
 - `tools/` — Python helper tools (board switch, setup CLI, scanner)
 
 If you want to dig deeper: commands are mapped via the `CommandManager` under `components/CommandManager/...`.
+
+---
+
+### USB Composite (UVC + CDC)
+When UVC support is compiled in the device enumerates as a composite USB device:
+- UVC interface: video streaming (JPEG frames)
+- CDC (virtual COM): command channel accepting newline‑terminated JSON objects
+
+Example newline‑terminated JSON commands over CDC:
+```
+{"cmd":"ping"}\n
+{"cmd":"get_info"}\n
+{"cmd":"switch_mode","mode":"wifi"}\n
+```
+Responses are JSON blobs flushed immediately.
+
+### Command Summary (JSON)
+| Command | Purpose | Example |
+|---------|---------|---------|
+| ping | Reachability test | {"cmd":"ping"} |
+| get_info | Board + version info | {"cmd":"get_info"} |
+| switch_mode | Set streaming mode (uvc|wifi|auto/setup) | {"cmd":"switch_mode","mode":"uvc"} |
+| start_streaming | Force start (skip delay) | {"cmd":"start_streaming"} |
+| update_ota | Set OTA creds / port | {"cmd":"update_ota","login":"u","password":"p","port":3232} |
+| update_led_pwm | Set external LED duty (%) | {"cmd":"update_led_pwm","dutyCycle":60} |
+| set_device_mode | Legacy numeric mode set | {"cmd":"set_device_mode","mode":1} |
+| get_led_current | Return LED current mA | {"cmd":"get_led_current"} |
+| restart | Schedule a reboot | {"cmd":"restart"} |
+| scan_wifi | Scan networks | {"cmd":"scan_wifi"} |
+| set_wifi_sta | Configure STA creds | {"cmd":"set_wifi_sta","ssid":"AP","password":"pw"} |
+| connect_wifi | Start Wi‑Fi connect | {"cmd":"connect_wifi"} |
+| get_wifi_status | Wi‑Fi state snapshot | {"cmd":"get_wifi_status"} |
+
+Notes:
+- Commands are newline (`\n`) delimited on CDC; REST & original USB‑serial use the same JSON payloads.
+- Error responses return `{ "error": "message" }`.
+
+### Monitoring (LED Current)
+Enabled with `MONITORING_LED_CURRENT=y` plus shunt/gain settings. The task samples every `CONFIG_MONITORING_LED_INTERVAL_MS` ms and maintains a filtered moving average over `CONFIG_MONITORING_LED_SAMPLES` samples. Use `get_led_current` command to query.
+
+### Debug & External LED Configuration
+| Kconfig | Effect |
+|---------|--------|
+| LED_DEBUG_ENABLE | Enables/disables discrete status LED GPIO init & drive |
+| LED_EXTERNAL_CONTROL | Enables PWM control for IR / external LED |
+| LED_EXTERNAL_PWM_DUTY_CYCLE | Default duty % applied at boot (0–100) |
+| LED_EXTERNAL_AS_DEBUG | Mirrors only error patterns onto external LED (0%/50%) when debug LED absent or also for redundancy |
+
+### Board Profiles
+Each file under `boards/` overlays `sdkconfig.base_defaults`. The merge order: base → board file → (optional) dynamic Wi‑Fi overrides via `switchBoardType.py` flags. Duplicate trailing segment directories collapse to unique keys.
+
+- UVC doesn’t appear on the host?
+  - Switch mode to UVC via CLI tool, replug USB and wait 20s.
+
+### Adding a new board configuration
+1. Create a new config file under `boards/` (you can nest folders): for example `boards/my_family/my_variant`.
+2. Populate it with only the `CONFIG_...` lines that differ from the shared defaults. Shared baseline lives in `boards/sdkconfig.base_defaults` and is always merged first.
+3. The board key the script accepts will be the relative path with `/` turned into `_` (example: `boards/my_family/my_variant` -> `my_family_my_variant`).
+4. Run `python tools/switchBoardType.py --list` to verify it’s detected, then switch using `-b my_family_my_variant`.
+5. If you accidentally create two files that collapse to the same key the last one found wins—rename to keep keys unique.
+
+Tips:
+- Use `--diff` after adding a board to sanity‑check only the intended keys change.
+- For Wi‑Fi overrides on first flash: add none—pass `--ssid` / `--password` when switching if needed.
 
 ---
 
@@ -134,20 +207,6 @@ The firmware uses a small set of LED patterns to indicate status and blocking er
 | WiFiStateConnecting | ![wifi connecting](docs/led_patterns/wifi_connecting.svg) | transitional | 400/400 (loop) | Wi‑Fi associating / DHCP pending |
 | WiFiStateConnected | ![wifi connected](docs/led_patterns/wifi_connected.svg) | notification | 150/150×3 then 600 off | Wi‑Fi connected successfully |
 | WiFiStateError | ![wifi error](docs/led_patterns/wifi_error.svg) | error | 200/100 500/300 (loop) | Wi‑Fi failed (auth timeout or no AP) |
-
-- UVC doesn’t appear on the host?
-  - Switch mode to UVC via CLI tool, replug USB and wait 20s.
-
-### Adding a new board configuration
-1. Create a new config file under `boards/` (you can nest folders): for example `boards/my_family/my_variant`.
-2. Populate it with only the `CONFIG_...` lines that differ from the shared defaults. Shared baseline lives in `boards/sdkconfig.base_defaults` and is always merged first.
-3. The board key the script accepts will be the relative path with `/` turned into `_` (example: `boards/my_family/my_variant` -> `my_family_my_variant`).
-4. Run `python tools/switchBoardType.py --list` to verify it’s detected, then switch using `-b my_family_my_variant`.
-5. If you accidentally create two files that collapse to the same key the last one found wins—rename to keep keys unique.
-
-Tips:
-- Use `--diff` after adding a board to sanity‑check only the intended keys change.
-- For Wi‑Fi overrides on first flash: add none—pass `--ssid` / `--password` when switching if needed.
 
 ---
 
