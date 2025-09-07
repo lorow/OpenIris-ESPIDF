@@ -17,6 +17,7 @@ Firmware and tools for OpenIris — Wi‑Fi, UVC streaming, and a Python setup C
  - Configurable debug LED + external IR LED control with optional error mirroring (`LED_DEBUG_ENABLE`, `LED_EXTERNAL_AS_DEBUG`)
  - Auto‑discovered per‑board configuration overlays under `boards/`
  - Command framework (JSON over serial / CDC / REST) for mode switching, Wi‑Fi config, OTA credentials, LED brightness, info & monitoring
+ - Single source advertised name (`CONFIG_GENERAL_ADVERTISED_NAME`) used for both UVC device name and mDNS hostname (unless overridden at runtime)
 
 ---
 
@@ -109,6 +110,13 @@ What the CLI can do:
 - Internally, the serial number is derived from the Wi‑Fi MAC address.
 - The CLI displays the MAC by default (clearer); it’s the value used as the serial number.
 - The UVC device name is based on the MDNS hostname.
+
+## Advertised Name (UVC + mDNS)
+`CONFIG_GENERAL_ADVERTISED_NAME` (Kconfig) defines the base name announced over:
+- USB UVC descriptor (appears in OS camera list)
+- mDNS hostname / service name
+
+Runtime override: If the setup CLI (or a JSON command) provides a new device name, that value supersedes the compile-time default until next flash/reset of settings.
 
 ---
 
