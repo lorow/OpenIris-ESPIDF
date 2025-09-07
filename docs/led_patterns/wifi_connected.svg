@@ -1,0 +1,5 @@
+<svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <circle id="dot" cx="50" cy="50" r="30" fill="#34c759">
+  <animate attributeName="fill-opacity" values="1;0;1;0;1;0;0" keyTimes="0;0.166;0.333;0.5;0.666;0.833;1" dur="1.2s" repeatCount="indefinite"/>
+ </circle>
+</svg>

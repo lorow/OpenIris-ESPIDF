@@ -125,26 +125,20 @@ If you want to dig deeper: commands are mapped via the `CommandManager` under `c
 ### LED Status / Error Patterns
 The firmware uses a small set of LED patterns to indicate status and blocking errors. When `LED_DEBUG_ENABLE` is disabled and `LED_EXTERNAL_AS_DEBUG` is enabled the external IR LED mirrors ONLY error patterns (0%/50% duty). Non‑error patterns are not mirrored.
 
-| State | Category | Repeat | Pattern (ON/OFF ms) | Meaning |
-|-------|----------|--------|---------------------|---------|
-| LedStateNone | idle | no | (off) | No activity / heartbeat window waiting |
-| LedStateStreaming | active | yes | steady on | Streaming running (UVC or Wi‑Fi) |
-| LedStateStoppedStreaming | inactive | yes | steady off | Streaming intentionally stopped |
-| CameraError | error | yes | 300/300 300/700 | Camera init/runtime failure (check sensor, ribbon, power) |
-| WiFiStateConnecting | transitional | yes | 400/400 | Wi‑Fi associating / DHCP pending |
-| WiFiStateConnected | notification | no | 150/150 x3 then off | Wi‑Fi connected successfully |
-| WiFiStateError | error | yes | 200/100 500/300 | Wi‑Fi failed (auth timeout or no AP) |
+| State | Visual | Category | Repeat | Timing Pattern (ms) | Meaning |
+|-------|--------|----------|--------|----------------------|---------|
+| LedStateNone | ![idle](docs/led_patterns/idle.svg) | idle | no | (off) | No activity / heartbeat window waiting |
+| LedStateStreaming | ![stream](docs/led_patterns/streaming.svg) | active | yes | steady on | Streaming running (UVC or Wi‑Fi) |
+| LedStateStoppedStreaming | ![stopped](docs/led_patterns/stopped.svg) | inactive | yes | steady off | Streaming intentionally stopped |
+| CameraError | ![camera error](docs/led_patterns/camera_error.svg) | error | yes | 300/300 300/700 | Camera init/runtime failure (check sensor, ribbon, power) |
+| WiFiStateConnecting | ![wifi connecting](docs/led_patterns/wifi_connecting.svg) | transitional | yes | 400/400 | Wi‑Fi associating / DHCP pending |
+| WiFiStateConnected | ![wifi connected](docs/led_patterns/wifi_connected.svg) | notification | no | 150/150 x3 then off | Wi‑Fi connected successfully |
+| WiFiStateError | ![wifi error](docs/led_patterns/wifi_error.svg) | error | yes | 200/100 500/300 | Wi‑Fi failed (auth timeout or no AP) |
 
 Guidelines for adding new patterns:
 - Keep error patterns short, distinctive, and repeating.
 - Reserve long holds (>600ms ON) for critical failures.
 - Use non-repeating patterns to acknowledge one-shot events (e.g. successful connection).
-
-Potential future additions (not implemented yet):
-- StorageError: two long ON pulses (e.g. NVS/flash failure).
-- ConfigError: triple short pulses repeating (invalid configuration / preferences corrupt).
-- ThermalWarning: slow ramp or alternating duty (would require PWM pattern support).
-- FirmwareUpdate: progressive heartbeat (increasing ON time) while updating OTA.
 
 - UVC doesn’t appear on the host?
   - Switch mode to UVC via CLI tool, replug USB and wait 20s.
