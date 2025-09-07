@@ -135,11 +135,6 @@ The firmware uses a small set of LED patterns to indicate status and blocking er
 | WiFiStateConnected | ![wifi connected](docs/led_patterns/wifi_connected.svg) | notification | 150/150×3 then 600 off | Wi‑Fi connected successfully |
 | WiFiStateError | ![wifi error](docs/led_patterns/wifi_error.svg) | error | 200/100 500/300 (loop) | Wi‑Fi failed (auth timeout or no AP) |
 
-Guidelines for adding new patterns:
-- Keep error patterns short, distinctive, and repeating.
-- Reserve long holds (>600ms ON) for critical failures.
-- Use non-repeating patterns to acknowledge one-shot events (e.g. successful connection).
-
 - UVC doesn’t appear on the host?
   - Switch mode to UVC via CLI tool, replug USB and wait 20s.
 
