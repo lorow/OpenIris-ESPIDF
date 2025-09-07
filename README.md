@@ -125,15 +125,15 @@ If you want to dig deeper: commands are mapped via the `CommandManager` under `c
 ### LED Status / Error Patterns
 The firmware uses a small set of LED patterns to indicate status and blocking errors. When `LED_DEBUG_ENABLE` is disabled and `LED_EXTERNAL_AS_DEBUG` is enabled the external IR LED mirrors ONLY error patterns (0%/50% duty). Non‑error patterns are not mirrored.
 
-| State | Visual | Category | Repeat | Timing Pattern (ms) | Meaning |
-|-------|--------|----------|--------|----------------------|---------|
-| LedStateNone | ![idle](docs/led_patterns/idle.svg) | idle | no | (off) | No activity / heartbeat window waiting |
-| LedStateStreaming | ![stream](docs/led_patterns/streaming.svg) | active | yes | steady on | Streaming running (UVC or Wi‑Fi) |
-| LedStateStoppedStreaming | ![stopped](docs/led_patterns/stopped.svg) | inactive | yes | steady off | Streaming intentionally stopped |
-| CameraError | ![camera error](docs/led_patterns/camera_error.svg) | error | yes | 300/300 300/700 | Camera init/runtime failure (check sensor, ribbon, power) |
-| WiFiStateConnecting | ![wifi connecting](docs/led_patterns/wifi_connecting.svg) | transitional | yes | 400/400 | Wi‑Fi associating / DHCP pending |
-| WiFiStateConnected | ![wifi connected](docs/led_patterns/wifi_connected.svg) | notification | no | 150/150 x3 then off | Wi‑Fi connected successfully |
-| WiFiStateError | ![wifi error](docs/led_patterns/wifi_error.svg) | error | yes | 200/100 500/300 | Wi‑Fi failed (auth timeout or no AP) |
+| State | Visual | Category | Timing Pattern (ms) | Meaning |
+|-------|--------|----------|---------------------|---------|
+| LedStateNone | ![idle](docs/led_patterns/idle.svg) | idle | (off) | No activity / heartbeat window waiting |
+| LedStateStreaming | ![stream](docs/led_patterns/streaming.svg) | active | steady on | Streaming running (UVC or Wi‑Fi) |
+| LedStateStoppedStreaming | ![stopped](docs/led_patterns/stopped.svg) | inactive | steady off | Streaming intentionally stopped |
+| CameraError | ![camera error](docs/led_patterns/camera_error.svg) | error | 300/300 300/700 (loop) | Camera init/runtime failure (check sensor, ribbon, power) |
+| WiFiStateConnecting | ![wifi connecting](docs/led_patterns/wifi_connecting.svg) | transitional | 400/400 (loop) | Wi‑Fi associating / DHCP pending |
+| WiFiStateConnected | ![wifi connected](docs/led_patterns/wifi_connected.svg) | notification | 150/150×3 then 600 off | Wi‑Fi connected successfully |
+| WiFiStateError | ![wifi error](docs/led_patterns/wifi_error.svg) | error | 200/100 500/300 (loop) | Wi‑Fi failed (auth timeout or no AP) |
 
 Guidelines for adding new patterns:
 - Keep error patterns short, distinctive, and repeating.
