@@ -78,7 +78,7 @@ void LEDManager::setup()
     gpio_set_direction(blink_led_pin, GPIO_MODE_OUTPUT);
     this->toggleLED(LED_OFF);
 
-#ifdef CONFIG_LED_EXTERNAL_CONTROL
+#ifdef CONFIG_LED_CONTROL_MODE_PWM
     ESP_LOGI(LED_MANAGER_TAG, "Setting up illuminator led.");
     const int freq = CONFIG_LED_EXTERNAL_PWM_FREQ;
     const auto resolution = LEDC_TIMER_8_BIT;
@@ -180,7 +180,7 @@ void LEDManager::toggleLED(const bool state) const
 
 void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
 {
-#ifdef CONFIG_LED_EXTERNAL_CONTROL
+#ifdef CONFIG_LED_CONTROL_MODE_PWM
     const uint32_t dutyCycle = (static_cast<uint32_t>(dutyPercent) * 255) / 100;
     ESP_LOGI(LED_MANAGER_TAG, "Updating external LED duty to %u%% (raw %lu)", dutyPercent, dutyCycle);
 
@@ -190,7 +190,7 @@ void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)
     ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
 #else
     (void)dutyPercent; // unused
-    ESP_LOGW(LED_MANAGER_TAG, "CONFIG_LED_EXTERNAL_CONTROL not enabled; ignoring duty update");
+    ESP_LOGW(LED_MANAGER_TAG, "CONFIG_LED_CONTROL_MODE_PWM not enabled; ignoring duty update");
 #endif
 }
 
