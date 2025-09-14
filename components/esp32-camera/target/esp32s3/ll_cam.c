@@ -43,11 +43,8 @@ static const char *TAG = "s3 ll_cam";
 #ifdef CONFIG_LED_CONTROL_MODE_VSYNC
 static gptimer_handle_t strobe_timer = NULL;
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
 #define PWM_TIME (-0.00125*CONFIG_CAMERA_USB_XCLK_FREQ)+45000
-#else
-  int xclk_freq_hz = (-0.00125*CONFIG_CAMERA_WIFI_XCLK_FREQ)+45000;
-#endif
+#define PWM_TIME_WIFI (-0.00125*CONFIG_CAMERA_USB_XCLK_FREQ)+45000
 
 static bool IRAM_ATTR strobe_timer_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
     gpio_set_level(CONFIG_LED_EXTERNAL_GPIO, 0);  // cut strobe
@@ -84,8 +81,12 @@ static inline void IRAM_ATTR strobe_fire(void)
         
         // Set timer to turn it OFF after 500us
         gptimer_alarm_config_t alarm_config = {
-            .alarm_count = (int)((PWM_TIME)*((float)CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE/100)),  // 100% // This number changes with xclk, Ex. 20000 = 100% dutycycle @20MHz
-                                          // I need to find a way to calculate this. 
+            #ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+            .alarm_count = (int)((PWM_TIME)*((float)CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE/100)),
+            #else 
+            .alarm_count = (int)((PWM_TIME_WIFI)*((float)CONFIG_LED_EXTERNAL_PWM_DUTY_CYCLE/100)),
+            #endif
+                                          
             .flags.auto_reload_on_alarm = false,
         };
         gptimer_stop(strobe_timer);
