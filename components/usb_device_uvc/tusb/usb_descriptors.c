@@ -70,6 +70,8 @@ uint8_t const *tud_descriptor_device_cb(void)
 #define STRID_PRODUCT 2
 #define STRID_SERIAL 3
 #define STRID_UVC_CAM1 4
+// CDC interface string index used by TUD_CDC_DESCRIPTOR below
+#define STRID_CDC 6
 
 // Endpoint numbers for CDC
 #define EPNUM_CDC_NOTIF   0x81
@@ -200,12 +202,15 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index)
 //--------------------------------------------------------------------+
 
 // Array of pointers to string literals. Indices must match STRID_* above.
+// NOTE: Indices must be contiguous up to the highest used index (STRID_CDC = 6)
 char const *string_desc_arr[] = {
     (const char[]){0x09, 0x04}, // 0: Supported language: English (0x0409)
     CONFIG_TUSB_MANUFACTURER,   // 1: Manufacturer
-    CONFIG_TUSB_PRODUCT,        // 2: Product
+    CONFIG_TUSB_PRODUCT,        // 2: Product (overridden by advertised name)
     CONFIG_TUSB_SERIAL_NUM,     // 3: Serial (overridden by get_serial_number())
-    "UVC CAM1",                 // 4: UVC Interface name for Cam1 (overridden by get_uvc_device_name())
+    "UVC CAM1",                // 4: UVC Interface name for Cam1 (overridden by get_uvc_device_name())
+    "CDC",                     // 5: placeholder (unused)
+    "CDC Interface",           // 6: CDC Interface name (overridden to advertised name)
 };
 
 static uint16_t _desc_str[32];
@@ -249,7 +254,8 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
         // Allow dynamic overrides for specific indices
         if (index == STRID_SERIAL)
             str = get_serial_number();
-        if (index == STRID_UVC_CAM1)
+        // Unify all user-visible names (Product, UVC interface, CDC interface) to advertised name
+        if (index == STRID_UVC_CAM1 || index == STRID_PRODUCT || index == STRID_CDC)
             str = get_uvc_device_name();
         if (str == NULL)
             str = string_desc_arr[index];
