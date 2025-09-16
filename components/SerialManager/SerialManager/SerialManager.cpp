@@ -20,9 +20,15 @@ void SerialManager::setup()
   usb_serial_jtag_driver_install(&usb_serial_jtag_config);
 }
 
+bool SerialManager::isConnected()
+{
+  // in preparation for handling uart as well
+  return usb_serial_jtag_is_connected();
+}
+
 void SerialManager::try_receive()
 {
-  int current_position = 0;
+  static auto current_position = 0;
   int len = usb_serial_jtag_read_bytes(this->temp_data, 256, 1000 / 20);
 
   // If driver is uninstalled or an error occurs, abort read gracefully
@@ -31,45 +37,30 @@ void SerialManager::try_receive()
     return;
   }
 
-  // since we've got something on the serial port
-  // we gotta keep reading until we've got the whole message
-  while (len > 0)
+  if (len > 0)
   {
-    // Prevent buffer overflow
-    if (current_position + len >= BUF_SIZE)
-    {
-      int copy_len = BUF_SIZE - 1 - current_position;
-      if (copy_len > 0)
-      {
-        memcpy(this->data + current_position, this->temp_data, copy_len);
-        current_position += copy_len;
-      }
-      // Drop the rest of the input to avoid overflow
-      break;
-    }
-    memcpy(this->data + current_position, this->temp_data, (size_t)len);
-    current_position += len;
-    len = usb_serial_jtag_read_bytes(this->temp_data, 256, 1000 / 20);
-    if (len < 0)
-    {
-      // Driver likely uninstalled during handover; stop processing this cycle
-      break;
-    }
-  }
-
-  if (current_position)
-  {
-    // once we're done, we can terminate the string and reset the counter
-    data[current_position] = '\0';
-    current_position = 0;
-
     // Notify main that a command was received during startup
     notify_startup_command_received();
+  }
 
-    const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
-    const auto resultMessage = result.getResult();
-    int written = usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
-    (void)written; // ignore errors if driver already uninstalled
+  // since we've got something on the serial port
+  // we gotta keep reading until we've got the whole message
+  // we will submit the command once we get a newline, a return or the buffer is full
+  for (auto i = 0; i < len; i++)
+  {
+    this->data[current_position++] = this->temp_data[i];
+    // if we're at the end of the buffer, try to process the command anyway
+    // if we've got a new line, we've finished sending the commands, process them
+    if (current_position >= BUF_SIZE || this->data[current_position - 1] == '\n' || this->data[current_position - 1] == '\r')
+    {
+      data[current_position] = '\0';
+      current_position = 0;
+
+      const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
+      const auto resultMessage = result.getResult();
+      int written = usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
+      (void)written; // ignore errors if driver already uninstalled
+    }
   }
 }
 
@@ -79,11 +70,11 @@ void SerialManager::notify_startup_command_received()
   setStartupCommandReceived(true);
 
   // Cancel the startup timer if it's still running
-  if (timerHandle != nullptr)
+  if (timerHandle != nullptr && *timerHandle != nullptr)
   {
     esp_timer_stop(*timerHandle);
     esp_timer_delete(*timerHandle);
-    timerHandle = nullptr;
+    *timerHandle = nullptr;
     ESP_LOGI("[MAIN]", "Startup timer cancelled, staying in heartbeat mode");
   }
 }
@@ -112,7 +103,7 @@ bool SerialManager::should_send_heartbeat()
   // Always send heartbeat during startup delay or if no WiFi configured
 
   // If startup timer is still running, always send heartbeat
-  if (timerHandle != nullptr)
+  if (timerHandle != nullptr && *timerHandle != nullptr)
   {
     return true;
   }
