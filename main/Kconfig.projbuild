@@ -84,6 +84,29 @@ menu "OpenIris: LED Configuration"
             GPIO number (IOxx) used to blink an onboard LED.
             Some GPIOs are reserved for other functions (e.g. flash) and cannot be used.
 
+    # --- External LED control mode ---
+    choice LED_CONTROL_MODE
+        prompt "External LED control mode"
+        default LED_CONTROL_MODE_NONE
+        help
+            Select how the external IR LEDs are driven.
+
+        config LED_CONTROL_MODE_NONE
+            bool "Disabled"
+            help
+                External IR LED control is disabled.
+
+        config LED_CONTROL_MODE_PWM
+            bool "PWM"
+            help
+                Drive external IR LEDs with a PWM signal.
+
+        config LED_CONTROL_MODE_VSYNC
+            bool "VSync Strobe"
+            help
+                Flash external IR LEDs in sync with the camera.
+    endchoice
+
     config LED_EXTERNAL_GPIO
         int "GPIO pin controlling external LEDs"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
@@ -91,27 +114,21 @@ menu "OpenIris: LED Configuration"
         help
             GPIO number connected to the control line of the external IR LEDs.
 
-    config LED_EXTERNAL_CONTROL
-        bool "Board supports external IR LED control"
-        default false
-        help
-            Enable this if your board can control external IR LEDs.
-
     config LED_EXTERNAL_PWM_FREQ
         int "External LED PWM frequency (Hz)"
         default 5000
         range 1 40000
-        depends on LED_EXTERNAL_CONTROL
+        depends on LED_CONTROL_MODE_PWM
         help
             Frequency of the PWM signal driving the external IR LEDs.
 
     config LED_EXTERNAL_PWM_DUTY_CYCLE
-        int "External LED PWM duty cycle (%)"
+        int "External LED duty cycle (%)"
         default 50
         range 0 100
-        depends on LED_EXTERNAL_CONTROL
+        depends on LED_CONTROL_MODE_PWM || LED_CONTROL_MODE_VSYNC
         help
-            Duty cycle of the PWM signal for external IR LEDs, in percent.
+            Duty cycle of the enable signal for external IR LEDs, in percent.
             0 means always off, 100 means always on.
 
 endmenu
