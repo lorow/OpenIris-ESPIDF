@@ -5,9 +5,9 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "sdkconfig.h"
 #include "nvs_flash.h"
-#include "esp_wifi.h"
 
 #include <openiris_logo.hpp>
 #include <wifiManager.hpp>
@@ -65,7 +65,7 @@ UVCStreamManager uvcStream;
 
 auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
-MonitoringManager monitoringManager;
+std::shared_ptr<MonitoringManager> monitoringManager = std::make_shared<MonitoringManager>();
 
 void startWiFiMode(bool shouldCloseSerialManager);
 void startWiredMode(bool shouldCloseSerialManager);
@@ -233,11 +233,11 @@ void startSetupMode()
 {
     // If we're in SETUP mode - Device starts with a 20-second delay before deciding on what to do
     // during this time we await any commands
-    const int startup_delay_s = CONFIG_GENERAL_STARTUP_DELAY;
+    const uint64_t startup_delay_s = CONFIG_GENERAL_STARTUP_DELAY;
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "STARTUP: %d-SECOND DELAY MODE ACTIVE", startup_delay_s);
+    ESP_LOGI("[MAIN]", "STARTUP: %llu-SECOND DELAY MODE ACTIVE", (unsigned long long)startup_delay_s);
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "Device will wait %d seconds for commands...", startup_delay_s);
+    ESP_LOGI("[MAIN]", "Device will wait %llu seconds for commands...", (unsigned long long)startup_delay_s);
 
     // Create a one-shot timer for 20 seconds
     const esp_timer_create_args_t startup_timer_args = {
@@ -248,9 +248,9 @@ void startSetupMode()
         .skip_unhandled_events = false};
 
     ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &timerHandle));
-    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, (uint64_t)startup_delay_s * 1000000));
-    ESP_LOGI("[MAIN]", "Started %d-second startup timer", startup_delay_s);
-    ESP_LOGI("[MAIN]", "Send any command within %d seconds to enter heartbeat mode", startup_delay_s);
+    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, startup_delay_s * 1000000));
+    ESP_LOGI("[MAIN]", "Started %llu-second startup timer", (unsigned long long)startup_delay_s);
+    ESP_LOGI("[MAIN]", "Send any command within %llu seconds to enter heartbeat mode", (unsigned long long)startup_delay_s);
 }
 
 extern "C" void app_main(void)
@@ -262,7 +262,7 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
 #endif
     dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
-    dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, std::shared_ptr<MonitoringManager>(&monitoringManager, [](MonitoringManager*){}));
+    dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, monitoringManager);
 
     // add endpoint to check firmware version
     // add firmware version somewhere
@@ -275,8 +275,8 @@ extern "C" void app_main(void)
     initNVSStorage();
     deviceConfig->load();
     ledManager->setup();
-    monitoringManager.setup();
-    monitoringManager.start();
+    monitoringManager->setup();
+    monitoringManager->start();
 
     xTaskCreate(
         HandleStateManagerTask,

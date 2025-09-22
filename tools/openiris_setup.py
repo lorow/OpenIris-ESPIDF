@@ -1063,10 +1063,9 @@ def get_settings(device: OpenIrisDevice, args=None):
         print("🔑 Serial/MAC: unavailable")
 
     # Advertised Name
-    adv = summary.get("AdvertisedName", {})
-    adv_name = adv.get("advertised_name")
-    if adv_name:
-        print(f"📛 Name: {adv_name}")
+    advertised_name_data = summary.get("AdvertisedName", {})
+    if advertised_name := advertised_name_data.get("advertised_name"):
+        print(f"📛 Name: {advertised_name}")
 
     # Info
     info = summary.get("Info", {})
@@ -1090,12 +1089,11 @@ def get_settings(device: OpenIrisDevice, args=None):
     print(f"🎚️  Mode: {mode if mode else 'unknown'}")
 
     # Current
-    current = summary.get("Current", {}).get("led_current_ma")
-    if current is not None:
-        print(f"🔌 LED Current: {current:.3f} mA")
+    current_section = summary.get("Current", {})
+    if (led_current_ma := current_section.get("led_current_ma")) is not None:
+        print(f"🔌 LED Current: {led_current_ma:.3f} mA")
     else:
-        err = summary.get("Current", {}).get("error")
-        if err:
+        if (err := current_section.get("error")):
             print(f"🔌 LED Current: unavailable ({err})")
         else:
             print("🔌 LED Current: unavailable")

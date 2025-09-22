@@ -124,8 +124,10 @@ Runtime override: If the setup CLI (or a JSON command) provides a new device nam
 - Fast Wi‑Fi setup: in the CLI, go to “Wi‑Fi settings” → “Automatic setup”, then check “status”.
 - Change name/MDNS: set the device name in the CLI, then replug USB — UVC will show the new name.
 - Adjust brightness/LED: set LED PWM in the CLI.
- - Switch to UVC mode over commands: send JSON `{ "cmd": "switch_mode", "mode": "uvc" }` then reboot.
- - Read filtered LED current (if enabled): `{ "cmd": "get_led_current" }`.
+ - Switch to UVC mode over commands (CDC/serial):
+   `{"commands":[{"command":"switch_mode","data":{"mode":"uvc"}}]}` then reboot.
+ - Read filtered LED current (if enabled):
+   `{"commands":[{"command":"get_led_current"}]}`
 
 ---
 
@@ -143,11 +145,19 @@ When UVC support is compiled in the device enumerates as a composite USB device:
 - UVC interface: video streaming (JPEG frames)
 - CDC (virtual COM): command channel accepting newline‑terminated JSON objects
 
-Example newline‑terminated JSON commands over CDC:
+Example newline‑terminated JSON commands over CDC (one per line):
 ```
-{"cmd":"ping"}\n
-{"cmd":"get_info"}\n
-{"cmd":"switch_mode","mode":"wifi"}\n
+{"commands":[{"command":"ping"}]}
+{"commands":[{"command":"get_who_am_i"}]}
+{"commands":[{"command":"switch_mode","data":{"mode":"wifi"}}]}
+```
+
+Chained commands in a single request (processed in order):
+```
+{"commands":[
+  {"command":"set_mdns","data":{"hostname":"tracker"}},
+  {"command":"set_wifi","data":{"name":"main","ssid":"your_network","password":"password","channel":0,"power":0}}
+]}
 ```
 Responses are JSON blobs flushed immediately.
 

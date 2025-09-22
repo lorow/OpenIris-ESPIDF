@@ -72,8 +72,8 @@ private:
   bool finishedPattern = false;
 
 #if defined(CONFIG_LED_EXTERNAL_CONTROL) && defined(CONFIG_LED_EXTERNAL_AS_DEBUG)
-  mutable bool hasStoredExternalDuty = false;
-  mutable uint32_t storedExternalDuty = 0; // raw 0-255
+  bool hasStoredExternalDuty = false;
+  uint32_t storedExternalDuty = 0; // raw 0-255
 #endif
 };
 

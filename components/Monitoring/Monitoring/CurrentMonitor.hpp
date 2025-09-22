@@ -1,3 +1,5 @@
+#ifndef CURRENT_MONITOR_HPP
+#define CURRENT_MONITOR_HPP
 #pragma once
 #include <cstdint>
 #include <memory>
@@ -43,3 +45,5 @@ private:
     size_t sample_idx_ = 0;
     size_t sample_count_ = 0;
 };
+
+#endif

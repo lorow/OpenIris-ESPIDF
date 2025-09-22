@@ -6,8 +6,6 @@
 
 class MonitoringManager {
 public:
-    MonitoringManager() = default;
-    ~MonitoringManager() = default;
 
     void setup();
     void start();

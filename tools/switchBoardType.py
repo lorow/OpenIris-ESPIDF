@@ -1,4 +1,5 @@
 import os
+import difflib
 import argparse
 from typing import Dict, Optional, List
 
@@ -70,22 +71,9 @@ def _suggest_boards(partial: str) -> List[str]:
   contains = [b for b in BOARD_CONFIGS if partial_low in b.lower()]
   if contains:
     return contains[:10]
-  # simple levenshtein distance limited (manual lightweight)
-  def distance(a: str, b: str) -> int:
-    if len(a) < len(b):
-      a, b = b, a
-    prev = list(range(len(b)+1))
-    for i, ca in enumerate(a, 1):
-      cur = [i]
-      for j, cb in enumerate(b, 1):
-        ins = cur[j-1] + 1
-        dele = prev[j] + 1
-        sub = prev[j-1] + (ca != cb)
-        cur.append(min(ins, dele, sub))
-      prev = cur
-    return prev[-1]
-  ranked = sorted(BOARD_CONFIGS, key=lambda k: distance(partial_low, k.lower()))
-  return ranked[:5]
+  # fallback to fuzzy matching using difflib
+  choices = list(BOARD_CONFIGS.keys())
+  return difflib.get_close_matches(partial, choices, n=5, cutoff=0.4)
 
 def normalize_board_name(raw: Optional[str]) -> Optional[str]:
   if raw is None:

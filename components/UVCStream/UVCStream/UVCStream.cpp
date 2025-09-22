@@ -97,10 +97,10 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
   // --- Frame pacing BEFORE grabbing a new camera frame ---
   static int64_t next_deadline_us = 0;    // next permitted capture time
   static int rem_acc = 0;                 // fractional remainder accumulator
-  constexpr int target_fps = 60;          // desired FPS
-  constexpr int64_t us_per_sec = 1000000; // 1e6 microseconds
-  constexpr int base_interval_us = us_per_sec / target_fps; // 16666
-  constexpr int rem_us = us_per_sec % target_fps;           // 40 (distributed)
+  static const int target_fps = 60;          // desired FPS
+  static const int64_t us_per_sec = 1000000; // 1e6 microseconds
+  static const int base_interval_us = us_per_sec / target_fps; // 16666
+  static const int rem_us = us_per_sec % target_fps;           // 40 (distributed)
 
   const int64_t now_us = esp_timer_get_time();
   if (next_deadline_us == 0)
