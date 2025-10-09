@@ -4,23 +4,14 @@
 #include "esp_mac.h"
 #include <cstdio>
 
-// Implementation inspired by SummerSigh work, initial PR opened in openiris repo, adapted to this rewrite
-CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry, const nlohmann::json &json)
 {
-    const auto parsedJson = cJSON_Parse(jsonPayload.data());
-    if (parsedJson == nullptr)
+    if (!json.contains("mode") || !json["mode"].is_number_integer())
     {
-        return CommandResult::getErrorResult("Invalid payload");
+        return CommandResult::getErrorResult("Invalid payload - missing or unsupported mode");
     }
 
-    const auto modeObject = cJSON_GetObjectItem(parsedJson, "mode");
-    if (modeObject == nullptr)
-    {
-        return CommandResult::getErrorResult("Invalid payload - missing mode");
-    }
-
-    const auto mode = modeObject->valueint;
-
+    const auto mode = json["mode"].get<int>();
     if (mode < 0 || mode > 2)
     {
         return CommandResult::getErrorResult("Invalid payload - unsupported mode");
@@ -29,19 +20,11 @@ CommandResult setDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry,
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     projectConfig->setDeviceMode(static_cast<StreamingMode>(mode));
 
-    cJSON_Delete(parsedJson);
-
     return CommandResult::getSuccessResult("Device mode set");
 }
 
-CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> registry, const nlohmann::json &json)
 {
-    const auto parsedJson = cJSON_Parse(jsonPayload.data());
-
-    if (parsedJson == nullptr)
-    {
-        return CommandResult::getErrorResult("Invalid payload");
-    }
 
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     const auto oldDeviceConfig = projectConfig->getDeviceConfig();
@@ -49,48 +32,39 @@ CommandResult updateOTACredentialsCommand(std::shared_ptr<DependencyRegistry> re
     auto OTAPassword = oldDeviceConfig.OTAPassword;
     auto OTAPort = oldDeviceConfig.OTAPort;
 
-    if (const auto OTALoginObject = cJSON_GetObjectItem(parsedJson, "login"); OTALoginObject != nullptr)
+    if (json.contains("login") && json["login"].is_string())
     {
-        if (const auto newLogin = OTALoginObject->valuestring; strcmp(newLogin, "") != 0)
+        if (const auto newLogin = json["login"].get<std::string>(); strcmp(newLogin.c_str(), "") != 0)
         {
             OTALogin = newLogin;
         }
     }
 
-    if (const auto OTAPasswordObject = cJSON_GetObjectItem(parsedJson, "password"); OTAPasswordObject != nullptr)
+    if (json.contains("password") && json["password"].is_string())
     {
-        OTAPassword = OTAPasswordObject->valuestring;
+        OTAPassword = json["password"].get<std::string>();
     }
 
-    if (const auto OTAPortObject = cJSON_GetObjectItem(parsedJson, "port"); OTAPortObject != nullptr)
+    if (json.contains("port") && json["port"].is_number_integer())
     {
-        if (const auto newPort = OTAPortObject->valueint; newPort >= 82)
+        if (const auto newPort = json["port"].get<int>(); newPort >= 82)
         {
             OTAPort = newPort;
         }
     }
 
-    cJSON_Delete(parsedJson);
-
     projectConfig->setOTAConfig(OTALogin, OTAPassword, OTAPort);
     return CommandResult::getSuccessResult("OTA Config set");
 }
 
-CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registry, const nlohmann::json &json)
 {
-    const auto parsedJson = cJSON_Parse(jsonPayload.data());
-    if (parsedJson == nullptr)
-    {
-        return CommandResult::getErrorResult("Invalid payload");
-    }
-
-    const auto dutyCycleObject = cJSON_GetObjectItem(parsedJson, "dutyCycle");
-    if (dutyCycleObject == nullptr)
+    if (!json.contains("dutyCycle") || !json["dutyCycle"].is_number_integer())
     {
         return CommandResult::getErrorResult("Invalid payload - missing dutyCycle");
     }
 
-    const auto dutyCycle = dutyCycleObject->valueint;
+    const auto dutyCycle = json["dutyCycle"].get<int>();
 
     if (dutyCycle < 0 || dutyCycle > 100)
     {
@@ -106,8 +80,6 @@ CommandResult updateLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> regi
     {
         ledMgr->setExternalLEDDutyCycle(static_cast<uint8_t>(dutyCycle));
     }
-
-    cJSON_Delete(parsedJson);
 
     return CommandResult::getSuccessResult("LED duty cycle set");
 }
@@ -145,34 +117,28 @@ CommandResult startStreamingCommand()
     return CommandResult::getSuccessResult("Streaming starting");
 }
 
-CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, std::string_view jsonPayload)
+CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, const nlohmann::json &json)
 {
-    const auto parsedJson = cJSON_Parse(jsonPayload.data());
-    if (parsedJson == nullptr)
-    {
-        return CommandResult::getErrorResult("Invalid payload");
-    }
 
-    const auto modeObject = cJSON_GetObjectItem(parsedJson, "mode");
-    if (modeObject == nullptr)
+    if (!json.contains("mode") || !json["mode"].is_string())
     {
         return CommandResult::getErrorResult("Invalid payload - missing mode");
     }
 
-    const char *modeStr = modeObject->valuestring;
+    auto modeStr = json["mode"].get<std::string>();
     StreamingMode newMode;
 
-    ESP_LOGI("[DEVICE_COMMANDS]", "Switch mode command received with mode: %s", modeStr);
+    ESP_LOGI("[DEVICE_COMMANDS]", "Switch mode command received with mode: %s", modeStr.c_str());
 
-    if (strcmp(modeStr, "uvc") == 0)
+    if (modeStr == "uvc")
     {
         newMode = StreamingMode::UVC;
     }
-    else if (strcmp(modeStr, "wifi") == 0)
+    else if (modeStr == "wifi")
     {
         newMode = StreamingMode::WIFI;
     }
-    else if (strcmp(modeStr, "setup") == 0 || strcmp(modeStr, "auto") == 0)
+    else if (modeStr == "setup" || modeStr == "auto"))
     {
         newMode = StreamingMode::SETUP;
     }
@@ -184,8 +150,6 @@ CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, st
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     ESP_LOGI("[DEVICE_COMMANDS]", "Setting device mode to: %d", (int)newMode);
     projectConfig->setDeviceMode(newMode);
-
-    cJSON_Delete(parsedJson);
 
     return CommandResult::getSuccessResult("Device mode switched, restart to apply");
 }

@@ -50,11 +50,21 @@ void SerialManager::try_receive()
       data[current_position] = '\0';
       current_position = 0;
 
-      const auto result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
-      const auto resultMessage = result.getResult();
-      int written = usb_serial_jtag_write_bytes(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
-      (void)written; // ignore errors if driver already uninstalled
+      const nlohmann::json result = this->commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(this->data)));
+      const auto resultMessage = result.dump();
+      usb_serial_jtag_write_bytes_chunked(resultMessage.c_str(), resultMessage.length(), 1000 / 20);
     }
+  }
+}
+
+void SerialManager::usb_serial_jtag_write_bytes_chunked(const char *data, size_t len, size_t timeout)
+{
+  while (len > 0)
+  {
+    auto to_write = len > BUF_SIZE ? BUF_SIZE : len;
+    auto written = usb_serial_jtag_write_bytes(data, to_write, timeout);
+    data += written;
+    len -= written;
   }
 }
 
@@ -171,8 +181,8 @@ void HandleCDCSerialManagerTask(void *pvParameters)
         if (idx >= BUF_SIZE || buffer[idx - 1] == '\n' || buffer[idx - 1] == '\r')
         {
           buffer[idx - 1] = '\0';
-          const auto result = commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(buffer)));
-          const auto resultMessage = result.getResult();
+          const nlohmann::json result = commandManager->executeFromJson(std::string_view(reinterpret_cast<const char *>(buffer)));
+          const auto resultMessage = result.dump();
           tud_cdc_write(resultMessage.c_str(), resultMessage.length());
           tud_cdc_write_flush();
           idx = 0;

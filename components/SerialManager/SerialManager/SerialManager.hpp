@@ -41,6 +41,8 @@ public:
   void shutdown();
 
 private:
+  void usb_serial_jtag_write_bytes_chunked(const char *data, size_t len, size_t timeout);
+
   std::shared_ptr<CommandManager> commandManager;
   esp_timer_handle_t *timerHandle;
   std::shared_ptr<ProjectConfig> deviceConfig;
