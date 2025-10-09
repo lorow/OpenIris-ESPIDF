@@ -5,8 +5,8 @@
 
 #define BUF_SIZE (1024)
 
-SerialManager::SerialManager(std::shared_ptr<CommandManager> commandManager, esp_timer_handle_t *timerHandle, std::shared_ptr<ProjectConfig> deviceConfig)
-    : commandManager(commandManager), timerHandle(timerHandle), deviceConfig(deviceConfig)
+SerialManager::SerialManager(std::shared_ptr<CommandManager> commandManager, esp_timer_handle_t *timerHandle)
+    : commandManager(commandManager), timerHandle(timerHandle)
 {
   this->data = static_cast<uint8_t *>(malloc(BUF_SIZE));
   this->temp_data = static_cast<uint8_t *>(malloc(256));
@@ -83,46 +83,6 @@ void SerialManager::notify_startup_command_received()
   }
 }
 
-void SerialManager::send_heartbeat()
-{
-  // Get the MAC address as unique identifier
-  uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-
-  // Format as serial number string
-  char serial_number[18];
-  sprintf(serial_number, "%02X%02X%02X%02X%02X%02X",
-          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-  // Create heartbeat JSON with serial number
-  char heartbeat[128];
-  sprintf(heartbeat, "{\"heartbeat\":\"openiris_setup_mode\",\"serial\":\"%s\"}\n", serial_number);
-
-  usb_serial_jtag_write_bytes(heartbeat, strlen(heartbeat), 1000 / 20);
-  // Ignore return value; if the driver was uninstalled, this is a no-op
-}
-
-bool SerialManager::should_send_heartbeat()
-{
-  // Always send heartbeat during startup delay or if no WiFi configured
-
-  // If startup timer is still running, always send heartbeat
-  if (timerHandle != nullptr && *timerHandle != nullptr)
-  {
-    return true;
-  }
-
-  // If in heartbeat mode after startup, continue sending
-  if (getStartupCommandReceived())
-  {
-    return true;
-  }
-
-  // Otherwise, only send if no WiFi credentials configured
-  const auto wifiConfigs = deviceConfig->getWifiConfigs();
-  return wifiConfigs.empty();
-}
-
 void SerialManager::shutdown()
 {
   // Stop heartbeats; timer will be deleted by main if needed.
@@ -142,23 +102,9 @@ void SerialManager::shutdown()
 void HandleSerialManagerTask(void *pvParameters)
 {
   auto const serialManager = static_cast<SerialManager *>(pvParameters);
-  TickType_t lastHeartbeat = xTaskGetTickCount();
-  const TickType_t heartbeatInterval = pdMS_TO_TICKS(2000); // 2 second heartbeat
-
   while (true)
   {
     serialManager->try_receive();
-
-    // Send heartbeat every 2 seconds, but only if no WiFi credentials are set
-    TickType_t currentTime = xTaskGetTickCount();
-    if ((currentTime - lastHeartbeat) >= heartbeatInterval)
-    {
-      if (serialManager->should_send_heartbeat())
-      {
-        serialManager->send_heartbeat();
-      }
-      lastHeartbeat = currentTime;
-    }
   }
 }
 

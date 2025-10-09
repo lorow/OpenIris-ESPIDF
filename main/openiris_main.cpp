@@ -68,8 +68,8 @@ UVCStreamManager uvcStream;
 #endif
 
 auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
-auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 std::shared_ptr<MonitoringManager> monitoringManager = std::make_shared<MonitoringManager>();
+auto *serialManager = new SerialManager(commandManager, &timerHandle);
 
 void startWiFiMode();
 void startWiredMode(bool shouldCloseSerialManager);
