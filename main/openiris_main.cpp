@@ -28,6 +28,10 @@
 #include <UVCStream.hpp>
 #endif
 
+// defines to configure nlohmann-json for esp32
+#define JSON_NO_IO 1
+#define JSON_NOEXCEPTION 1
+
 #ifdef CONFIG_LED_DEBUG_ENABLE
 #define BLINK_GPIO (gpio_num_t) CONFIG_LED_DEBUG_GPIO
 #else
