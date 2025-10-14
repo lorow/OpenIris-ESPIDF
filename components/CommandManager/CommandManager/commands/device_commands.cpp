@@ -95,8 +95,8 @@ CommandResult getLEDDutyCycleCommand(std::shared_ptr<DependencyRegistry> registr
     const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
     const auto deviceCfg = projectConfig->getDeviceConfig();
     int duty = deviceCfg.led_external_pwm_duty_cycle;
-    auto result = std::format("{{ \"led_external_pwm_duty_cycle\": {} }}", duty);
-    return CommandResult::getSuccessResult(result);
+    const auto json = nlohmann::json{{"led_external_pwm_duty_cycle", duty}};
+    return CommandResult::getSuccessResult(json);
 }
 
 CommandResult startStreamingCommand()
@@ -173,8 +173,11 @@ CommandResult getDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry)
         break;
     }
 
-    auto result = std::format("{{ \"mode\": \"{}\", \"value\": {} }}", modeStr, static_cast<int>(currentMode));
-    return CommandResult::getSuccessResult(result);
+    const auto json = nlohmann::json{
+        {"mode", modeStr},
+        {"value", static_cast<int>(currentMode)},
+    };
+    return CommandResult::getSuccessResult(json);
 }
 
 CommandResult getSerialNumberCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
@@ -193,8 +196,11 @@ CommandResult getSerialNumberCommand(std::shared_ptr<DependencyRegistry> /*regis
     std::snprintf(mac_colon, sizeof(mac_colon), "%02X:%02X:%02X:%02X:%02X:%02X",
                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    auto result = std::format("{{ \"serial\": \"{}\", \"mac\": \"{}\" }}", serial_no_sep, mac_colon);
-    return CommandResult::getSuccessResult(result);
+    const auto json = nlohmann::json{
+        {"serial", serial_no_sep},
+        {"mac", mac_colon},
+    };
+    return CommandResult::getSuccessResult(json);
 }
 
 CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)

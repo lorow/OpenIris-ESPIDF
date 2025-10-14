@@ -17,6 +17,6 @@ CommandResult getMDNSNameCommand(std::shared_ptr<DependencyRegistry> registry)
   const auto projectConfig = registry->resolve<ProjectConfig>(DependencyType::project_config);
   auto mdnsConfig = projectConfig->getMDNSConfig();
 
-  auto result = std::format("{{ \"hostname\": \"{}\" }}", mdnsConfig.hostname);
-  return CommandResult::getSuccessResult(result);
+  const auto json = nlohmann::json{{"hostname", mdnsConfig.hostname}};
+  return CommandResult::getSuccessResult(json);
 }
