@@ -10,6 +10,7 @@ import time
 import argparse
 import sys
 import serial
+import string
 
 
 def is_back(choice: str):
@@ -67,7 +68,9 @@ class SubMenu:
             if isinstance(selected_element, SubMenu):
                 selected_element.show()
             else:
+                print("-" * 50)
                 selected_element[1](**self.context)
+                print("-" * 50)
 
 
 class Menu(SubMenu):
@@ -141,7 +144,7 @@ class OpenIrisDevice:
                     # assume we just started building the buffer and we've received the first packet
 
                     # alternative approach in case this doesn't work - we're always sending a valid json
-                    # so we can start building the buffer from the first packet and keep trying to find the 
+                    # so we can start building the buffer from the first packet and keep trying to find the
                     # starting and ending brackets, extract that part and validate, if the message is complete, return
                     if not response_buffer:
                         starting_idx = packet.find("{")
@@ -199,13 +202,100 @@ def get_device_mode(device: OpenIrisDevice) -> dict:
     command_result = device.send_command("get_device_mode")
     if has_command_failed(command_result):
         return {"mode": "unknown"}
-    
-    return command_result["results"][0]["result"]["data"]["mode"].lower()
+
+    return {"mode": command_result["results"][0]["result"]["data"]["mode"].lower()}
+
+
+def get_led_duty_cycle(device: OpenIrisDevice) -> dict:
+    command_result = device.send_command("get_led_duty_cycle")
+    if has_command_failed(command_result):
+        print(f"❌ Failed to get LED duty cycle: {command_result['error']}")
+        return {"duty_cycle": "unknown"}
+    try:
+        return {
+            "duty_cycle": int(
+                command_result["results"][0]["result"]["data"][
+                    "led_external_pwm_duty_cycle"
+                ]
+            )
+        }
+    except ValueError as e:
+        print(f"❌ Failed to parse LED duty cycle: {e}")
+        return {"duty_cycle": "unknown"}
+
+
+def get_mdns_name(device: OpenIrisDevice) -> dict:
+    response = device.send_command("get_mdns_name")
+    if "error" in response:
+        print(f"❌ Failed to get device name: {response['error']}")
+        return {"name": "unknown"}
+
+    return {"name": response["results"][0]["result"]["data"]["hostname"]}
+
+
+def get_serial_info(device: OpenIrisDevice) -> dict:
+    response = device.send_command("get_serial")
+    if has_command_failed(response):
+        print(f"❌ Failed to get serial/MAC: {response['error']}")
+        return {"serial": None, "mac": None}
+
+    return {
+        "serial": response["results"][0]["result"]["data"]["serial"],
+        "mac": response["results"][0]["result"]["data"]["mac"],
+    }
+
+
+def get_wifi_status(device: OpenIrisDevice) -> dict:
+    response = device.send_command("get_wifi_status")
+    if has_command_failed(response):
+        print(f"❌ Failed to get wifi status: {response['error']}")
+        return {"wifi_status": "unknown"}
+
+    return {"wifi_status": response["results"][0]["result"]["data"]}
+
+
+def configure_device_name(device: OpenIrisDevice, *args, **kwargs):
+    current_name = get_mdns_name(device)
+    print(f"\n📍 Current device name: {current_name['name']} \n")
+    print(
+        "💡 Please enter your preferred device name, your board will be accessible under http://<name>.local/"
+    )
+    print("💡 Please avoid spaces and special characters")
+    print("    To back out, enter `back`")
+    print("\n    Note, this will also modify the name of the UVC device")
+
+    while True:
+        name_choice = input("\nDevice name: ").strip()
+        if any(space in name_choice for space in string.whitespace):
+            print("❌ Please avoid spaces and special characters")
+        else:
+            break
+
+    if is_back(name_choice):
+        return
+
+    response = device.send_command("set_mdns", {"hostname": name_choice})
+    if "error" in response:
+        print(f"❌ MDNS name setup failed: {response['error']}")
+        return
+
+    print("✅ MDNS name set successfully")
+
+
+def start_streaming(device: OpenIrisDevice, *args, **kwargs):
+    print("🚀 Starting streaming mode...")
+    response = device.send_command("start_streaming")
+
+    if "error" in response:
+        print(f"❌ Failed to start streaming: {response['error']}")
+        return
+
+    print("✅ Streaming mode started")
 
 
 def switch_device_mode_command(device: OpenIrisDevice, *args, **kwargs):
     modes = ["wifi", "uvc", "auto"]
-    current_mode = get_device_mode(device)
+    current_mode = get_device_mode(device)["mode"]
     print(f"\n📍 Current device mode: {current_mode}")
     print("\n🔄 Select new device mode:")
     print("1. WiFi - Stream over WiFi connection")
@@ -215,8 +305,8 @@ def switch_device_mode_command(device: OpenIrisDevice, *args, **kwargs):
 
     mode_choice = input("\nSelect mode (1-3): ").strip()
     if is_back(mode_choice):
-        return 
-    
+        return
+
     try:
         mode = modes[int(mode_choice) - 1]
     except ValueError:
@@ -227,20 +317,66 @@ def switch_device_mode_command(device: OpenIrisDevice, *args, **kwargs):
     if "error" in command_result:
         print(f"❌ Failed to switch mode: {command_result['error']}")
         return
-    
+
     print(f"✅ Device mode switched to '{mode}' successfully!")
     print("🔄 Please restart the device for changes to take effect")
 
 
-def start_streaming(device: OpenIrisDevice, *args, **kwargs):
-    print("🚀 Starting streaming mode...")
-    response = device.send_command("start_streaming")
-    
-    if "error" in response:
-        print(f"❌ Failed to start streaming: {response['error']}")
-        return
-    
-    print("✅ Streaming mode started")
+def set_led_duty_cycle(device: OpenIrisDevice, *args, **kwargs):
+    current_duty_cycle = get_led_duty_cycle(device)["duty_cycle"]
+    print(f"💡 Current LED duty cycle: {current_duty_cycle}%")
+
+    while True:
+        desired_pwd = input(
+            "Enter LED external PWM duty cycle (0-100) or `back` to exit: \n>> "
+        )
+        if is_back(desired_pwd):
+            break
+
+        try:
+            duty_cycle = int(desired_pwd)
+        except ValueError:
+            print("❌ Invalid input. Please enter a number between 0 and 100.")
+
+        if duty_cycle < 0 or duty_cycle > 100:
+            print("❌ Duty cycle must be between 0 and 100.")
+        else:
+            response = device.send_command(
+                "set_led_duty_cycle", {"dutyCycle": duty_cycle}
+            )
+            if has_command_failed(response):
+                print(f"❌ Failed to set LED duty cycle: {response['error']}")
+                return False
+
+            print("✅ LED duty cycle set successfully")
+            updated = get_led_duty_cycle(device)["duty_cycle"]
+            print(f"💡 Current LED duty cycle: {updated}%")
+
+
+def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
+    print("🧩 Collecting device settings...\n")
+
+    probes = [
+        ("Identity", get_serial_info),
+        ("LED", get_led_duty_cycle),
+        ("Mode", get_device_mode),
+        ("WiFi", get_wifi_status),
+    ]
+
+    summary: dict[str, dict] = {}
+
+    for label, probe in probes:
+        summary[label] = probe(device)
+
+    print(f"🔑 Serial: {summary['Identity']}")
+    print(f"💡 LED PWM Duty: {summary['LED']['duty_cycle']}%")
+    print(f"🎚️  Mode: {summary['Mode']['mode']}")
+
+    wifi = summary.get("WiFi", {}).get("wifi_status", {})
+    status = wifi.get("status", "unknown")
+    ip = wifi.get("ip_address") or "-"
+    configured = wifi.get("networks_configured", 0)
+    print(f"📶 WiFi: {status}  |  IP: {ip}  |  Networks configured: {configured}")
 
 
 def handle_menu(menu_context: dict | None = None) -> str:
@@ -260,12 +396,12 @@ def handle_menu(menu_context: dict | None = None) -> str:
     manual_wifi_actions.add_action("🔗 Connect to WiFi", lambda: None)
     manual_wifi_actions.add_action("🛰️  Check WiFi status", lambda: None)
 
-    menu.add_action("🌐 Configure MDNS", lambda: None)
-    menu.add_action("💻 Configure UVC Name", lambda: None)
-    menu.add_action("🚀 Start streaming mode", lambda: None)
+    menu.add_action("🌐 Configure MDNS", configure_device_name)
+    menu.add_action("💻 Configure UVC Name", configure_device_name)
+    menu.add_action("🚀 Start streaming mode", start_streaming)
     menu.add_action("🔄 Switch device mode (WiFi/UVC/Auto)", switch_device_mode_command)
-    menu.add_action("💡 Update PWM Duty Cycle", lambda: start_streaming)
-    menu.add_action("🧩 Get settings summary", lambda: None)
+    menu.add_action("💡 Update PWM Duty Cycle", set_led_duty_cycle)
+    menu.add_action("🧩 Get settings summary", get_settings_summary)
     menu.show()
 
 
