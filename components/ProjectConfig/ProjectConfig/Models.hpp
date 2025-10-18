@@ -23,7 +23,7 @@ struct BaseConfigModel
 
 enum class StreamingMode
 {
-  AUTO,
+  SETUP,
   UVC,
   WIFI,
 };
@@ -31,18 +31,18 @@ enum class StreamingMode
 struct DeviceMode_t : BaseConfigModel
 {
   StreamingMode mode;
-  explicit DeviceMode_t(Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::AUTO) {}
+  explicit DeviceMode_t(Preferences *pref) : BaseConfigModel(pref), mode(StreamingMode::SETUP) {}
 
   void load()
   {
-    // Default mode can be controlled via sdkconfig:
-    // - If CONFIG_START_IN_UVC_MODE is enabled, default to UVC
-    // - Otherwise default to AUTO
+  // Default mode can be controlled via sdkconfig:
+  // - If CONFIG_START_IN_UVC_MODE is enabled, default to UVC
+  // - Otherwise default to SETUP
     int default_mode =
 #if CONFIG_START_IN_UVC_MODE
         static_cast<int>(StreamingMode::UVC);
 #else
-        static_cast<int>(StreamingMode::AUTO);
+    static_cast<int>(StreamingMode::SETUP);
 #endif
 
     int stored_mode = this->pref->getInt("mode", default_mode);
@@ -103,9 +103,13 @@ struct MDNSConfig_t : BaseConfigModel
 
   void load()
   {
-    // by default, this will be openiris
-    // but we can override it at compile time
-    std::string default_hostname = CONFIG_WIFI_MDNS_HOSTNAME;
+  // Default hostname comes from GENERAL_ADVERTISED_NAME (unified advertised name)
+  std::string default_hostname =
+#ifdef CONFIG_GENERAL_ADVERTISED_NAME
+  CONFIG_GENERAL_ADVERTISED_NAME;
+#else
+  "openiristracker";
+#endif
 
     if (default_hostname.empty())
     {

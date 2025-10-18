@@ -7,28 +7,64 @@ endmenu
 menu "OpenIris: General Configuration"
 
     config START_IN_UVC_MODE
-        bool "Start in UVC Mode"
+        bool "Default initial streaming mode = UVC"
         default false
         help
-            Enables UVC (wired) support in the firmware by default.
-            To be used when a board is designed to be used primarily with wired headsets.
-            When enabled, the default device streaming mode will be UVC unless overridden by a
-            saved preference. When disabled, the default mode is AUTO.
+            Sets the power‑on default streaming mode (before any user preference is stored).
+            If enabled AND UVC support is compiled in (GENERAL_INCLUDE_UVC_MODE), the device
+            will default to UVC mode on first boot. If disabled it defaults to SETUP mode,
+            waiting for a user choice or commands. This option does NOT compile UVC support in;
+            it only changes the initial preference used when no saved mode exists.
 
-    config GENERAL_DEFAULT_WIRED_MODE
-        bool "Wired mode"
+    config GENERAL_INCLUDE_UVC_MODE
+        bool "Include UVC (USB Video Class) support"
         default false
         help
-            Enables UVC (wired) support in the firmware. When enabled, the
-            default device streaming mode will be UVC unless overridden by a
-            saved preference. When disabled, the default mode is AUTO.
+            Compiles in UVC (USB Video Class) streaming support (camera + CDC bridge).
+            Disable this on boards that are Wi‑Fi only or where USB bandwidth / memory
+            should be conserved. If disabled any attempt to switch to UVC mode will log
+            an error and fall back to Wi‑Fi (if wireless is enabled). Combine with
+            START_IN_UVC_MODE only when the hardware supports UVC.
 
-    config GENERAL_UVC_DELAY
-        int "UVC delay (s)"
-        default 30
+    config GENERAL_STARTUP_DELAY
+        int "Setup grace period (s)"
+        default 20
         range 10 10000
         help
-            Delay in seconds before the ESP reports itself as a UVC device.
+            Number of seconds the device remains in SETUP / heartbeat mode on boot (when the
+            current streaming mode resolves to SETUP) before automatically launching the
+            selected streaming backend (UVC or Wi‑Fi). During this window host commands can
+            change mode or other settings. After the timer expires, streaming starts
+            automatically unless a command was received or startup was paused.
+
+    config GENERAL_ENABLE_WIRELESS
+        bool "Enable wireless (WiFi/Bluetooth)"
+        default y
+        help
+            When disabled, the firmware will not start WiFi or related services (mDNS/REST),
+            and any Bluetooth memory (if present on the SoC) should be left released. This can
+            reduce power consumption when operating solely in UVC mode or without networking.
+
+    config GENERAL_BOARD
+        string "Board / device identifier"
+        default "OpenIris"
+        help
+            A human-readable board or device identifier exposed via the get_info command.
+
+    config GENERAL_VERSION
+        string "Firmware version"
+        default "0.0.1"
+        help
+            A firmware version string exposed via the get_info command.
+
+    config GENERAL_ADVERTISED_NAME
+        string "Advertised device name (UVC + mDNS)"
+        default "openiristracker"
+        help
+            Human-readable device name advertised uniformly across interfaces.
+            Used as the default mDNS hostname and (indirectly) the UVC USB
+            device name via get_uvc_device_name(). Users can still override
+            the runtime hostname through preferences.
 
 endmenu
 
@@ -51,10 +87,7 @@ menu "OpenIris: Camera Configuration"
 endmenu
 
 menu "OpenIris: WiFi Configuration"
-
-    config WIFI_MDNS_HOSTNAME
-        string "mDNS hostname"
-        default "openiristracker"
+    # mDNS hostname now derives from GENERAL_ADVERTISED_NAME (no separate Kconfig)
 
     config WIFI_SSID
         string "WiFi network name (SSID)"
@@ -76,12 +109,20 @@ endmenu
 
 menu "OpenIris: LED Configuration"
 
-    config LED_BLINK_GPIO
-        int "Blink GPIO number"
+    config LED_DEBUG_ENABLE
+        bool "Enable debug/status LED"
+        default y
+        help
+            When disabled the firmware will not drive the dedicated debug/status GPIO.
+            Useful on boards without a discrete status LED. Error/state patterns can
+            optionally be mirrored onto the external IR LED if LED_EXTERNAL_AS_DEBUG is set.
+
+    config LED_DEBUG_GPIO
+        int "Debug LED GPIO number"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
         default 8
         help
-            GPIO number (IOxx) used to blink an onboard LED.
+            GPIO number (IOxx) used to drive an onboard debug/status LED.
             Some GPIOs are reserved for other functions (e.g. flash) and cannot be used.
 
     config LED_EXTERNAL_GPIO
@@ -96,6 +137,17 @@ menu "OpenIris: LED Configuration"
         default false
         help
             Enable this if your board can control external IR LEDs.
+
+    config LED_EXTERNAL_AS_DEBUG
+        bool "Mirror error pattern on external LED"
+        depends on LED_EXTERNAL_CONTROL
+        default n
+        help
+            When enabled and an error LED pattern is active, the external IR LED PWM output
+            will blink (0% / 50% duty) to replicate the debug/status LED pattern. If
+            LED_DEBUG_ENABLE is disabled this provides visual error feedback using only
+            the external LED. Normal configured PWM brightness is restored when leaving
+            the error pattern.
 
     config LED_EXTERNAL_PWM_FREQ
         int "External LED PWM frequency (Hz)"
@@ -113,5 +165,55 @@ menu "OpenIris: LED Configuration"
         help
             Duty cycle of the PWM signal for external IR LEDs, in percent.
             0 means always off, 100 means always on.
+
+endmenu
+
+menu "OpenIris: Monitoring"
+
+    config MONITORING_LED_CURRENT
+        bool "Enable LED current monitoring"
+        default y
+        help
+            Enable sampling LED current via ADC and report it over commands.
+
+    config MONITORING_LED_ADC_GPIO
+        int "ADC GPIO for LED current sense"
+        depends on MONITORING_LED_CURRENT
+        range 0 48
+        default 3
+        help
+            GPIO connected to the current sense input (ADC1 on ESP32-S3: 1..10 supported).
+
+    config MONITORING_LED_GAIN
+        int "Analog front-end gain/divider"
+        depends on MONITORING_LED_CURRENT
+        range 1 1024
+        default 11
+        help
+            Divider or amplifier gain between shunt and ADC. The measured mV are divided by this value.
+
+    config MONITORING_LED_SHUNT_MILLIOHM
+        int "Shunt resistance (milli-ohms)"
+        depends on MONITORING_LED_CURRENT
+        range 1 1000000
+        default 22000
+        help
+            Shunt resistor value in milli-ohms. Current[mA] = 1000 * Vshunt[mV] / R[mΩ].
+
+    config MONITORING_LED_SAMPLES
+        int "Filter window size (samples)"
+        depends on MONITORING_LED_CURRENT
+        range 1 200
+        default 10
+        help
+            Moving-average window length for voltage filtering.
+
+    config MONITORING_LED_INTERVAL_MS
+        int "Sampling interval (ms)"
+        depends on MONITORING_LED_CURRENT
+        range 10 60000
+        default 500
+        help
+            Period between samples when background monitoring is active.
 
 endmenu

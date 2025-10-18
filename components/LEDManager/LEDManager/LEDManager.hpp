@@ -70,6 +70,11 @@ private:
   size_t currentPatternIndex = 0;
   size_t timeToDelayFor = 100;
   bool finishedPattern = false;
+
+#if defined(CONFIG_LED_EXTERNAL_CONTROL) && defined(CONFIG_LED_EXTERNAL_AS_DEBUG)
+  bool hasStoredExternalDuty = false;
+  uint32_t storedExternalDuty = 0; // raw 0-255
+#endif
 };
 
 void HandleLEDDisplayTask(void *pvParameter);

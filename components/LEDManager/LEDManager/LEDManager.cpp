@@ -2,63 +2,23 @@
 
 const char *LED_MANAGER_TAG = "[LED_MANAGER]";
 
+// Pattern design rules:
+//  - Error states: isError=true, repeat indefinitely, easily distinguishable (avoid overlap).
+//  - Non-error repeating: show continuous activity (e.g. streaming ON steady, connecting blink).
+//  - Non-repeating notification (e.g. Connected) gives user a brief confirmation burst then turns off.
+// Durations in ms.
 ledStateMap_t LEDManager::ledStateMap = {
-    {
-        LEDStates_e::LedStateNone,
-        {
-            false,
-            false,
-            {{LED_OFF, 1000}},
-        },
-    },
-    {
-        LEDStates_e::LedStateStreaming,
-        {
-            false,
-            true,
-            {{LED_ON, 1000}},
-        },
-    },
-    {
-        LEDStates_e::LedStateStoppedStreaming,
-        {
-            false,
-            true,
-            {{LED_OFF, 1000}},
-        },
-    },
-    {
-        LEDStates_e::CameraError,
-        {
-            true,
-            true,
-            {{{LED_ON, 300}, {LED_OFF, 300}, {LED_ON, 300}, {LED_OFF, 300}}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateConnecting,
-        {
-            false,
-            true,
-            {{LED_ON, 400}, {LED_OFF, 400}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateConnected,
-        {
-            false,
-            false,
-            {{LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}, {LED_ON, 200}, {LED_OFF, 200}},
-        },
-    },
-    {
-        LEDStates_e::WiFiStateError,
-        {
-            true,
-            true,
-            {{LED_ON, 200}, {LED_OFF, 100}, {LED_ON, 500}, {LED_OFF, 100}, {LED_ON, 200}},
-        },
-    },
+    { LEDStates_e::LedStateNone, { /*isError*/false, /*repeat*/false, {{LED_OFF, 1000}} } },
+    { LEDStates_e::LedStateStreaming, { false, /*repeat steady*/true, {{LED_ON, 1000}} } },
+    { LEDStates_e::LedStateStoppedStreaming, { false, true, {{LED_OFF, 1000}} } },
+    // CameraError: double blink pattern repeating
+    { LEDStates_e::CameraError, { true, true, {{ {LED_ON,300}, {LED_OFF,300}, {LED_ON,300}, {LED_OFF,700} }} } },
+    // WiFiStateConnecting: balanced slow blink 400/400
+    { LEDStates_e::WiFiStateConnecting, { false, true, {{ {LED_ON,400}, {LED_OFF,400} }} } },
+    // WiFiStateConnected: short 3 quick flashes then done (was long noisy burst before)
+    { LEDStates_e::WiFiStateConnected, { false, false, {{ {LED_ON,150}, {LED_OFF,150}, {LED_ON,150}, {LED_OFF,150}, {LED_ON,150}, {LED_OFF,600} }} } },
+    // WiFiStateError: asymmetric attention pattern (fast, pause, long, pause, fast)
+    { LEDStates_e::WiFiStateError, { true, true, {{ {LED_ON,200}, {LED_OFF,100}, {LED_ON,500}, {LED_OFF,300} }} } },
 };
 
 LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin,
@@ -73,10 +33,13 @@ LEDManager::LEDManager(gpio_num_t pin, gpio_num_t illumninator_led_pin,
 void LEDManager::setup()
 {
     ESP_LOGI(LED_MANAGER_TAG, "Setting up status led.");
+#ifdef CONFIG_LED_DEBUG_ENABLE
     gpio_reset_pin(blink_led_pin);
-    /* Set the GPIO as a push/pull output */
     gpio_set_direction(blink_led_pin, GPIO_MODE_OUTPUT);
     this->toggleLED(LED_OFF);
+#else
+    ESP_LOGI(LED_MANAGER_TAG, "Debug LED disabled via Kconfig (LED_DEBUG_ENABLE=n)");
+#endif
 
 #ifdef CONFIG_LED_EXTERNAL_CONTROL
     ESP_LOGI(LED_MANAGER_TAG, "Setting up illuminator led.");
@@ -168,6 +131,31 @@ void LEDManager::updateState(const LEDStates_e newState)
     if (newState == this->currentState)
         return;
 
+    // Handle external LED mirroring transitions (store/restore duty)
+#if defined(CONFIG_LED_EXTERNAL_CONTROL) && defined(CONFIG_LED_EXTERNAL_AS_DEBUG)
+    bool wasError = ledStateMap[this->currentState].isError;
+    bool willBeError = ledStateMap[newState].isError;
+    if (!wasError && willBeError)
+    {
+        // store current duty once
+        if (!hasStoredExternalDuty)
+        {
+            storedExternalDuty = ledc_get_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            hasStoredExternalDuty = true;
+        }
+    }
+    else if (wasError && !willBeError)
+    {
+        // restore duty
+        if (hasStoredExternalDuty)
+        {
+            ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, storedExternalDuty));
+            ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+            hasStoredExternalDuty = false;
+        }
+    }
+#endif
+
     this->currentState = newState;
     this->currentPatternIndex = 0;
     this->finishedPattern = false;
@@ -175,7 +163,20 @@ void LEDManager::updateState(const LEDStates_e newState)
 
 void LEDManager::toggleLED(const bool state) const
 {
+#ifdef CONFIG_LED_DEBUG_ENABLE
     gpio_set_level(blink_led_pin, state);
+#endif
+
+#if defined(CONFIG_LED_EXTERNAL_CONTROL) && defined(CONFIG_LED_EXTERNAL_AS_DEBUG)
+    // Mirror only for error states
+    if (ledStateMap.contains(this->currentState) && ledStateMap.at(this->currentState).isError)
+    {
+        // For pattern ON use 50%, OFF use 0%
+        uint32_t duty = (state == LED_ON) ? ((50 * 255) / 100) : 0;
+        ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty));
+        ESP_ERROR_CHECK_WITHOUT_ABORT(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
+    }
+#endif
 }
 
 void LEDManager::setExternalLEDDutyCycle(uint8_t dutyPercent)

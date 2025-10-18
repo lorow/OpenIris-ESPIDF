@@ -6,15 +6,17 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+// LED status categories
+// Naming kept stable for existing queues; documented meanings added.
 enum class LEDStates_e
 {
-  LedStateNone,
-  LedStateStreaming,
-  LedStateStoppedStreaming,
-  CameraError,
-  WiFiStateError,
-  WiFiStateConnecting,
-  WiFiStateConnected
+  LedStateNone,           // Idle / no indication (LED off)
+  LedStateStreaming,      // Active streaming (UVC or WiFi) – steady ON
+  LedStateStoppedStreaming, // Streaming stopped intentionally – steady OFF (could differentiate later)
+  CameraError,            // Camera init / runtime failure – double blink pattern
+  WiFiStateError,         // WiFi connection error – distinctive blink sequence
+  WiFiStateConnecting,    // WiFi association / DHCP pending – slow blink
+  WiFiStateConnected      // WiFi connected (momentary confirmation burst)
 };
 
 enum class WiFiState_e

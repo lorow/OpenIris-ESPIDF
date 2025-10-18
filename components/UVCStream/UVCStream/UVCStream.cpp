@@ -6,6 +6,10 @@
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
+// Tracks whether a frame has been handed to TinyUSB and not yet returned.
+// File scope so both get_cb and return_cb can access it safely.
+static bool s_frame_inflight = false;
+
 extern "C"
 {
   static char serial_number_str[13];
@@ -85,55 +89,57 @@ static void UVCStreamHelpers::camera_stop_cb(void *cb_ctx)
 static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
 {
   auto *mgr = static_cast<UVCStreamManager *>(cb_ctx);
-  s_fb.cam_fb_p = esp_camera_fb_get();
 
-  if (!s_fb.cam_fb_p)
-  {
-    return nullptr;
-  }
+  // Guard against requesting a new frame while previous is still in flight.
+  // This was causing intermittent corruption/glitches because the pointer
+  // to the underlying camera buffer was overwritten before TinyUSB returned it.
 
-  //--------------------------------------------------------------------------------------------------------------
-  // Pace frames to exactly 60 fps (drop extras). Uses fixed-point accumulator
-  // to achieve an exact average of 60.000 fps without drifting.
-  static int64_t next_deadline_us = 0;
-  static int rem_acc = 0; // remainder accumulator for 1e6 % fps distribution
-  constexpr int target_fps = 60;
-  constexpr int64_t us_per_sec = 1000000LL;
-  constexpr int base_interval_us = us_per_sec / target_fps; // 16666
-  constexpr int rem_us = us_per_sec % target_fps;           // 40
+  // --- Frame pacing BEFORE grabbing a new camera frame ---
+  static int64_t next_deadline_us = 0;    // next permitted capture time
+  static int rem_acc = 0;                 // fractional remainder accumulator
+  static const int target_fps = 60;          // desired FPS
+  static const int64_t us_per_sec = 1000000; // 1e6 microseconds
+  static const int base_interval_us = us_per_sec / target_fps; // 16666
+  static const int rem_us = us_per_sec % target_fps;           // 40 (distributed)
 
   const int64_t now_us = esp_timer_get_time();
   if (next_deadline_us == 0)
   {
-    // First frame: allow immediately and schedule next slot from now
+    // First allowed capture immediately
     next_deadline_us = now_us;
   }
-  if (now_us < next_deadline_us)
+
+  // If a frame is still being transmitted or we are too early, just signal no frame
+  if (s_frame_inflight || now_us < next_deadline_us)
   {
-    // Too early for next frame: drop this camera buffer
-    esp_camera_fb_return(s_fb.cam_fb_p);
-    s_fb.cam_fb_p = nullptr;
+    return nullptr; // host will poll again
+  }
+
+  // Acquire a fresh frame only when allowed and no frame in flight
+  camera_fb_t *cam_fb = esp_camera_fb_get();
+  if (!cam_fb)
+  {
     return nullptr;
   }
-  //--------------------------------------------------------------------------------------------------------------
 
-  s_fb.uvc_fb.buf = s_fb.cam_fb_p->buf;
-  s_fb.uvc_fb.len = s_fb.cam_fb_p->len;
-  s_fb.uvc_fb.width = s_fb.cam_fb_p->width;
-  s_fb.uvc_fb.height = s_fb.cam_fb_p->height;
-  s_fb.uvc_fb.format = UVC_FORMAT_JPEG; // we gotta make sure we're ALWAYS using JPEG
-  s_fb.uvc_fb.timestamp = s_fb.cam_fb_p->timestamp;
+  s_fb.cam_fb_p = cam_fb;
+  s_fb.uvc_fb.buf = cam_fb->buf;
+  s_fb.uvc_fb.len = cam_fb->len;
+  s_fb.uvc_fb.width = cam_fb->width;
+  s_fb.uvc_fb.height = cam_fb->height;
+  s_fb.uvc_fb.format = UVC_FORMAT_JPEG;
+  s_fb.uvc_fb.timestamp = cam_fb->timestamp;
 
-  // Ensure frame fits into configured UVC transfer buffer
+  // Validate size fits into transfer buffer
   if (mgr && s_fb.uvc_fb.len > mgr->getUvcBufferSize())
   {
     ESP_LOGE(UVC_STREAM_TAG, "Frame size %d exceeds UVC buffer size %u", (int)s_fb.uvc_fb.len, (unsigned)mgr->getUvcBufferSize());
-    esp_camera_fb_return(s_fb.cam_fb_p);
+    esp_camera_fb_return(cam_fb);
+    s_fb.cam_fb_p = nullptr;
     return nullptr;
   }
 
-  //--------------------------------------------------------------------------------------------------------------
-  // Schedule the next allowed frame time: base interval plus distributed remainder
+  // Schedule next frame time (distribute remainder for exact long‑term 60.000 fps)
   rem_acc += rem_us;
   int extra_us = 0;
   if (rem_acc >= target_fps)
@@ -141,11 +147,10 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
     rem_acc -= target_fps;
     extra_us = 1;
   }
-  // Accumulate from the previous deadline to avoid drift; if we are badly late, catch up from now
-  const int64_t base_next = next_deadline_us + base_interval_us + extra_us;
-  next_deadline_us = (base_next < now_us) ? now_us : base_next;
-  //--------------------------------------------------------------------------------------------------------------
+  const int64_t candidate_next = next_deadline_us + base_interval_us + extra_us;
+  next_deadline_us = (candidate_next < now_us) ? now_us : candidate_next;
 
+  s_frame_inflight = true;
   return &s_fb.uvc_fb;
 }
 
@@ -153,13 +158,18 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 {
   (void)cb_ctx;
   assert(fb == &s_fb.uvc_fb);
-  esp_camera_fb_return(s_fb.cam_fb_p);
+  if (s_fb.cam_fb_p)
+  {
+    esp_camera_fb_return(s_fb.cam_fb_p);
+    s_fb.cam_fb_p = nullptr;
+  }
+  s_frame_inflight = false;
 }
 
 esp_err_t UVCStreamManager::setup()
 {
 
-#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
   ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
   return ESP_FAIL;
 #endif

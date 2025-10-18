@@ -5,6 +5,7 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "sdkconfig.h"
 #include "nvs_flash.h"
 
@@ -21,12 +22,18 @@
 #include <SerialManager.hpp>
 #include <RestAPI.hpp>
 #include <main_globals.hpp>
+#include <MonitoringManager.hpp>
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
 #include <UVCStream.hpp>
 #endif
 
-#define BLINK_GPIO (gpio_num_t) CONFIG_LED_BLINK_GPIO
+#ifdef CONFIG_LED_DEBUG_ENABLE
+#define BLINK_GPIO (gpio_num_t) CONFIG_LED_DEBUG_GPIO
+#else
+// Use an invalid / unused GPIO when debug LED disabled to avoid accidental toggles
+#define BLINK_GPIO (gpio_num_t) -1
+#endif
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
 TaskHandle_t serialManagerHandle;
@@ -52,12 +59,13 @@ StreamServer streamServer(80, stateManager);
 
 auto *restAPI = new RestAPI("http://0.0.0.0:81", commandManager);
 
-#ifdef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
 UVCStreamManager uvcStream;
 #endif
 
 auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO, ledStateQueue, deviceConfig);
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
+std::shared_ptr<MonitoringManager> monitoringManager = std::make_shared<MonitoringManager>();
 
 void startWiFiMode(bool shouldCloseSerialManager);
 void startWiredMode(bool shouldCloseSerialManager);
@@ -81,14 +89,14 @@ int websocket_logger(const char *format, va_list args)
 
 void launch_streaming()
 {
-    // Note, when switching and later right away activating UVC mode when we were previously in WiFi or Auto mode, the WiFi
+    // Note, when switching and later right away activating UVC mode when we were previously in WiFi or Setup mode, the WiFi
     // utilities will still be running since we've launched them with startAutoMode() -> startWiFiMode()
     // we could add detection of this case, but it's probably not worth it since the next start of the device literally won't launch them
     // and we're telling folks to just reboot the device anyway
     // same case goes for when switching from UVC to WiFi
 
     StreamingMode deviceMode = deviceConfig->getDeviceMode();
-    // if we've changed the mode from auto to something else, we can clean up serial manager
+    // if we've changed the mode from setup to something else, we can clean up serial manager
     // either the API endpoints or CDC will take care of further configuration
     if (deviceMode == StreamingMode::WIFI)
     {
@@ -98,10 +106,10 @@ void launch_streaming()
     {
         startWiredMode(true);
     }
-    else if (deviceMode == StreamingMode::AUTO)
+    else if (deviceMode == StreamingMode::SETUP)
     {
-        // we're still in auto, the user didn't select anything yet, let's give a bit of time for them to make a choice
-        ESP_LOGI("[MAIN]", "No mode was selected, staying in AUTO mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
+    // we're still in setup, the user didn't select anything yet, let's give a bit of time for them to make a choice
+    ESP_LOGI("[MAIN]", "No mode was selected, staying in SETUP mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
     }
     else
     {
@@ -150,7 +158,7 @@ void force_activate_streaming()
 
 void startWiredMode(bool shouldCloseSerialManager)
 {
-#ifndef CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
     ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
     ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
     deviceMode = StreamingMode::WIFI;
@@ -211,7 +219,7 @@ void startWiFiMode(bool shouldCloseSerialManager)
             ESP_LOGI("[MAIN]", "We're still connected to serial. Serial manager task will remain running.");
         }
     }
-
+#ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     wifiManager->Begin();
     mdnsManager.start();
     restAPI->begin();
@@ -223,16 +231,20 @@ void startWiFiMode(bool shouldCloseSerialManager)
         restAPI,
         1, // it's the rest API, we only serve commands over it so we don't really need a higher priority
         nullptr);
+#else
+    ESP_LOGW("[MAIN]", "Wireless is disabled by configuration; skipping WiFi/mDNS/REST startup.");
+#endif
 }
 
 void startSetupMode()
 {
-    // If we're in an auto mode - Device starts with a 20-second delay before deciding on what to do
+    // If we're in SETUP mode - Device starts with a 20-second delay before deciding on what to do
     // during this time we await any commands
+    const uint64_t startup_delay_s = CONFIG_GENERAL_STARTUP_DELAY;
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "STARTUP: 20-SECOND DELAY MODE ACTIVE");
+    ESP_LOGI("[MAIN]", "STARTUP: %llu-SECOND DELAY MODE ACTIVE", (unsigned long long)startup_delay_s);
     ESP_LOGI("[MAIN]", "=====================================");
-    ESP_LOGI("[MAIN]", "Device will wait 20 seconds for commands...");
+    ESP_LOGI("[MAIN]", "Device will wait %llu seconds for commands...", (unsigned long long)startup_delay_s);
 
     // Create a one-shot timer for 20 seconds
     const esp_timer_create_args_t startup_timer_args = {
@@ -243,17 +255,21 @@ void startSetupMode()
         .skip_unhandled_events = false};
 
     ESP_ERROR_CHECK(esp_timer_create(&startup_timer_args, &timerHandle));
-    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, CONFIG_GENERAL_UVC_DELAY * 1000000));
-    ESP_LOGI("[MAIN]", "Started 20-second startup timer");
-    ESP_LOGI("[MAIN]", "Send any command within 20 seconds to enter heartbeat mode");
+    ESP_ERROR_CHECK(esp_timer_start_once(timerHandle, startup_delay_s * 1000000));
+    ESP_LOGI("[MAIN]", "Started %llu-second startup timer", (unsigned long long)startup_delay_s);
+    ESP_LOGI("[MAIN]", "Send any command within %llu seconds to enter heartbeat mode", (unsigned long long)startup_delay_s);
 }
 
 extern "C" void app_main(void)
 {
     dependencyRegistry->registerService<ProjectConfig>(DependencyType::project_config, deviceConfig);
     dependencyRegistry->registerService<CameraManager>(DependencyType::camera_manager, cameraHandler);
+    // Register WiFiManager only when wireless is enabled to avoid exposing WiFi commands in no-wireless builds
+#ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     dependencyRegistry->registerService<WiFiManager>(DependencyType::wifi_manager, wifiManager);
+#endif
     dependencyRegistry->registerService<LEDManager>(DependencyType::led_manager, ledManager);
+    dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, monitoringManager);
 
     // add endpoint to check firmware version
     // add firmware version somewhere
@@ -266,6 +282,8 @@ extern "C" void app_main(void)
     initNVSStorage();
     deviceConfig->load();
     ledManager->setup();
+    monitoringManager->setup();
+    monitoringManager->start();
 
     xTaskCreate(
         HandleStateManagerTask,
@@ -316,7 +334,8 @@ extern "C" void app_main(void)
     {
         // since we're in setup mode, we have to have wireless functionality on,
         // so we can do wifi scanning, test connection etc
-        startWiFiMode(false);
+    // if wireless is disabled by configuration, we will not start WiFi services here
+    startWiFiMode(false);
         startSetupMode();
     }
 }

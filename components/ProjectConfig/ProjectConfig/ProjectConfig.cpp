@@ -115,7 +115,7 @@ void ProjectConfig::setMDNSConfig(const std::string &hostname)
 {
   ESP_LOGD(CONFIGURATION_TAG, "Updating MDNS config");
   this->config.mdns.hostname.assign(hostname);
-  this->config.device.save();
+  this->config.mdns.save();
 }
 
 void ProjectConfig::setCameraConfig(const uint8_t vflip,

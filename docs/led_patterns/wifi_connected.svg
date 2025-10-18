@@ -1,0 +1,7 @@
+<svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <circle cx="50" cy="50" r="30" fill="#34c759">
+  <!-- Pattern: (ON150 OFF150)x3 then OFF600 (total 1350ms) -->
+  <animate attributeName="fill-opacity" dur="1.35s" repeatCount="indefinite" calcMode="discrete"
+           values="1;0;1;0;1;0" keyTimes="0;0.1111;0.2222;0.3333;0.4444;1" />
+ </circle>
+</svg>

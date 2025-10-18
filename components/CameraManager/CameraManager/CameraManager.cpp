@@ -48,7 +48,7 @@ void CameraManager::setupCameraPinout()
 
   ESP_LOGI(CAMERA_MANAGER_TAG, "CAM_BOARD");
 #endif
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#if CONFIG_GENERAL_INCLUDE_UVC_MODE
   xclk_freq_hz = CONFIG_CAMERA_USB_XCLK_FREQ;
 #endif
 
@@ -79,10 +79,10 @@ void CameraManager::setupCameraPinout()
       .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
       .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-      .jpeg_quality = 7, // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
-      .fb_count = 2,     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-      .fb_location = CAMERA_FB_IN_DRAM,
-      .grab_mode = CAMERA_GRAB_LATEST, // CAMERA_GRAB_WHEN_EMPTY
+  .jpeg_quality = 8, // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
+  .fb_count = 2,     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+  .fb_location = CAMERA_FB_IN_DRAM,
+  .grab_mode = CAMERA_GRAB_WHEN_EMPTY, // was CAMERA_GRAB_LATEST; new mode reduces frame skips at cost of minor latency
   };
 }
 
@@ -196,7 +196,7 @@ bool CameraManager::setupCamera()
     return false;
   }
 
-#if CONFIG_GENERAL_DEFAULT_WIRED_MODE
+#if CONFIG_GENERAL_INCLUDE_UVC_MODE
   const auto temp_sensor = esp_camera_sensor_get();
 
   // Thanks to lick_it, we discovered that OV5640 likes to overheat when

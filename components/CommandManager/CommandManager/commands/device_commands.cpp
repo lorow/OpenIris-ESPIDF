@@ -1,5 +1,6 @@
 #include "device_commands.hpp"
 #include "LEDManager.hpp"
+#include "MonitoringManager.hpp"
 #include "esp_mac.h"
 #include <cstdio>
 
@@ -171,9 +172,9 @@ CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, st
     {
         newMode = StreamingMode::WIFI;
     }
-    else if (strcmp(modeStr, "auto") == 0)
+    else if (strcmp(modeStr, "setup") == 0 || strcmp(modeStr, "auto") == 0)
     {
-        newMode = StreamingMode::AUTO;
+        newMode = StreamingMode::SETUP;
     }
     else
     {
@@ -203,8 +204,8 @@ CommandResult getDeviceModeCommand(std::shared_ptr<DependencyRegistry> registry)
     case StreamingMode::WIFI:
         modeStr = "WiFi";
         break;
-    case StreamingMode::AUTO:
-        modeStr = "Auto";
+    case StreamingMode::SETUP:
+        modeStr = "Setup";
         break;
     }
 
@@ -229,5 +230,32 @@ CommandResult getSerialNumberCommand(std::shared_ptr<DependencyRegistry> /*regis
                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     auto result = std::format("{{ \"serial\": \"{}\", \"mac\": \"{}\" }}", serial_no_sep, mac_colon);
+    return CommandResult::getSuccessResult(result);
+}
+
+CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
+{
+#if CONFIG_MONITORING_LED_CURRENT
+    auto mon = registry->resolve<MonitoringManager>(DependencyType::monitoring_manager);
+    if (!mon)
+    {
+        return CommandResult::getErrorResult("MonitoringManager unavailable");
+    }
+    float ma = mon->getCurrentMilliAmps();
+    auto result = std::format("{{ \"led_current_ma\": {:.3f} }}", static_cast<double>(ma));
+    return CommandResult::getSuccessResult(result);
+#else
+    return CommandResult::getErrorResult("Monitoring disabled");
+#endif
+}
+
+CommandResult getInfoCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
+{
+    const char* who = CONFIG_GENERAL_BOARD;
+    const char* ver = CONFIG_GENERAL_VERSION;
+    // Ensure non-null strings
+    if (!who) who = "";
+    if (!ver) ver = "";
+    auto result = std::format("{{ \"who_am_i\": \"{}\", \"version\": \"{}\" }}", who, ver);
     return CommandResult::getSuccessResult(result);
 }
