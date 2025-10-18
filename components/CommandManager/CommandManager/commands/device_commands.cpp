@@ -138,7 +138,7 @@ CommandResult switchModeCommand(std::shared_ptr<DependencyRegistry> registry, co
     {
         newMode = StreamingMode::WIFI;
     }
-    else if (modeStr == "setup" || modeStr == "auto"))
+    else if (modeStr == "setup" || modeStr == "auto")
     {
         newMode = StreamingMode::SETUP;
     }
@@ -212,8 +212,13 @@ CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
         return CommandResult::getErrorResult("MonitoringManager unavailable");
     }
     float ma = mon->getCurrentMilliAmps();
-    auto result = std::format("{{ \"led_current_ma\": {:.3f} }}", static_cast<double>(ma));
-    return CommandResult::getSuccessResult(result);
+    const auto json = nlohmann::json
+    {
+        {
+            "led_current_ma", std::format("{:.3f}", static_cast<double>(ma))
+        }
+    }
+    return CommandResult::getSuccessResult(json);
 #else
     return CommandResult::getErrorResult("Monitoring disabled");
 #endif
@@ -221,11 +226,17 @@ CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
 
 CommandResult getInfoCommand(std::shared_ptr<DependencyRegistry> /*registry*/)
 {
-    const char* who = CONFIG_GENERAL_BOARD;
-    const char* ver = CONFIG_GENERAL_VERSION;
+    const char *who = CONFIG_GENERAL_BOARD;
+    const char *ver = CONFIG_GENERAL_VERSION;
     // Ensure non-null strings
-    if (!who) who = "";
-    if (!ver) ver = "";
-    auto result = std::format("{{ \"who_am_i\": \"{}\", \"version\": \"{}\" }}", who, ver);
-    return CommandResult::getSuccessResult(result);
+    if (!who)
+        who = "";
+    if (!ver)
+        ver = "";
+
+    const auto json = nlohmann::json{
+        {"who_am_i", who},
+        {"version", ver},
+    };
+    return CommandResult::getSuccessResult(json);
 }

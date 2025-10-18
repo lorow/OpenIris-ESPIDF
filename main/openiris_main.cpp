@@ -36,7 +36,7 @@
 #define BLINK_GPIO (gpio_num_t) CONFIG_LED_DEBUG_GPIO
 #else
 // Use an invalid / unused GPIO when debug LED disabled to avoid accidental toggles
-#define BLINK_GPIO (gpio_num_t) -1
+#define BLINK_GPIO (gpio_num_t) - 1
 #endif
 #define CONFIG_LED_C_PIN_GPIO (gpio_num_t) CONFIG_LED_EXTERNAL_GPIO
 
@@ -112,8 +112,8 @@ void launch_streaming()
     }
     else if (deviceMode == StreamingMode::SETUP)
     {
-    // we're still in setup, the user didn't select anything yet, let's give a bit of time for them to make a choice
-    ESP_LOGI("[MAIN]", "No mode was selected, staying in SETUP mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
+        // we're still in setup, the user didn't select anything yet, let's give a bit of time for them to make a choice
+        ESP_LOGI("[MAIN]", "No mode was selected, staying in SETUP mode. WiFi streaming will be enabled still. \nPlease select another mode if you'd like.");
     }
     else
     {
