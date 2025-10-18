@@ -309,6 +309,15 @@ def get_serial_info(device: OpenIrisDevice) -> dict:
         "mac": response["results"][0]["result"]["data"]["mac"],
     }
 
+def get_device_info(device: OpenIrisDevice) -> dict:
+    response = device.send_command("get_who_am_i")
+
+    if has_command_failed(response):
+        print(f"❌ Failed to get device info: {response['error']}")
+        return {"who_am_i": None, "version": None}
+    
+    return {"who_am_i": response["results"][0]["result"]["data"]["who_am_i"], "version": response["results"][0]["result"]["data"]["version"]}
+
 
 def get_wifi_status(device: OpenIrisDevice) -> dict:
     response = device.send_command("get_wifi_status")
@@ -423,6 +432,7 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
 
     probes = [
         ("Identity", get_serial_info),
+        ("Info", get_device_info),
         ("LED", get_led_duty_cycle),
         ("Mode", get_device_mode),
         ("WiFi", get_wifi_status),
@@ -436,6 +446,15 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
     print(f"🔑 Serial: {summary['Identity']}")
     print(f"💡 LED PWM Duty: {summary['LED']['duty_cycle']}%")
     print(f"🎚️ Mode: {summary['Mode']['mode']}")
+    
+    info = summary.get("Info", {})
+    who = info.get("who_am_i")
+    ver = info.get("version")
+    if who:
+        print(f"🏷️  Device: {who}")
+    if ver:
+        print(f"🧭 Version: {ver}")
+
 
     wifi = summary.get("WiFi", {}).get("wifi_status", {})
     status = wifi.get("status", "unknown")
