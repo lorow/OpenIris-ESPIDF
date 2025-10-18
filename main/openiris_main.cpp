@@ -38,7 +38,7 @@
 
 TaskHandle_t serialManagerHandle;
 
-esp_timer_handle_t timerHandle;
+esp_timer_handle_t timerHandle = nullptr;
 QueueHandle_t eventQueue = xQueueCreate(10, sizeof(SystemEvent));
 QueueHandle_t ledStateQueue = xQueueCreate(10, sizeof(uint32_t));
 QueueHandle_t cdcMessageQueue = xQueueCreate(3, sizeof(cdc_command_packet_t));
@@ -209,8 +209,15 @@ void startWiFiMode(bool shouldCloseSerialManager)
     ESP_LOGI("[MAIN]", "Starting WiFi streaming mode.");
     if (shouldCloseSerialManager)
     {
-        ESP_LOGI("[MAIN]", "Closing serial manager task.");
-        vTaskDelete(serialManagerHandle);
+        if (!serialManager->isConnected())
+        {
+            ESP_LOGI("[MAIN]", "We're not connected to serial. Closing serial manager task.");
+            vTaskDelete(serialManagerHandle);
+        }
+        else
+        {
+            ESP_LOGI("[MAIN]", "We're still connected to serial. Serial manager task will remain running.");
+        }
     }
 #ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     wifiManager->Begin();
