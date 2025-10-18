@@ -20,12 +20,6 @@ void SerialManager::setup()
   usb_serial_jtag_driver_install(&usb_serial_jtag_config);
 }
 
-bool SerialManager::isConnected()
-{
-  // in preparation for handling uart as well
-  return usb_serial_jtag_is_connected();
-}
-
 void SerialManager::try_receive()
 {
   static auto current_position = 0;

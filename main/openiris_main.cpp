@@ -67,7 +67,7 @@ auto ledManager = std::make_shared<LEDManager>(BLINK_GPIO, CONFIG_LED_C_PIN_GPIO
 auto *serialManager = new SerialManager(commandManager, &timerHandle, deviceConfig);
 std::shared_ptr<MonitoringManager> monitoringManager = std::make_shared<MonitoringManager>();
 
-void startWiFiMode(bool shouldCloseSerialManager);
+void startWiFiMode();
 void startWiredMode(bool shouldCloseSerialManager);
 
 static void initNVSStorage()
@@ -100,7 +100,7 @@ void launch_streaming()
     // either the API endpoints or CDC will take care of further configuration
     if (deviceMode == StreamingMode::WIFI)
     {
-        startWiFiMode(true);
+        startWiFiMode();
     }
     else if (deviceMode == StreamingMode::UVC)
     {
@@ -204,21 +204,9 @@ void startWiredMode(bool shouldCloseSerialManager)
 #endif
 }
 
-void startWiFiMode(bool shouldCloseSerialManager)
+void startWiFiMode()
 {
     ESP_LOGI("[MAIN]", "Starting WiFi streaming mode.");
-    if (shouldCloseSerialManager)
-    {
-        if (!serialManager->isConnected())
-        {
-            ESP_LOGI("[MAIN]", "We're not connected to serial. Closing serial manager task.");
-            vTaskDelete(serialManagerHandle);
-        }
-        else
-        {
-            ESP_LOGI("[MAIN]", "We're still connected to serial. Serial manager task will remain running.");
-        }
-    }
 #ifdef CONFIG_GENERAL_ENABLE_WIRELESS
     wifiManager->Begin();
     mdnsManager.start();
@@ -327,15 +315,14 @@ extern "C" void app_main(void)
     }
     else if (mode == StreamingMode::WIFI)
     {
-        // in Wifi mode we only need the wireless communication stuff, nothing else got started
-        startWiFiMode(true);
+        // in Wifi mode we only need the wireless communication stuff, but the serial manager has to remain alive
+        startWiFiMode();
     }
     else
     {
         // since we're in setup mode, we have to have wireless functionality on,
         // so we can do wifi scanning, test connection etc
-    // if wireless is disabled by configuration, we will not start WiFi services here
-    startWiFiMode(false);
+        startWiFiMode();
         startSetupMode();
     }
 }
