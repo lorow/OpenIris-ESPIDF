@@ -212,12 +212,7 @@ CommandResult getLEDCurrentCommand(std::shared_ptr<DependencyRegistry> registry)
         return CommandResult::getErrorResult("MonitoringManager unavailable");
     }
     float ma = mon->getCurrentMilliAmps();
-    const auto json = nlohmann::json
-    {
-        {
-            "led_current_ma", std::format("{:.3f}", static_cast<double>(ma))
-        }
-    }
+    const auto json = nlohmann::json{{"led_current_ma", std::format("{:.3f}", static_cast<double>(ma))}};
     return CommandResult::getSuccessResult(json);
 #else
     return CommandResult::getErrorResult("Monitoring disabled");

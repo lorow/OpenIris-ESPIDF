@@ -264,11 +264,8 @@ extern "C" void app_main(void)
     dependencyRegistry->registerService<MonitoringManager>(DependencyType::monitoring_manager, monitoringManager);
 
     // add endpoint to check firmware version
-    // add firmware version somewhere
     // setup CI and building for other boards
-    // finish todos, overhaul stuff a bit
 
-    // todo - do we need logs over CDC? Or just commands and their results?
     // esp_log_set_vprintf(&websocket_logger);
     Logo::printASCII();
     initNVSStorage();

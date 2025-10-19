@@ -328,6 +328,15 @@ def get_wifi_status(device: OpenIrisDevice) -> dict:
     return {"wifi_status": response["results"][0]["result"]["data"]}
 
 
+def get_led_current(device: OpenIrisDevice) -> dict:
+    response = device.send_command("get_led_current")
+    if has_command_failed(response):
+        print(f"❌ Failed to get LED current: {response}")
+        return {"led_current_ma": "unknown"}
+
+    return {"led_current_ma": response["results"][0]["result"]["data"]["led_current_ma"]}
+
+
 def configure_device_name(device: OpenIrisDevice, *args, **kwargs):
     current_name = get_mdns_name(device)
     print(f"\n📍 Current device name: {current_name['name']} \n")
@@ -432,8 +441,10 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
 
     probes = [
         ("Identity", get_serial_info),
+        ("AdvertisedName", get_mdns_name),
         ("Info", get_device_info),
         ("LED", get_led_duty_cycle),
+        ("Current", get_led_current),
         ("Mode", get_device_mode),
         ("WiFi", get_wifi_status),
     ]
@@ -445,8 +456,16 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
 
     print(f"🔑 Serial: {summary['Identity']}")
     print(f"💡 LED PWM Duty: {summary['LED']['duty_cycle']}%")
-    print(f"🎚️ Mode: {summary['Mode']['mode']}")
+    print(f"🎚️  Mode: {summary['Mode']['mode']}")
     
+    current_section = summary.get("Current", {})
+    led_current_ma = current_section.get("led_current_ma")
+    print(f"🔌 LED Current: {led_current_ma} mA")
+    
+    advertised_name_data = summary.get("AdvertisedName", {})
+    advertised_name = advertised_name_data.get("name")
+    print(f"📛 Name: {advertised_name}")
+
     info = summary.get("Info", {})
     who = info.get("who_am_i")
     ver = info.get("version")
@@ -457,10 +476,11 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
 
 
     wifi = summary.get("WiFi", {}).get("wifi_status", {})
-    status = wifi.get("status", "unknown")
-    ip = wifi.get("ip_address") or "-"
-    configured = wifi.get("networks_configured", 0)
-    print(f"📶 WiFi: {status}  |  IP: {ip}  |  Networks configured: {configured}")
+    if wifi:
+        status = wifi.get("status", "unknown")
+        ip = wifi.get("ip_address") or "-"
+        configured = wifi.get("networks_configured", 0)
+        print(f"📶 WiFi: {status}  |  IP: {ip}  |  Networks configured: {configured}")
 
 
 def scan_networks(wifi_scanner: WiFiScanner, *args, **kwargs):
