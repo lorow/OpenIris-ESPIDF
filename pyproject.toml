@@ -1,0 +1,14 @@
+[project]
+name = "blink"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pyserial>=3.5",
+]
+
+[dependency-groups]
+dev = [
+    "bumpver>=2025.1131",
+]
