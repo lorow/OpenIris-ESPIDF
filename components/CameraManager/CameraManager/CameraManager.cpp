@@ -78,27 +78,11 @@ void CameraManager::setupCameraPinout()
       .pixel_format = PIXFORMAT_JPEG,  // YUV422,GRAYSCALE,RGB565,JPEG
       .frame_size = FRAMESIZE_240X240, // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-  .jpeg_quality = 8, // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
-  .fb_count = 2,     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
-  .fb_location = CAMERA_FB_IN_DRAM,
-  .grab_mode = CAMERA_GRAB_WHEN_EMPTY, // was CAMERA_GRAB_LATEST; new mode reduces frame skips at cost of minor latency
+      .jpeg_quality = 8, // 0-63, for OV series camera sensors, lower number means higher quality // Below 6 stability problems
+      .fb_count = 2,     // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+      .fb_location = CAMERA_FB_IN_DRAM,
+      .grab_mode = CAMERA_GRAB_WHEN_EMPTY, // was CAMERA_GRAB_LATEST; new mode reduces frame skips at cost of minor latency
   };
-}
-
-void CameraManager::setupBasicResolution()
-{
-
-  if (!esp_psram_is_initialized())
-  {
-    ESP_LOGE(CAMERA_MANAGER_TAG, "PSRAM not initialized!");
-    ESP_LOGD(CAMERA_MANAGER_TAG, "Setting fb_location to CAMERA_FB_IN_DRAM with lower picture quality");
-    config.fb_location = CAMERA_FB_IN_DRAM;
-    config.jpeg_quality = 7;
-    config.fb_count = 2;
-    return;
-  }
-
-  ESP_LOGI(CAMERA_MANAGER_TAG, "PSRAM size: %u", esp_psram_get_size());
 }
 
 void CameraManager::setupCameraSensor()
@@ -136,7 +120,7 @@ void CameraManager::setupCameraSensor()
 
   // automatic gain control gain, controls by how much the resulting image
   // should be amplified
-  camera_sensor->set_agc_gain(camera_sensor, 2);                   // 0 to 30
+  camera_sensor->set_agc_gain(camera_sensor, 2);                                // 0 to 30
   camera_sensor->set_gainceiling(camera_sensor, static_cast<gainceiling_t>(6)); // 0 to 6
 
   // black and white pixel correction, averages the white and black spots
