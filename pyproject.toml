@@ -12,3 +12,18 @@ dependencies = [
 dev = [
     "bumpver>=2025.1131",
 ]
+
+[bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH[PYTAGNUM]"
+commit = true
+tag = true
+push = false
+
+[bumpver.file_patterns]
+"pyproject.toml" = [
+    'version = "{version}"',
+]
+"sdkconfig" = [
+    'CONFIG_GENERAL_VERSION="{version}"',
+]
