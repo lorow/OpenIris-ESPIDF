@@ -63,21 +63,28 @@ After this, you’re ready for the Quick start below.
 
 ## Quick start
 
+### 1) Grab UV.
+
+We're using UV to manage our tools, grab and install it from [here](https://docs.astral.sh/uv/getting-started/installation/).
+
+Once installed, you'll be able to just run the commands below and UV will take care of setting up everything.
+
+
 ### 1) Pick your board (loads the default configuration)
 Boards are auto‑discovered from the `boards/` directory. First list them, then pick one:
 
 Windows (cmd):
 
 ```cmd
-python .\tools\switchBoardType.py --list
-python .\tools\switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
+uv run .\tools\switchBoardType.py --list
+uv run .\tools\switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
 ```
 
 macOS/Linux (bash):
 
 ```bash
-python3 ./tools/switchBoardType.py --list
-python3 ./tools/switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
+uv run ./tools/switchBoardType.py --list
+uv run ./tools/switchBoardType.py --board seed_studio_xiao_esp32s3 --diff
 ```
 Notes:
 - Use `--list` to see all detected board keys.
@@ -99,19 +106,18 @@ Configure the device over USB serial.
 Before you run it:
 
 - If you still have the serial monitor open, close it (the port must be free).
-- In VS Code, open the sidebar “ESP‑IDF: Explorer” and click “Open ESP‑IDF Terminal”. We’ll run the CLI there so Python and packages are in the right environment.
 
 Then run:
 
 ```cmd
-python .\tools\setup_openiris.py --port COMxx
+uv run .\tools\setup_openiris.py --port COMxx
 ```
 
 Examples:
 
-- Windows: `python .\tools\setup_openiris.py --port COM69`, …
-- macOS: idk
-- Linux: idk
+- Windows: `uv run .\tools\setup_openiris.py --port COM69`, …
+- macOS: `uv run .\tools\setup_openiris.py --port \dev\tty<port>`
+- Linux: `uv run .\tools\setup_openiris.py --port \dev\tty<port>`
 
 What the CLI can do:
 
@@ -207,7 +213,7 @@ Each file under `boards/` overlays `sdkconfig.base_defaults`. The merge order: b
 1. Create a new config file under `boards/` (you can nest folders): for example `boards/my_family/my_variant`.
 2. Populate it with only the `CONFIG_...` lines that differ from the shared defaults. Shared baseline lives in `boards/sdkconfig.base_defaults` and is always merged first.
 3. The board key the script accepts will be the relative path with `/` turned into `_` (example: `boards/my_family/my_variant` -> `my_family_my_variant`).
-4. Run `python tools/switchBoardType.py --list` to verify it’s detected, then switch using `-b my_family_my_variant`.
+4. Run `uv run tools/switchBoardType.py --list` to verify it’s detected, then switch using `-b my_family_my_variant`.
 5. If you accidentally create two files that collapse to the same key the last one found wins—rename to keep keys unique.
 
 Tips:

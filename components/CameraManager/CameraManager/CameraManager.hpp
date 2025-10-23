@@ -36,7 +36,6 @@ private:
   void loadConfigData();
   void setupCameraPinout();
   void setupCameraSensor();
-  void setupBasicResolution();
 };
 
 #endif // CAMERAMANAGER_HPP
