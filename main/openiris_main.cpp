@@ -215,7 +215,11 @@ void startWiFiMode()
     wifiManager->Begin();
     mdnsManager.start();
     restAPI->begin();
-
+    StreamingMode mode = deviceConfig->getDeviceMode();
+    if (mode == StreamingMode::WIFI)
+    {
+        streamServer.startStreamServer();
+    }
     xTaskCreate(
         HandleRestAPIPollTask,
         "HandleRestAPIPollTask",
