@@ -113,7 +113,7 @@ CommandResult startStreamingCommand()
     esp_timer_handle_t activateStreamingTimer;
     esp_timer_create(&args, &activateStreamingTimer);
     esp_timer_start_once(activateStreamingTimer, pdMS_TO_TICKS(150));
-    streamServer.startStreamServer();
+    // streamServer.startStreamServer();
     return CommandResult::getSuccessResult("Streaming starting");
 }
 
