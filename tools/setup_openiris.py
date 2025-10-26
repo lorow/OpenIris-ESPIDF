@@ -482,6 +482,15 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
         configured = wifi.get("networks_configured", 0)
         print(f"📶 WiFi: {status}  |  IP: {ip}  |  Networks configured: {configured}")
 
+def restart_device_command(device: OpenIrisDevice, *args, **kwargs):
+    print("🔄 Restarting device...")
+    response = device.send_command("restart_device")
+    if has_command_failed(response):
+        print(f"❌ Failed to restart device: {response['error']}")
+        return
+
+    print("✅ Device restart command sent successfully")
+    print("💡 Please wait a few seconds for the device to reboot")
 
 def scan_networks(wifi_scanner: WiFiScanner, *args, **kwargs):
     use_custom_timeout = (
@@ -668,6 +677,7 @@ def handle_menu(menu_context: dict | None = None) -> str:
     menu.add_action("🔄 Switch device mode (WiFi/UVC/Auto)", switch_device_mode_command)
     menu.add_action("💡 Update PWM Duty Cycle", set_led_duty_cycle)
     menu.add_action("🧩 Get settings summary", get_settings_summary)
+    menu.add_action("🔪 Restart device", restart_device_command)
     menu.show()
 
 
