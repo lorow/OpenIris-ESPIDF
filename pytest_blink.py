@@ -11,6 +11,6 @@ from pytest_embedded_idf.dut import IdfDut
 @pytest.mark.generic
 def test_blink(dut: IdfDut) -> None:
     # check and log bin size
-    binary_file = os.path.join(dut.app.binary_path, 'blink.bin')
+    binary_file = os.path.join(dut.app.binary_path, "blink.bin")
     bin_size = os.path.getsize(binary_file)
-    logging.info('blink_bin_size : {}KB'.format(bin_size // 1024))
+    logging.info("blink_bin_size : {}KB".format(bin_size // 1024))

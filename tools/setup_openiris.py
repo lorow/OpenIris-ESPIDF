@@ -309,14 +309,18 @@ def get_serial_info(device: OpenIrisDevice) -> dict:
         "mac": response["results"][0]["result"]["data"]["mac"],
     }
 
+
 def get_device_info(device: OpenIrisDevice) -> dict:
     response = device.send_command("get_who_am_i")
 
     if has_command_failed(response):
         print(f"❌ Failed to get device info: {response['error']}")
         return {"who_am_i": None, "version": None}
-    
-    return {"who_am_i": response["results"][0]["result"]["data"]["who_am_i"], "version": response["results"][0]["result"]["data"]["version"]}
+
+    return {
+        "who_am_i": response["results"][0]["result"]["data"]["who_am_i"],
+        "version": response["results"][0]["result"]["data"]["version"],
+    }
 
 
 def get_wifi_status(device: OpenIrisDevice) -> dict:
@@ -334,7 +338,9 @@ def get_led_current(device: OpenIrisDevice) -> dict:
         print(f"❌ Failed to get LED current: {response}")
         return {"led_current_ma": "unknown"}
 
-    return {"led_current_ma": response["results"][0]["result"]["data"]["led_current_ma"]}
+    return {
+        "led_current_ma": response["results"][0]["result"]["data"]["led_current_ma"]
+    }
 
 
 def configure_device_name(device: OpenIrisDevice, *args, **kwargs):
@@ -457,11 +463,11 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
     print(f"🔑 Serial: {summary['Identity']}")
     print(f"💡 LED PWM Duty: {summary['LED']['duty_cycle']}%")
     print(f"🎚️  Mode: {summary['Mode']['mode']}")
-    
+
     current_section = summary.get("Current", {})
     led_current_ma = current_section.get("led_current_ma")
     print(f"🔌 LED Current: {led_current_ma} mA")
-    
+
     advertised_name_data = summary.get("AdvertisedName", {})
     advertised_name = advertised_name_data.get("name")
     print(f"📛 Name: {advertised_name}")
@@ -473,7 +479,6 @@ def get_settings_summary(device: OpenIrisDevice, *args, **kwargs):
         print(f"🏷️  Device: {who}")
     if ver:
         print(f"🧭 Version: {ver}")
-
 
     wifi = summary.get("WiFi", {}).get("wifi_status", {})
     if wifi:
