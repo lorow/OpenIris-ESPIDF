@@ -58,3 +58,8 @@ CONFIG_GENERAL_INCLUDE_UVC_MODE=y
 # CONFIG_MONITORING_LED_CURRENT is not set
 CONFIG_GENERAL_BOARD="project_babble"
 CONFIG_GENERAL_ENABLE_WIRELESS=y
+#
+# OpenIris: Serial Communication Settings
+#
+CONFIG_UART_PORT_NUMER=1
+# end of OpenIris: Serial Communication Settings

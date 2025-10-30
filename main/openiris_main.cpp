@@ -165,7 +165,6 @@ void startWiredMode(bool shouldCloseSerialManager)
 #ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
     ESP_LOGE("[MAIN]", "UVC mode selected but the board likely does not support it.");
     ESP_LOGI("[MAIN]", "Falling back to WiFi mode if credentials available");
-    deviceMode = StreamingMode::WIFI;
     startWiFiMode();
 #else
     ESP_LOGI("[MAIN]", "Starting UVC streaming mode.");

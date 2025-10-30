@@ -69,3 +69,8 @@ CONFIG_GENERAL_BOARD="facefocusvr_eye_r"
 # CONFIG_LED_DEBUG_ENABLE is not set
 CONFIG_LED_EXTERNAL_AS_DEBUG=y
 CONFIG_GENERAL_ADVERTISED_NAME="FFVR Eye R"
+#
+# OpenIris: Serial Communication Settings
+#
+CONFIG_UART_PORT_NUMER=1
+# end of OpenIris: Serial Communication Settings

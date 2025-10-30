@@ -107,6 +107,16 @@ menu "OpenIris: WiFi Configuration"
 
 endmenu
 
+menu "OpenIris: Serial Communication Settings"
+    config UART_PORT_NUMER
+        int "UART Port number"
+        default 1
+        range 1 4
+        help
+            The UART port to use for communication
+
+endmenu
+
 menu "OpenIris: LED Configuration"
 
     config LED_DEBUG_ENABLE

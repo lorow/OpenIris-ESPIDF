@@ -1,8 +1,9 @@
+#ifdef CONFIG_GENERAL_INCLUDE_UVC_MODE
+
 #include "UVCStream.hpp"
 #include <cstdio> // for snprintf
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-// no deps on main globals here; handover is performed in main before calling setup when needed
 
 static const char *UVC_STREAM_TAG = "[UVC DEVICE]";
 
@@ -94,10 +95,10 @@ static uvc_fb_t *UVCStreamHelpers::camera_fb_get_cb(void *cb_ctx)
   // to the underlying camera buffer was overwritten before TinyUSB returned it.
 
   // --- Frame pacing BEFORE grabbing a new camera frame ---
-  static int64_t next_deadline_us = 0;    // next permitted capture time
-  static int rem_acc = 0;                 // fractional remainder accumulator
-  static const int target_fps = 60;          // desired FPS
-  static const int64_t us_per_sec = 1000000; // 1e6 microseconds
+  static int64_t next_deadline_us = 0;                         // next permitted capture time
+  static int rem_acc = 0;                                      // fractional remainder accumulator
+  static const int target_fps = 60;                            // desired FPS
+  static const int64_t us_per_sec = 1000000;                   // 1e6 microseconds
   static const int base_interval_us = us_per_sec / target_fps; // 16666
   static const int rem_us = us_per_sec % target_fps;           // 40 (distributed)
 
@@ -167,12 +168,6 @@ static void UVCStreamHelpers::camera_fb_return_cb(uvc_fb_t *fb, void *cb_ctx)
 
 esp_err_t UVCStreamManager::setup()
 {
-
-#ifndef CONFIG_GENERAL_INCLUDE_UVC_MODE
-  ESP_LOGE(UVC_STREAM_TAG, "The board does not support UVC, please, setup WiFi connection.");
-  return ESP_FAIL;
-#endif
-
   ESP_LOGI(UVC_STREAM_TAG, "Setting up UVC Stream");
   // Allocate a fixed-size transfer buffer (compile-time constant)
   uvc_buffer_size = UVCStreamManager::UVC_MAX_FRAMESIZE_SIZE;
@@ -219,3 +214,5 @@ esp_err_t UVCStreamManager::start()
   // UVC device is already initialized in setup(), just log that we're starting
   return ESP_OK;
 }
+
+#endif

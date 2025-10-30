@@ -50,3 +50,8 @@ CONFIG_SPIRAM_CS_IO=26
 # CONFIG_SPIRAM_SPEED_120M is not set
 CONFIG_SPIRAM_SPEED_80M=y
 # CONFIG_SUPPORTS_EXTERNAL_LED_CONTROL is not set
+#
+# OpenIris: Serial Communication Settings
+#
+CONFIG_UART_PORT_NUMER=1
+# end of OpenIris: Serial Communication Settings

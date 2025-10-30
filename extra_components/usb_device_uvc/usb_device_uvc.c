@@ -20,11 +20,7 @@
 
 static const char *TAG = "usbd_uvc";
 
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-#define UVC_CAM_NUM 2
-#else
 #define UVC_CAM_NUM 1
-#endif
 
 typedef struct
 {
@@ -85,12 +81,6 @@ void tud_suspend_cb(bool remote_wakeup_en)
     {
         s_uvc_device.user_config[0].stop_cb(s_uvc_device.user_config[0].cb_ctx);
     }
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-    if (s_uvc_device.user_config[1].stop_cb)
-    {
-        s_uvc_device.user_config[1].stop_cb(s_uvc_device.user_config[1].cb_ctx);
-    }
-#endif
     ESP_LOGI(TAG, "Suspend");
 }
 
@@ -178,82 +168,6 @@ static void video_task(void *arg)
     }
 }
 
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-static void video_task2(void *arg)
-{
-    uint32_t start_ms = 0;
-    uint32_t frame_num = 0;
-    uint32_t frame_len = 0;
-    uint32_t already_start = 0;
-    uint32_t tx_busy = 0;
-    uint8_t *uvc_buffer = s_uvc_device.user_config[1].uvc_buffer;
-    uint32_t uvc_buffer_size = s_uvc_device.user_config[1].uvc_buffer_size;
-    uvc_fb_t *pic = NULL;
-
-    while (1)
-    {
-        if (!tud_video_n_streaming(1, 0))
-        {
-            already_start = 0;
-            frame_num = 0;
-            tx_busy = 0;
-            vTaskDelay(1);
-            continue;
-        }
-
-        if (!already_start)
-        {
-            already_start = 1;
-            start_ms = get_time_millis();
-        }
-
-        uint32_t cur = get_time_millis();
-        if (cur - start_ms < s_uvc_device.interval_ms[1])
-        {
-            vTaskDelay(1);
-            continue;
-        }
-
-        if (tx_busy)
-        {
-            uint32_t xfer_done = ulTaskNotifyTake(pdTRUE, 1);
-            if (xfer_done == 0)
-            {
-                continue;
-            }
-            ++frame_num;
-            tx_busy = 0;
-        }
-
-        start_ms += s_uvc_device.interval_ms[1];
-        ESP_LOGD(TAG, "frame %" PRIu32 " taking picture...", frame_num);
-        pic = s_uvc_device.user_config[1].fb_get_cb(s_uvc_device.user_config[1].cb_ctx);
-        if (pic)
-        {
-            ESP_LOGD(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Failed to capture picture");
-            continue;
-        }
-
-        if (pic->len > uvc_buffer_size)
-        {
-            ESP_LOGW(TAG, "frame size is too big, dropping frame");
-            s_uvc_device.user_config[1].fb_return_cb(pic, s_uvc_device.user_config[1].cb_ctx);
-            continue;
-        }
-        frame_len = pic->len;
-        memcpy(uvc_buffer, pic->buf, frame_len);
-        s_uvc_device.user_config[1].fb_return_cb(pic, s_uvc_device.user_config[1].cb_ctx);
-        tx_busy = 1;
-        tud_video_n_frame_xfer(1, 0, (void *)uvc_buffer, frame_len);
-        ESP_LOGD(TAG, "frame %" PRIu32 " transfer start, size %" PRIu32, frame_num, frame_len);
-    }
-}
-#endif
-
 void tud_video_frame_xfer_complete_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx)
 {
     (void)ctl_idx;
@@ -307,18 +221,9 @@ esp_err_t uvc_device_config(int index, uvc_device_config_t *config)
 esp_err_t uvc_device_init(void)
 {
     ESP_RETURN_ON_FALSE(s_uvc_device.uvc_init[0], ESP_ERR_INVALID_STATE, TAG, "uvc device 0 not init");
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-    ESP_RETURN_ON_FALSE(s_uvc_device.uvc_init[1], ESP_ERR_INVALID_STATE, TAG, "uvc device 1 not init, if not use, please disable CONFIG_UVC_SUPPORT_TWO_CAM");
-#endif
 
 #ifdef CONFIG_FORMAT_MJPEG_CAM1
     s_uvc_device.format[0] = UVC_FORMAT_JPEG;
-#endif
-
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-#ifdef CONFIG_FORMAT_MJPEG_CAM2
-    s_uvc_device.format[1] = UVC_FORMAT_JPEG;
-#endif
 #endif
 
     // init device stack on configured roothub port
@@ -335,10 +240,6 @@ esp_err_t uvc_device_init(void)
 #if (CFG_TUD_VIDEO)
     core_id = (CONFIG_UVC_CAM1_TASK_CORE < 0) ? tskNO_AFFINITY : CONFIG_UVC_CAM1_TASK_CORE;
     xTaskCreatePinnedToCore(video_task, "UVC", 4096, NULL, CONFIG_UVC_CAM1_TASK_PRIORITY, &s_uvc_device.uvc_task_hdl[0], core_id);
-#if CONFIG_UVC_SUPPORT_TWO_CAM
-    core_id = (CONFIG_UVC_CAM2_TASK_CORE < 0) ? tskNO_AFFINITY : CONFIG_UVC_CAM2_TASK_CORE;
-    xTaskCreatePinnedToCore(video_task2, "UVC2", 4096, NULL, CONFIG_UVC_CAM2_TASK_PRIORITY, &s_uvc_device.uvc_task_hdl[1], core_id);
-#endif
 #endif
     ESP_LOGI(TAG, "UVC Device Start, Version: %d.%d.%d", USB_DEVICE_UVC_VER_MAJOR, USB_DEVICE_UVC_VER_MINOR, USB_DEVICE_UVC_VER_PATCH);
     return ESP_OK;
