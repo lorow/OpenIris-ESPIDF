@@ -604,8 +604,12 @@ def handle_menu(menu_context: dict | None = None) -> str:
 
 
 def valid_port(port: str):
-    if not port.startswith("COM"):
-        raise argparse.ArgumentTypeError("Invalid port name. We only support COM ports")
+    if sys.platform == "windows":
+        if not port.startswith("COM"):
+            raise argparse.ArgumentTypeError("Invalid port name. We only support COM ports")
+    else:
+        if not port.startswith("/dev/tty"):
+            raise argparse.ArgumentTypeError("Invalid port name. Port must be in /dev/tty")
     return port
 
 

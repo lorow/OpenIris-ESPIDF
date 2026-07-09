@@ -4,7 +4,7 @@ requires-python = ">=3.12"
 
 [[package]]
 name = "blink"
-version = "0.2.0rc0"
+version = "0.2.1rc0"
 source = { virtual = "." }
 dependencies = [
     { name = "pyserial" },
