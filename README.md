@@ -113,15 +113,23 @@ Before you run it:
 
 Then run:
 
+Windows (cmd):
+
 ```cmd
 uv run .\tools\setup_openiris.py --port COMxx
 ```
 
+macOS/Linux (bash):
+
+```bash
+uv run ./tools/setup_openiris.py --port /dev/tty<port>
+```
+
 Examples:
 
-- Windows: `uv run .\tools\setup_openiris.py --port COM69`, …
-- macOS: `uv run .\tools\setup_openiris.py --port \dev\tty<port>`
-- Linux: `uv run .\tools\setup_openiris.py --port \dev\tty<port>`
+- Windows: `uv run .\tools\setup_openiris.py --port COM69`
+- macOS: `uv run ./tools/setup_openiris.py --port /dev/ttyACM0`
+- Linux: `uv run ./tools/setup_openiris.py --port /dev/ttyACM0`
 
 What the CLI can do:
 
