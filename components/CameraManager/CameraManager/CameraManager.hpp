@@ -27,6 +27,7 @@ class CameraManager
     esp_err_t lastCameraError = ESP_OK;
     uint8_t* diagnosticJpegBuf = nullptr;
     size_t diagnosticJpegLen = 0;
+    bool cameraOk = false;
 
    public:
     CameraManager(std::shared_ptr<ProjectConfig> projectConfig, QueueHandle_t eventQueue);
@@ -43,6 +44,15 @@ class CameraManager
     // so streaming clients (Baballonia/EyeTrackVR/etc.) see the failure instead of just losing the feed.
     // Returns false if no diagnostic frame has been generated (e.g. camera never failed).
     bool getDiagnosticFrame(const uint8_t** outBuf, size_t* outLen) const;
+
+    // True once setupCamera() has succeeded. Checked by the retry task below and by
+    // StreamServer to decide whether to serve live frames or the diagnostic fallback.
+    bool isCameraOk() const;
+
+    // Spawns a background task that keeps retrying setupCamera() every 5s while it hasn't
+    // succeeded yet (e.g. the sensor was reseated after a failed boot), so the camera can
+    // recover on its own without a manual reboot.
+    void startAutoRetry();
 
    private:
     void loadConfigData();

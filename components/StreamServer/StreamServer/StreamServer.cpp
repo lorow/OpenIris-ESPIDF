@@ -45,13 +45,16 @@ esp_err_t StreamHelpers::stream(httpd_req_t* req)
     if (SendStreamEvent(eventQueue, StreamState_e::Stream_ON))
         stream_on_sent = true;
 
-    const bool cameraFailed = stateManager && stateManager->GetCameraState() == CameraState_e::Camera_Error;
-    const uint8_t* diagBuf = nullptr;
-    size_t diagLen = 0;
-    const bool haveDiagFrame = cameraFailed && cameraManager && cameraManager->getDiagnosticFrame(&diagBuf, &diagLen);
-
     while (true)
     {
+        // Re-checked every iteration (not just once at connection start) so an already-open
+        // stream picks up a camera that recovers mid-connection (see CameraManager's retry
+        // task) without the client needing to reconnect.
+        const bool cameraFailed = stateManager && stateManager->GetCameraState() == CameraState_e::Camera_Error;
+        const uint8_t* diagBuf = nullptr;
+        size_t diagLen = 0;
+        const bool haveDiagFrame = cameraFailed && cameraManager && cameraManager->getDiagnosticFrame(&diagBuf, &diagLen);
+
         if (haveDiagFrame)
         {
             // No real camera frames are coming; re-serve the same diagnostic JPEG slowly so

@@ -1,5 +1,6 @@
 #include "CameraManager.hpp"
 #include "esp_heap_caps.h"
+#include "freertos/task.h"
 #include "img_converters.h"
 
 #include <algorithm>
@@ -260,6 +261,7 @@ bool CameraManager::setupCamera()
     {
         ESP_LOGI(CAMERA_MANAGER_TAG, "Camera initialized: %s \r\n", esp_err_to_name(hasCameraBeenInitialized));
 
+        this->cameraOk = true;
         constexpr auto event = SystemEvent{EventSource::CAMERA, CameraState_e::Camera_Success};
         xQueueSend(this->eventQueue, &event, 10);
     }
@@ -268,9 +270,8 @@ bool CameraManager::setupCamera()
         ESP_LOGE(CAMERA_MANAGER_TAG, "Camera initialization failed with error: %s \r\n", esp_err_to_name(hasCameraBeenInitialized));
         ESP_LOGE(CAMERA_MANAGER_TAG,
                  "Camera most likely not seated properly in the socket. "
-                 "Please "
-                 "fix the "
-                 "camera and reboot the device.\r\n");
+                 "Please fix the camera - it'll be retried automatically, no reboot needed.\r\n");
+        this->cameraOk = false;
         this->lastCameraError = hasCameraBeenInitialized;
         this->generateDiagnosticFrame();
         constexpr auto event = SystemEvent{EventSource::CAMERA, CameraState_e::Camera_Error};
@@ -295,6 +296,33 @@ bool CameraManager::setupCamera()
 
     this->setupCameraSensor();
     return true;
+}
+
+bool CameraManager::isCameraOk() const
+{
+    return cameraOk;
+}
+
+namespace
+{
+void CameraRetryTask(void* param)
+{
+    auto* self = static_cast<CameraManager*>(param);
+    while (true)
+    {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        if (!self->isCameraOk())
+        {
+            ESP_LOGI(CAMERA_MANAGER_TAG, "Camera not initialized, retrying...");
+            self->setupCamera();
+        }
+    }
+}
+}  // namespace
+
+void CameraManager::startAutoRetry()
+{
+    xTaskCreate(CameraRetryTask, "CameraRetryTask", 1024 * 3, this, 1, nullptr);
 }
 
 void CameraManager::loadConfigData()

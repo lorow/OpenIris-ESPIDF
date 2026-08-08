@@ -282,6 +282,7 @@ extern "C" void app_main(void)
     xTaskCreate(HandleLEDDisplayTask, "HandleLEDDisplayTask", 1024 * 2, ledManager.get(), 3, nullptr);
 
     cameraHandler->setupCamera();
+    cameraHandler->startAutoRetry();
 
     // let's keep the serial manager running for the duration of the setup
     // we'll clean it up later if need be
