@@ -62,7 +62,7 @@ auto wifiManager = std::make_shared<WiFiManager>(deviceConfig, eventQueue, state
 MDNSManager mdnsManager(deviceConfig, eventQueue);
 
 std::shared_ptr<CameraManager> cameraHandler = std::make_shared<CameraManager>(deviceConfig, eventQueue);
-StreamServer streamServer(80, stateManager);
+StreamServer streamServer(80, stateManager, cameraHandler);
 
 std::shared_ptr<RestAPI> restAPI = std::make_shared<RestAPI>("http://0.0.0.0:81", commandManager);
 
